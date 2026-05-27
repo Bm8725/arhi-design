@@ -16,6 +16,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-white text-black antialiased">
       <Navbar />
+      
       <Hero />
       <Transformare3D />
       <Manifestdesign />

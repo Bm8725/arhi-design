@@ -138,10 +138,10 @@ export default function InteriorWoowHero() {
 
               <div 
                 className="absolute bottom-8 left-8 transition-transform duration-300 pointer-events-none"
-                style={{ 
-                  transform: `translateX(${rotateY * -1}px) translateY(${rotateX * -1}px)`,
-                  translateZ: '50px' 
-                }}
+            style={{ 
+              transform: `translateX(${rotateY * -1}px) translateY(${rotateX * -1}px) translateZ(50px)`
+            }}
+
               >
                 <p className="text-[10px] uppercase tracking-[0.3em] text-amber-400 mb-1 font-semibold">Concept Premium</p>
                 <p className="text-xl font-light tracking-wide">Spații Cu Caracter.</p>

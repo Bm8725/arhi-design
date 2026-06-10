@@ -18,7 +18,7 @@ export default function Footer() {
         {/* COLOANA 1: LOGO ȘI DESCRIERE (5 coloane pe desktop) */}
         <div className="md:col-span-5 space-y-6">
           <Link href="/" className="text-2xl font-light tracking-[0.25em] uppercase group">
-            Arhi<span className="font-semibold text-gray-400 group-hover:text-black transition-colors duration-300">.Design</span>
+            Pro<span className="font-semibold text-gray-400 group-hover:text-black transition-colors duration-300">arh.4d</span>
           </Link>
           <p className="text-xs text-[#7c7265] max-w-sm leading-relaxed font-light">
             Schițăm viitorul prin volume pure și materiale brute. Un studio dedicat arhitecturii rezidențiale de lux și designului interior atemporal.
@@ -35,14 +35,15 @@ export default function Footer() {
           <div className="flex flex-col gap-2 text-xs font-medium uppercase tracking-wider text-[#554d42]">
             <Link href="/" className="hover:text-black transition-colors w-fit">Acasă</Link>
             <Link href="/portofoliu" className="hover:text-black transition-colors w-fit">Portofoliu</Link>
-            <Link href="/servicii" className="hover:text-black transition-colors w-fit">Servicii</Link>
-            <Link href="/contact" className="hover:text-black transition-colors w-fit">Consultanță</Link>
+            <Link href="/servicii" className="hover:text-black transition-colors w-fit">Despre noi</Link>
+            <Link href="/404" className="hover:text-black transition-colors w-fit">Politica de confidențialitate</Link>
+            <Link href="/404" className="hover:text-black transition-colors w-fit">GDPR</Link>
           </div>
         </div>
 
         {/* COLOANA 3: DATE CONTACT / STUDIO (4 coloane pe desktop) */}
         <div className="md:col-span-4 space-y-4">
-          <h4 className="text-[10px] font-mono tracking-[0.25em] text-[#8c8275] uppercase font-bold">Atelier București</h4>
+          <h4 className="text-[10px] font-mono tracking-[0.25em] text-[#8c8275] uppercase font-bold">Atelier Targoviste</h4>
           <div className="space-y-3 text-xs font-light text-[#554d42]">
             <div className="flex items-center gap-3">
               <MapPin size={14} className="text-[#8c8275]" strokeWidth={1.5} />
@@ -66,7 +67,7 @@ export default function Footer() {
         
         {/* TEXT COPYRIGHT */}
         <div className="text-[10px] font-mono text-[#8c8275] tracking-widest uppercase text-center sm:text-left">
-          © {new Date().getFullYear()} Arhi.Design Studio. Next.js app web designed by BM, cloud infrastructure. All rights reserved.
+          © {new Date().getFullYear()} ProArhi.4D birou de arhitectura. All rights reserved.
         </div>
 
         {/* BUTON BACK TO TOP ANIMAT */}
@@ -74,7 +75,7 @@ export default function Footer() {
           onClick={scrolleazaSus}
           className="group flex items-center gap-3 text-[10px] font-mono tracking-widest uppercase text-[#554d42] hover:text-black transition-colors focus:outline-none cursor-pointer"
         >
-          <span>Înapoi sus</span>
+          <span>up</span>
           <span className="p-2 border border-[#e5e0d8] group-hover:border-black group-hover:-translate-y-1 transition-all duration-300">
             <ArrowUp size={12} strokeWidth={2} />
           </span>

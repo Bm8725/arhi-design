@@ -36,6 +36,7 @@ export default function Navbar() {
 
   const navigation = [
     { name: 'Acasă', href: '/' },
+     { name: 'shop', href: '/shop' },
     { 
       name: 'Portofoliu', 
       href: '/dashboard',
@@ -71,7 +72,7 @@ export default function Navbar() {
             
             {/* LOGO */}
             <Link href="/" className="text-xl font-light tracking-[0.25em] text-white uppercase group">
-              Arhi<span className="font-semibold text-amber-500 transition-colors duration-300">.Design</span>
+              Pro<span className="font-semibold text-amber-500 transition-colors duration-300">arh.4d</span>
             </Link>
 
             {/* DESKTOP NAVIGATION */}

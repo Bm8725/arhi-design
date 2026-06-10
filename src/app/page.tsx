@@ -20,7 +20,7 @@ export default function Home() {
       <Hero />
       <Transformare3D />
       <Manifestdesign />
-      <ChatBot />
+ 
       <Footer /> 
     </main>
   );

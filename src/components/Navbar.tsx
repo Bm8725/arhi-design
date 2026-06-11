@@ -9,6 +9,7 @@ import {
   FolderGit2, 
   Briefcase, 
   User, 
+  Users,
   Menu, 
   X, 
   ChevronDown 
@@ -64,7 +65,8 @@ export default function Navbar() {
         { name: 'Avize & Urbanism (PUD/PUZ)', href: '/UrbanismSection' },
       ]
     },
-    { name: 'Contact', href: '/contact', icon: User },
+   { name: 'Noi', href: '/despre', icon: Users },
+
   ];
 
   return (
@@ -141,11 +143,28 @@ export default function Navbar() {
       {/* ========================================================================= */}
       {/* 2. MOBILE HEADER LOGO */}
       {/* ========================================================================= */}
-      <div className="fixed top-0 left-0 w-full z-50 bg-black/50 backdrop-blur-lg border-b border-white/5 md:hidden h-16 flex items-center justify-center">
-        <Link href="/" className="text-lg font-light tracking-[0.2em] text-white uppercase">
-          Pro<span className="font-semibold text-amber-500">arh.4d</span>
-        </Link>
-      </div>
+{/* ========================================================================= */}
+{/* 2. MOBILE HEADER LOGO + MY ACCOUNT */}
+{/* ========================================================================= */}
+<div className="fixed top-0 left-0 w-full z-50 bg-black/50 backdrop-blur-lg border-b border-white/5 md:hidden h-16 flex items-center justify-between px-6">
+  <div className="w-10"></div> 
+
+  <Link href="/" className="text-lg font-light tracking-[0.2em] text-white uppercase transform translate-x-3">
+    Pro<span className="font-semibold text-amber-500">arh.4d</span>
+  </Link>
+
+  <Link 
+    href="/myaccount" 
+    className={`p-2 rounded-full border transition-all ${
+      pathname === '/myaccount' 
+        ? 'bg-amber-500 text-black border-amber-500' 
+        : 'text-white border-white/10 bg-white/5 hover:bg-white/10'
+    }`}
+    aria-label="Contul meu"
+  >
+    <User size={18} />
+  </Link>
+</div>
 
       {/* ========================================================================= */}
       {/* 3. MOBILE BOTTOM TAB BAR WITH SUBOPTIONS */}

@@ -5,6 +5,7 @@ import Footer from '@/components/Footer';
 import Navbar from '@/components/Navbar';
 import WhatsAppWidget from "@/components/WhatsAppWidget";
 
+
 interface SpaceDesign {
   id: number;
   title: string;
@@ -152,6 +153,8 @@ export default function InteriorWoowHero() {
 
         </div>
       </section>
+
+
          <WhatsAppWidget />
       {/* 3. FOOTER - Scos în afara secțiunii de hero pentru o ierarhie corectă */}
       <Footer />

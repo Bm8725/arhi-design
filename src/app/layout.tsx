@@ -26,8 +26,8 @@ export const metadata: Metadata = {
 
   // 2. Configurarea pentru Share pe Social Media (Facebook, WhatsApp, LinkedIn etc.)
   openGraph: {
-    title: "Proarh.4d | Birou de Proiectare Arhitecturală",
-    description: "Servicii premium de arhitectură, proiectare rezidențială și comercială, randări 3D și urbanism.",
+    title: "Proarh.4d | Birou de Proiectare Arhitecturală. Arh. Sotangeanu Bogdan",
+    description: "Servicii premium de arhitectură, proiectare rezidențială și comercială, randări 3D/4D și urbanism.",
     url: "https://proarh4d.ro", // Pune aici domeniul tău final când va fi live
     siteName: "Proarh.4d",
     images: [
@@ -46,7 +46,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Proarh.4d | Birou de Proiectare Arhitecturală",
-    description: "Servicii premium de arhitectură, proiectare rezidențială și comercială.",
+    description: "Servicii premium de arhitectură, proiectare rezidențială și comercială. Dambovita. Targoviste.",
     images: ["/proarh4d.ro.png"],
   },
 };

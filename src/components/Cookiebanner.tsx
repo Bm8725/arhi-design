@@ -1,155 +1,240 @@
-/**
- * components/Cookiebanner.tsx
- */
-
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { 
+  Home, 
+  ShoppingBag, 
+  FolderGit2, 
+  Briefcase, 
+  User, 
+  Menu, 
+  X, 
+  ChevronDown 
+} from 'lucide-react';
 
-export default function CookieBanner() {
-  const [isVisible, setIsVisible] = useState(false);
-  const [showPreferences, setShowPreferences] = useState(false);
-  const [preferences, setPreferences] = useState({
-    essential: true,
-    analytics: true,
-    marketing: false,
-  });
+export default function Navbar() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const pathname = usePathname();
+  
+  const [showNavbar, setShowNavbar] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+  const [activeMobileMenu, setActiveMobileMenu] = useState<string | null>(null);
 
   useEffect(() => {
-    const consent = localStorage.getItem('proarh_governance_consent');
-    if (!consent) {
-      const timer = setTimeout(() => setIsVisible(true), 1200);
-      return () => clearTimeout(timer);
-    }
-  }, []);
+    const controlNavbar = () => {
+      if (typeof window !== 'undefined') {
+        if (isOpen) return;
+        if (window.scrollY > lastScrollY && window.scrollY > 80) {
+          setShowNavbar(false);
+        } else {
+          setShowNavbar(true);
+        }
+        setLastScrollY(window.scrollY);
+      }
+    };
 
-  const saveConsent = (status: 'all' | 'custom' | 'denied', payload: typeof preferences) => {
-    localStorage.setItem('proarh_governance_consent', status);
-    localStorage.setItem('proarh_cookie_matrix', JSON.stringify(payload));
-    setIsVisible(false);
-  };
+    window.addEventListener('scroll', controlNavbar);
+    return () => window.removeEventListener('scroll', controlNavbar);
+  }, [lastScrollY, isOpen]);
 
-  const handleAcceptAll = () => {
-    saveConsent('all', { essential: true, analytics: true, marketing: true });
-  };
-
-  const handleSaveCustom = () => {
-    saveConsent('custom', preferences);
-  };
-
-  const handleDeclineAll = () => {
-    saveConsent('denied', { essential: true, analytics: false, marketing: false });
-  };
-
-  // MINI-ICON PERMANENT când bannerul principal este ascuns
-  if (!isVisible) {
-    return (
-      <button
-        onClick={() => setIsVisible(true)}
-        className="fixed bottom-24 md:bottom-6 left-6 w-11 h-11 bg-[#0d0d0d]/90 backdrop-blur-xl border border-neutral-800 hover:border-amber-500/50 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] z-[9999] flex items-center justify-center text-neutral-400 hover:text-amber-500 transition-all duration-300 group"
-        title="Setări Cookie"
-      >
-        <svg className="w-5 h-5 transition-transform duration-300 group-hover:rotate-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-13.332 9-6.03 9-11.622 0-1.31-.21-2.57-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.286z" />
-        </svg>
-      </button>
-    );
-  }
+  const navigation = [
+    { name: 'Acasă', href: '/', icon: Home },
+    { name: 'shop', href: '/shop', icon: ShoppingBag },
+    { 
+      name: 'Portofoliu', 
+      href: '/dashboard',
+      icon: FolderGit2,
+      subOptions: [
+        { name: 'Rezidențial', href: '/404' },
+        { name: 'Comercial & Office', href: '/404' },
+        { name: 'Peisagistică', href: '/dashboard' },
+      ]
+    },
+    { 
+      name: 'Servicii', 
+      href: '/servicii',
+      icon: Briefcase,
+      subOptions: [
+        { name: 'Design Interior', href: '/DesignInterior' },
+        { name: 'Proiectare & Arhitectură', href: '/Arhiservices' },
+        { name: 'Randări 3D & VR', href: '/404' },
+        { name: 'Avize & Urbanism (PUD/PUZ)', href: '/UrbanismSection' },
+      ]
+    },
+    { name: 'Contact', href: '/contact', icon: User },
+  ];
 
   return (
-    <div className="fixed bottom-24 md:bottom-6 left-6 max-w-md w-[calc(100vw-3rem)] bg-[#0d0d0d]/90 backdrop-blur-xl border border-neutral-800/80 rounded-xl shadow-[0_30px_70px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.05)] z-[9999] overflow-hidden transition-all duration-500 font-sans">
-      
-      <div className="w-full h-[2px] bg-gradient-to-r from-neutral-900 via-amber-500/50 to-neutral-900" />
-      
-      <div className="p-5 md:p-6 flex flex-col gap-5">
-        
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-            <h4 className="text-xs font-mono tracking-wider text-neutral-200 uppercase">
-              Privacy Settings
-            </h4>
-          </div>
-        </div>
+    <>
+      {/* ========================================================================= */}
+      {/* 1. DESKTOP NAVBAR */}
+      {/* ========================================================================= */}
+      <div className={`fixed top-0 md:top-6 left-0 w-full z-50 px-0 md:px-6 transition-transform duration-500 hidden md:block ${
+        showNavbar ? 'translate-y-0' : '-translate-y-full md:-translate-y-28'
+      }`}>
+        <nav className="w-full max-w-7xl mx-auto bg-black/40 backdrop-blur-xl border border-white/10 md:rounded-full transition-all duration-300">
+          <div className="px-6 md:px-8 h-20 flex items-center justify-between">
+            
+            <Link href="/" className="text-xl font-light tracking-[0.25em] text-white uppercase group">
+              Pro<span className="font-semibold text-amber-500 transition-colors duration-300">arh.4d</span>
+            </Link>
 
-        {!showPreferences ? (
-          <p className="text-neutral-400 text-xs leading-relaxed font-light">
-            Utilizăm cookie-uri pentru a optimiza performanța platformei, a securiza sesiunile și a analiza traficul complet anonim.
-          </p>
-        ) : (
-          <div className="space-y-2.5 bg-neutral-950/40 p-3 rounded-lg border border-neutral-900">
-            <div className="flex items-center justify-between gap-4 py-1">
-              <div className="flex flex-col">
-                <span className="text-xs font-mono text-neutral-300">Tehnice</span>
-                <span className="text-[10px] text-neutral-500">Sesiuni și securitate.</span>
-              </div>
-              <span className="text-[9px] font-mono text-amber-500/80 bg-amber-500/5 px-2 py-0.5 rounded">Activ</span>
-            </div>
-
-            <div className="flex items-center justify-between gap-4 py-1 border-t border-neutral-900/50">
-              <div className="flex flex-col">
-                <span className="text-xs font-mono text-neutral-300">Analitice</span>
-                <span className="text-[10px] text-neutral-500">Performanță și trafic anonim.</span>
-              </div>
-              <input 
-                type="checkbox" 
-                checked={preferences.analytics}
-                onChange={(e) => setPreferences({...preferences, analytics: e.target.checked})}
-                className="w-4 h-4 rounded border-neutral-800 bg-neutral-900 text-amber-500 focus:ring-0 cursor-pointer accent-amber-500"
-              />
-            </div>
-
-            <div className="flex items-center justify-between gap-4 py-1 border-t border-neutral-900/50">
-              <div className="flex flex-col">
-                <span className="text-xs font-mono text-neutral-300">Marketing</span>
-                <span className="text-[10px] text-neutral-500">Personalizare experiență.</span>
-              </div>
-              <input 
-                type="checkbox" 
-                checked={preferences.marketing}
-                onChange={(e) => setPreferences({...preferences, marketing: e.target.checked})}
-                className="w-4 h-4 rounded border-neutral-800 bg-neutral-900 text-amber-500 focus:ring-0 cursor-pointer accent-amber-500"
-              />
-            </div>
-          </div>
-        )}
-
-        <div className="flex items-center justify-between gap-4 pt-3 border-t border-neutral-950">
-          <button
-            onClick={() => setShowPreferences(!showPreferences)}
-            className="text-neutral-500 hover:text-amber-400 text-[11px] font-mono transition-colors"
-          >
-            {showPreferences ? '[ Închide ]' : '[ Opțiuni ]'}
-          </button>
-
-          <div className="flex items-center gap-2">
-            {!showPreferences ? (
-              <>
-                <button
-                  onClick={handleDeclineAll}
-                  className="px-2.5 py-1.5 border border-neutral-800 hover:border-neutral-700 bg-neutral-900/20 text-neutral-400 hover:text-white text-xs font-mono rounded-md transition-all"
+            <div className="flex items-center gap-10 text-xs font-semibold tracking-[0.15em] uppercase text-neutral-400">
+              {navigation.map((item) => (
+                <div 
+                  key={item.name} 
+                  className="relative list-none"
+                  onMouseEnter={() => item.subOptions && setActiveDropdown(item.name)}
+                  onMouseLeave={() => setActiveDropdown(null)}
                 >
-                  Refuză
-                </button>
-                <button
-                  onClick={handleAcceptAll}
-                  className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-black font-medium text-xs font-mono rounded-md shadow-md shadow-amber-500/5 transition-all"
-                >
-                  Acceptă
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={handleSaveCustom}
-                className="px-4 py-1.5 bg-white hover:bg-neutral-200 text-black font-medium text-xs font-mono rounded-md transition-all"
+                  {item.subOptions ? (
+                    <button className="flex items-center gap-1 py-2 hover:text-white transition-colors duration-300 cursor-pointer focus:outline-none">
+                      {item.name}
+                      <ChevronDown size={14} className={`transition-transform duration-300 ${activeDropdown === item.name ? 'rotate-180 text-amber-500' : ''}`} />
+                    </button>
+                  ) : (
+                    <Link 
+                      href={item.href} 
+                      className="relative py-2 hover:text-white transition-colors duration-300 after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-amber-500 hover:after:w-full after:transition-all after:duration-300"
+                    >
+                      {item.name}
+                    </Link>
+                  )}
+
+                  {item.subOptions && (
+                    <div className={`absolute left-0 top-full pt-4 w-64 transition-all duration-300 ${
+                      activeDropdown === item.name ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-2 pointer-events-none'
+                    }`}>
+                      <div className="bg-black/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex flex-col gap-3 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                        {item.subOptions.map((sub) => (
+                          <Link 
+                            key={sub.name} 
+                            href={sub.href}
+                            className="text-[11px] tracking-wider text-neutral-400 hover:text-white transition-colors duration-200 py-1 border-b border-transparent hover:border-white/5"
+                          >
+                            {sub.name}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="hidden md:block">
+              <Link 
+                href="/myaccount" 
+                className="relative inline-flex items-center justify-center bg-amber-500 text-black rounded-full px-6 py-3 text-[10px] font-bold tracking-[0.2em] uppercase overflow-hidden transition-all duration-300 hover:bg-amber-400 active:scale-95"
               >
-                Salvează
-              </button>
-            )}
-          </div>
-        </div>
+               Contul meu
+              </Link>
+            </div>
 
+          </div>
+        </nav>
       </div>
-    </div>
+
+      {/* ========================================================================= */}
+      {/* 2. MOBILE HEADER LOGO */}
+      {/* ========================================================================= */}
+      <div className="fixed top-0 left-0 w-full z-50 bg-black/50 backdrop-blur-lg border-b border-white/5 md:hidden h-16 flex items-center justify-center">
+        <Link href="/" className="text-lg font-light tracking-[0.2em] text-white uppercase">
+          Pro<span className="font-semibold text-amber-500">arh.4d</span>
+        </Link>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 3. MOBILE BOTTOM TAB BAR WITH SUBOPTIONS */}
+      {/* ========================================================================= */}
+      <div className="fixed bottom-0 left-0 w-full z-50 px-4 pb-5 pt-2 bg-gradient-to-t from-black via-black/90 to-transparent md:hidden">
+        <nav className="w-full bg-[#0d0d0d]/90 backdrop-blur-2xl border border-white/10 rounded-2xl h-16 flex items-center justify-around px-2 shadow-[0_-10px_30px_rgba(0,0,0,0.8)]">
+          {navigation.map((item) => {
+            const IconComponent = item.icon;
+            const isTabActive = pathname === item.href || (item.subOptions?.some(sub => pathname === sub.href));
+
+            return (
+              <div key={item.name} className="flex-1 h-full flex items-center justify-center relative group">
+
+                {/* SUBOPTIONS FLOATING BUBBLE */}
+                {item.subOptions && activeMobileMenu === item.name && (
+                  <div className="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 w-52 bg-black/95 backdrop-blur-xl border border-white/10 rounded-xl p-2 flex flex-col gap-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.6)] animate-fade-in z-50">
+                    {item.subOptions.map((sub) => {
+                      const isSubActive = pathname === sub.href;
+                      return (
+                        <Link
+                          key={sub.name}
+                          href={sub.href}
+                          onClick={() => setActiveMobileMenu(null)}
+                          className={`text-[10px] tracking-wider py-2 px-3 rounded-lg uppercase transition-all ${
+                            isSubActive 
+                              ? 'bg-amber-500 text-black font-bold' 
+                              : 'text-neutral-400 active:text-white active:bg-white/5'
+                          }`}
+                        >
+                          {sub.name}
+                        </Link>
+                      );
+                    })}
+                    {/* Săgeată decorativă */}
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-black border-r border-b border-white/10 rotate-45 -mt-[5px]" />
+                  </div>
+                )}
+
+                {/* Tab button */}
+                {item.subOptions ? (
+                  <button
+                    onClick={() => setActiveMobileMenu(activeMobileMenu === item.name ? null : item.name)}
+                    className="flex flex-col items-center justify-center w-full h-full"
+                  >
+                    <IconComponent 
+                      size={20} 
+                      strokeWidth={isTabActive || activeMobileMenu === item.name ? 2.5 : 1.8} 
+                      className={`transition-all duration-300 ${
+                        isTabActive || activeMobileMenu === item.name ? 'text-amber-500 scale-110' : 'text-neutral-400'
+                      }`} 
+                    />
+                    <span className={`text-[9px] font-medium tracking-wide uppercase mt-1 transition-colors duration-300 ${
+                      isTabActive || activeMobileMenu === item.name ? 'text-white font-semibold' : 'text-neutral-500'
+                    }`}>
+                      {item.name}
+                    </span>
+                    {(isTabActive || activeMobileMenu === item.name) && (
+                      <span className="absolute bottom-1 w-1 h-1 rounded-full bg-amber-500" />
+                    )}
+                  </button>
+                ) : (
+                  <Link
+                    href={item.href}
+                    onClick={() => setActiveMobileMenu(null)}
+                    className="flex flex-col items-center justify-center w-full h-full"
+                  >
+                    <IconComponent 
+                      size={20} 
+                      strokeWidth={isTabActive ? 2.5 : 1.8} 
+                      className={`transition-all duration-300 ${
+                        isTabActive ? 'text-amber-500 scale-110' : 'text-neutral-400'
+                      }`} 
+                    />
+                    <span className={`text-[9px] font-medium tracking-wide uppercase mt-1 transition-colors duration-300 ${
+                      isTabActive ? 'text-white font-semibold' : 'text-neutral-500'
+                    }`}>
+                      {item.name === 'shop' ? 'Shop' : item.name}
+                    </span>
+                    {isTabActive && (
+                      <span className="absolute bottom-1 w-1 h-1 rounded-full bg-amber-500" />
+                    )}
+                  </Link>
+                )}
+
+              </div>
+            );
+          })}
+        </nav>
+      </div>
+    </>
   );
 }

@@ -42,7 +42,7 @@ export default function Navbar() {
 
   const navigation = [
     { name: 'Acasă', href: '/', icon: Home },
-    { name: 'shop', href: '/shop', icon: ShoppingBag },
+    { name: 'shop', href: '/404', icon: ShoppingBag },
     { 
       name: 'Portofoliu', 
       href: '/dashboard',
@@ -50,7 +50,7 @@ export default function Navbar() {
       subOptions: [
         { name: 'Rezidențial', href: '/404' },
         { name: 'Comercial & Office', href: '/404' },
-        { name: 'Peisagistică', href: '/dashboard' },
+        { name: 'Peisagistică', href: '/404' },
       ]
     },
     { 
@@ -59,7 +59,7 @@ export default function Navbar() {
       icon: Briefcase,
       subOptions: [
         { name: 'Design Interior', href: '/DesignInterior' },
-        { name: 'Proiectare & Arhitectură', href: '/Arhiservices' },
+        { name: 'Proiectare & Arhitectură', href: '/404' },
         { name: 'Randări 3D & VR', href: '/404' },
         { name: 'Avize & Urbanism (PUD/PUZ)', href: '/UrbanismSection' },
       ]

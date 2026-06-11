@@ -3,6 +3,7 @@
 import React, { useState, useRef, MouseEvent } from 'react';
 import Footer from '@/components/Footer';
 import Navbar from '@/components/Navbar';
+import WhatsAppWidget from "@/components/WhatsAppWidget";
 
 interface SpaceDesign {
   id: number;
@@ -151,7 +152,7 @@ export default function InteriorWoowHero() {
 
         </div>
       </section>
-
+         <WhatsAppWidget />
       {/* 3. FOOTER - Scos în afara secțiunii de hero pentru o ierarhie corectă */}
       <Footer />
     </div>

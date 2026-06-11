@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { ChevronLeft, CheckCircle2, Home, Building2, Trees, Paintbrush, Sparkles, ShieldCheck } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import WhatsAppWidget from "@/components/WhatsAppWidget";
 
 export default function ContactPage() {
   const [pas, setPas] = useState(1);
@@ -482,6 +483,8 @@ export default function ContactPage() {
           </div>
         </div>
       </div>
+
+      <WhatsAppWidget />
       <Footer />
     </>
   );

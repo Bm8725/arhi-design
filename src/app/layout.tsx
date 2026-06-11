@@ -61,6 +61,16 @@ export default function RootLayout({
       lang="ro" // Schimbat din "en" în "ro" deoarece site-ul tău este în limba română
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <script
+  dangerouslySetInnerHTML={{
+    __html: `
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('data:text/javascript,self.addEventListener("fetch",()=>{})');
+      }
+    `,
+  }}
+/>
+
       <body className="min-h-full flex flex-col bg-black text-white">{children}</body>
     </html>
   );

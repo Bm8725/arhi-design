@@ -33,12 +33,12 @@ function isAvailableNow(): boolean {
 const architects = [
   {
     id: 1,
-    name: 'Arh. Alexandru Popescu',
-    role: 'Arhitect Principal',
+    name: 'Alexandru Popescu',
+    role: 'suport clienti',
     specialty: 'Design Interior & Rezidențial',
     phone: '40743193627',
     avatar: 'AP',
-    schedule: 'Lun–Vin, 09:00–11:00',
+    schedule: 'Lun–Vin, 09:00–15:00',
   },
 ];
 
@@ -100,7 +100,7 @@ export default function WhatsAppWidget() {
   const isOpen = step !== 'idle';
 
   return (
-    <div className="fixed bottom-32 md:bottom-12 right-5 z-50 font-sans flex flex-col items-end gap-3">
+    <div className="fixed bottom-36 md:bottom-12 right-5 z-50 font-sans flex flex-col items-end gap-3">
 
       {/* BUBBLE */}
       {showBubble && !isOpen && (
@@ -111,8 +111,8 @@ export default function WhatsAppWidget() {
           >
             <X size={10} />
           </button>
-          <p className="text-[11px] text-neutral-300 leading-relaxed">Hai să vorbim! 💬</p>
-          <p className="text-[10px] text-neutral-500 mt-0.5">Răspundem rapid pe WhatsApp.</p>
+          <p className="text-[11px] text-neutral-300 leading-relaxed">Salutare! 💬</p>
+          <p className="text-[10px] text-neutral-500 mt-0.5">Răspundem rapid pe WhatsApp de luni până vineri, 09:00–15:00</p>
         </div>
       )}
 

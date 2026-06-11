@@ -46,7 +46,7 @@ export default function CookieBanner() {
     return (
       <button
         onClick={() => setIsVisible(true)}
-        className="fixed bottom-24 md:bottom-6 left-6 w-11 h-11 bg-[#0d0d0d]/90 backdrop-blur-xl border border-neutral-800 hover:border-amber-500/50 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] z-[9999] flex items-center justify-center text-neutral-400 hover:text-amber-500 transition-all duration-300 group"
+        className="fixed bottom-38 md:bottom-6 left-6 w-11 h-11 bg-[#0d0d0d]/90 backdrop-blur-xl border border-neutral-800 hover:border-amber-500/50 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] z-[9999] flex items-center justify-center text-neutral-400 hover:text-amber-500 transition-all duration-300 group"
         title="Setări Cookie"
       >
         <svg className="w-5 h-5 transition-transform duration-300 group-hover:rotate-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>

@@ -168,7 +168,6 @@ export default function Navbar() {
                         <Link
                           key={sub.name}
                           href={sub.href}
-                          onPress={() => setActiveMobileMenu(null)}
                           onClick={() => setActiveMobileMenu(null)}
                           className={`text-[10px] tracking-wider py-2 px-3 rounded-lg uppercase transition-all ${
                             isSubActive 
@@ -180,7 +179,6 @@ export default function Navbar() {
                         </Link>
                       );
                     })}
-                    {/* Săgeată decorativă */}
                     <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-black border-r border-b border-white/10 rotate-45 -mt-[5px]" />
                   </div>
                 )}

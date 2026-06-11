@@ -14,6 +14,8 @@ import {
   X, 
   ChevronDown 
 } from 'lucide-react';
+import Image from 'next/image'; //
+
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -80,9 +82,25 @@ export default function Navbar() {
         <nav className="w-full max-w-7xl mx-auto bg-black/40 backdrop-blur-xl border border-white/10 md:rounded-full transition-all duration-300">
           <div className="px-6 md:px-8 h-20 flex items-center justify-between">
             
-            <Link href="/" className="text-xl font-light tracking-[0.25em] text-white uppercase group">
-              Pro<span className="font-semibold text-amber-500 transition-colors duration-300">arh.4d</span>
-            </Link>
+       {/* LOGO DESKTOP ULTRA-MODERN CU IMAGINE ȘI EFECT DE GLOW */}
+<Link href="/" className="flex items-center gap-3.5 group cursor-pointer focus:outline-none select-none">
+  {/* Container imagine cu efect de zoom discret la hover */}
+  <div className="relative w-9 h-9 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(245,158,11,0.3)]">
+    <Image
+      src="/proarh4d.ro.png"
+      alt="Proarh.4d Logo"
+      fill
+      className="object-contain"
+      priority
+    />
+  </div>
+
+  {/* Textul brandului cu spacing elegant */}
+  <span className="text-xl font-light tracking-[0.25em] text-white uppercase transition-colors duration-300">
+    Pro<span className="font-semibold text-amber-500 transition-shadow duration-300 group-hover:text-amber-400">arh.4d</span>
+  </span>
+</Link>
+
 
             <div className="flex items-center gap-10 text-xs font-semibold tracking-[0.15em] uppercase text-neutral-400">
               {navigation.map((item) => (
@@ -140,19 +158,28 @@ export default function Navbar() {
         </nav>
       </div>
 
-      {/* ========================================================================= */}
-      {/* 2. MOBILE HEADER LOGO */}
-      {/* ========================================================================= */}
 {/* ========================================================================= */}
 {/* 2. MOBILE HEADER LOGO + MY ACCOUNT */}
 {/* ========================================================================= */}
-<div className="fixed top-0 left-0 w-full z-50 bg-black/50 backdrop-blur-lg border-b border-white/5 md:hidden h-16 flex items-center justify-between px-6">
-  <div className="w-10"></div> 
-
-  <Link href="/" className="text-lg font-light tracking-[0.2em] text-white uppercase transform translate-x-3">
-    Pro<span className="font-semibold text-amber-500">arh.4d</span>
+<div className="fixed top-0 left-0 w-full z-50 bg-black/50 backdrop-blur-lg border-b border-white/5 md:hidden h-16 flex items-center justify-between px-4">
+  
+  {/* Logo-ul mărit și lipit complet în stânga */}
+  <Link href="/" className="flex items-center gap-2.5 group">
+    <div className="relative w-8 h-8"> {/* Am mărit dimensiunea imaginii aici */}
+      <Image
+        src="/proarh4d.ro.png"
+        alt="Proarh.4d Logo"
+        fill
+        className="object-contain"
+        priority
+      />
+    </div>
+    <span className="text-lg font-light tracking-[0.15em] text-white uppercase">
+      Pro<span className="font-semibold text-amber-500">arh.4d</span>
+    </span>
   </Link>
 
+  {/* Butonul de cont rămâne fixat în dreapta */}
   <Link 
     href="/myaccount" 
     className={`p-2 rounded-full border transition-all ${
@@ -165,6 +192,7 @@ export default function Navbar() {
     <User size={18} />
   </Link>
 </div>
+
 
       {/* ========================================================================= */}
       {/* 3. MOBILE BOTTOM TAB BAR WITH SUBOPTIONS */}

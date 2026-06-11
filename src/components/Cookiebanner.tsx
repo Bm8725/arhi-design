@@ -41,12 +41,12 @@ export default function CookieBanner() {
     saveConsent('denied', { essential: true, analytics: false, marketing: false });
   };
 
-  // MINI-ICON PERMANENT (Stânga jos) când bannerul principal este ascuns
+  // MINI-ICON PERMANENT când bannerul principal este ascuns
   if (!isVisible) {
     return (
       <button
         onClick={() => setIsVisible(true)}
-        className="fixed bottom-6 left-6 w-11 h-11 bg-[#0d0d0d]/90 backdrop-blur-xl border border-neutral-800 hover:border-amber-500/50 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] z-[9999] flex items-center justify-center text-neutral-400 hover:text-amber-500 transition-all duration-300 group"
+        className="fixed bottom-24 md:bottom-6 left-6 w-11 h-11 bg-[#0d0d0d]/90 backdrop-blur-xl border border-neutral-800 hover:border-amber-500/50 rounded-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] z-[9999] flex items-center justify-center text-neutral-400 hover:text-amber-500 transition-all duration-300 group"
         title="Setări Cookie"
       >
         <svg className="w-5 h-5 transition-transform duration-300 group-hover:rotate-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
@@ -57,14 +57,12 @@ export default function CookieBanner() {
   }
 
   return (
-    // Mutat permanent pe stânga jos (bottom-6 left-6)
-    <div className="fixed bottom-6 left-6 max-w-md w-[calc(100vw-3rem)] bg-[#0d0d0d]/90 backdrop-blur-xl border border-neutral-800/80 rounded-xl shadow-[0_30px_70px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.05)] z-[9999] overflow-hidden transition-all duration-500 font-sans">
+    <div className="fixed bottom-24 md:bottom-6 left-6 max-w-md w-[calc(100vw-3rem)] bg-[#0d0d0d]/90 backdrop-blur-xl border border-neutral-800/80 rounded-xl shadow-[0_30px_70px_rgba(0,0,0,0.9),inset_0_1px_0_rgba(255,255,255,0.05)] z-[9999] overflow-hidden transition-all duration-500 font-sans">
       
       <div className="w-full h-[2px] bg-gradient-to-r from-neutral-900 via-amber-500/50 to-neutral-900" />
       
       <div className="p-5 md:p-6 flex flex-col gap-5">
         
-        {/* TOP: Design Curat */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
@@ -74,15 +72,12 @@ export default function CookieBanner() {
           </div>
         </div>
 
-        {/* TEXTE CURĂȚATE (Fără umplutură corporate) */}
         {!showPreferences ? (
           <p className="text-neutral-400 text-xs leading-relaxed font-light">
             Utilizăm cookie-uri pentru a optimiza performanța platformei, a securiza sesiunile și a analiza traficul complet anonim.
           </p>
         ) : (
-          /* SETĂRI GRANULARE MINIMALISTE */
           <div className="space-y-2.5 bg-neutral-950/40 p-3 rounded-lg border border-neutral-900">
-            {/* Esențiale */}
             <div className="flex items-center justify-between gap-4 py-1">
               <div className="flex flex-col">
                 <span className="text-xs font-mono text-neutral-300">Tehnice</span>
@@ -91,7 +86,6 @@ export default function CookieBanner() {
               <span className="text-[9px] font-mono text-amber-500/80 bg-amber-500/5 px-2 py-0.5 rounded">Activ</span>
             </div>
 
-            {/* Analitice */}
             <div className="flex items-center justify-between gap-4 py-1 border-t border-neutral-900/50">
               <div className="flex flex-col">
                 <span className="text-xs font-mono text-neutral-300">Analitice</span>
@@ -105,7 +99,6 @@ export default function CookieBanner() {
               />
             </div>
 
-            {/* Marketing */}
             <div className="flex items-center justify-between gap-4 py-1 border-t border-neutral-900/50">
               <div className="flex flex-col">
                 <span className="text-xs font-mono text-neutral-300">Marketing</span>
@@ -121,7 +114,6 @@ export default function CookieBanner() {
           </div>
         )}
 
-        {/* LEPTURI ȘI BUTOANE */}
         <div className="flex items-center justify-between gap-4 pt-3 border-t border-neutral-950">
           <button
             onClick={() => setShowPreferences(!showPreferences)}

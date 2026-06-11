@@ -2,28 +2,34 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Menu, X, ChevronDown } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { 
+  Home, 
+  ShoppingBag, 
+  FolderGit2, 
+  Briefcase, 
+  User, 
+  Menu, 
+  X, 
+  ChevronDown 
+} from 'lucide-react';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
-  const [mobileSubOpen, setMobileSubOpen] = useState<string | null>(null);
+  const pathname = usePathname();
   
-  // Stări pentru auto-ascundere la scroll
   const [showNavbar, setShowNavbar] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [activeMobileMenu, setActiveMobileMenu] = useState<string | null>(null);
 
   useEffect(() => {
     const controlNavbar = () => {
       if (typeof window !== 'undefined') {
-        // Dacă meniul mobil este deschis, NU ascunde navbar-ul
         if (isOpen) return;
-
         if (window.scrollY > lastScrollY && window.scrollY > 80) {
-          // Scroll în jos -> ascunde navbar
           setShowNavbar(false);
         } else {
-          // Scroll în sus -> arată navbar
           setShowNavbar(true);
         }
         setLastScrollY(window.scrollY);
@@ -35,11 +41,12 @@ export default function Navbar() {
   }, [lastScrollY, isOpen]);
 
   const navigation = [
-    { name: 'Acasă', href: '/' },
-     { name: 'shop', href: '/shop' },
+    { name: 'Acasă', href: '/', icon: Home },
+    { name: 'shop', href: '/shop', icon: ShoppingBag },
     { 
       name: 'Portofoliu', 
       href: '/dashboard',
+      icon: FolderGit2,
       subOptions: [
         { name: 'Rezidențial', href: '/404' },
         { name: 'Comercial & Office', href: '/404' },
@@ -49,6 +56,7 @@ export default function Navbar() {
     { 
       name: 'Servicii', 
       href: '/servicii',
+      icon: Briefcase,
       subOptions: [
         { name: 'Design Interior', href: '/DesignInterior' },
         { name: 'Proiectare & Arhitectură', href: '/Arhiservices' },
@@ -56,27 +64,25 @@ export default function Navbar() {
         { name: 'Avize & Urbanism (PUD/PUZ)', href: '/UrbanismSection' },
       ]
     },
-    { name: 'Contact', href: '/contact' },
+    { name: 'Contact', href: '/contact', icon: User },
   ];
 
   return (
     <>
-      {/* WRAPPER INSULĂ: Margini md:top-6 și lățime max-w-7xl pentru efectul plutitor */}
-      <div className={`fixed top-0 md:top-6 left-0 w-full z-50 px-0 md:px-6 transition-transform duration-500 ${
+      {/* ========================================================================= */}
+      {/* 1. DESKTOP NAVBAR */}
+      {/* ========================================================================= */}
+      <div className={`fixed top-0 md:top-6 left-0 w-full z-50 px-0 md:px-6 transition-transform duration-500 hidden md:block ${
         showNavbar ? 'translate-y-0' : '-translate-y-full md:-translate-y-28'
       }`}>
-        
-        {/* STRUCTURA NAV TIP INSULĂ CYBER/PREMIUM */}
         <nav className="w-full max-w-7xl mx-auto bg-black/40 backdrop-blur-xl border border-white/10 md:rounded-full transition-all duration-300">
           <div className="px-6 md:px-8 h-20 flex items-center justify-between">
             
-            {/* LOGO */}
             <Link href="/" className="text-xl font-light tracking-[0.25em] text-white uppercase group">
               Pro<span className="font-semibold text-amber-500 transition-colors duration-300">arh.4d</span>
             </Link>
 
-            {/* DESKTOP NAVIGATION */}
-            <div className="hidden md:flex items-center gap-10 text-xs font-semibold tracking-[0.15em] uppercase text-neutral-400">
+            <div className="flex items-center gap-10 text-xs font-semibold tracking-[0.15em] uppercase text-neutral-400">
               {navigation.map((item) => (
                 <div 
                   key={item.name} 
@@ -98,7 +104,6 @@ export default function Navbar() {
                     </Link>
                   )}
 
-                  {/* DESKTOP DROPDOWN MENU (Tip Insulă Asortat) */}
                   {item.subOptions && (
                     <div className={`absolute left-0 top-full pt-4 w-64 transition-all duration-300 ${
                       activeDropdown === item.name ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-2 pointer-events-none'
@@ -120,96 +125,116 @@ export default function Navbar() {
               ))}
             </div>
 
-            {/* DESKTOP CTA BUTTON (Rotunjit ca Insula) */}
             <div className="hidden md:block">
               <Link 
-                href="/contact" 
+                href="/myaccount" 
                 className="relative inline-flex items-center justify-center bg-amber-500 text-black rounded-full px-6 py-3 text-[10px] font-bold tracking-[0.2em] uppercase overflow-hidden transition-all duration-300 hover:bg-amber-400 active:scale-95"
               >
-                Consultanță
+               Contul meu
               </Link>
             </div>
 
-            {/* MOBILE HAMBURGER BUTTON */}
-            <button 
-              onClick={() => setIsOpen(!isOpen)}
-              className="md:hidden p-2 text-white hover:text-amber-500 transition-colors focus:outline-none z-50"
-              aria-label="Toggle Menu"
-            >
-              {isOpen ? <X size={24} strokeWidth={1.5} /> : <Menu size={24} strokeWidth={1.5} />}
-            </button>
           </div>
         </nav>
       </div>
 
-      {/* MOBILE MENU CURTAIN (Adaptat la fundalul întunecat al site-ului) */}
-      <div className={`fixed inset-0 z-40 bg-black/95 backdrop-blur-2xl md:hidden transition-all duration-500 ease-in-out ${
-        isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-      }`}>
-        <div className="flex flex-col h-full justify-between px-8 pt-28 pb-8 overflow-y-auto">
-          
-          {/* MOBILE LINKS */}
-          <div className="flex flex-col gap-4">
-            {navigation.map((item, index) => (
-              <div key={item.name} className="flex flex-col">
-                {item.subOptions ? (
-                  <>
-                    <button
-                      onClick={() => setMobileSubOpen(mobileSubOpen === item.name ? null : item.name)}
-                      className={`text-2xl font-light tracking-wide text-white uppercase flex items-center justify-between py-2 border-b border-white/10 transition-all duration-300 ${
-                        isOpen ? 'translate-x-0 opacity-100' : '-translate-x-4 opacity-0'
-                      }`}
-                      style={{ transitionDelay: `${index * 40}ms` }}
-                    >
-                      {item.name}
-                      <ChevronDown size={20} className={`transition-transform duration-300 ${mobileSubOpen === item.name ? 'rotate-180 text-amber-500' : 'text-white'}`} />
-                    </button>
-                    
-                    {/* MOBILE SUBOPTIONS (ACCORDION) */}
-                    <div className={`flex flex-col gap-3 pl-4 overflow-hidden transition-all duration-300 ease-in-out ${
-                      mobileSubOpen === item.name ? 'max-h-60 opacity-100 pt-3 pb-2' : 'max-h-0 opacity-0'
-                    }`}>
-                      {item.subOptions.map((sub) => (
+      {/* ========================================================================= */}
+      {/* 2. MOBILE HEADER LOGO */}
+      {/* ========================================================================= */}
+      <div className="fixed top-0 left-0 w-full z-50 bg-black/50 backdrop-blur-lg border-b border-white/5 md:hidden h-16 flex items-center justify-center">
+        <Link href="/" className="text-lg font-light tracking-[0.2em] text-white uppercase">
+          Pro<span className="font-semibold text-amber-500">arh.4d</span>
+        </Link>
+      </div>
+
+      {/* ========================================================================= */}
+      {/* 3. MOBILE BOTTOM TAB BAR WITH SUBOPTIONS */}
+      {/* ========================================================================= */}
+      <div className="fixed bottom-0 left-0 w-full z-50 px-4 pb-5 pt-2 bg-gradient-to-t from-black via-black/90 to-transparent md:hidden">
+        <nav className="w-full bg-[#0d0d0d]/90 backdrop-blur-2xl border border-white/10 rounded-2xl h-16 flex items-center justify-around px-2 shadow-[0_-10px_30px_rgba(0,0,0,0.8)]">
+          {navigation.map((item) => {
+            const IconComponent = item.icon;
+            const isTabActive = pathname === item.href || (item.subOptions?.some(sub => pathname === sub.href));
+
+            return (
+              <div key={item.name} className="flex-1 h-full flex items-center justify-center relative group">
+
+                {/* SUBOPTIONS FLOATING BUBBLE */}
+                {item.subOptions && activeMobileMenu === item.name && (
+                  <div className="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 w-52 bg-black/95 backdrop-blur-xl border border-white/10 rounded-xl p-2 flex flex-col gap-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.6)] animate-fade-in z-50">
+                    {item.subOptions.map((sub) => {
+                      const isSubActive = pathname === sub.href;
+                      return (
                         <Link
                           key={sub.name}
                           href={sub.href}
-                          onClick={() => setIsOpen(false)}
-                          className="text-sm tracking-wide text-neutral-400 hover:text-white uppercase"
+                          onPress={() => setActiveMobileMenu(null)}
+                          onClick={() => setActiveMobileMenu(null)}
+                          className={`text-[10px] tracking-wider py-2 px-3 rounded-lg uppercase transition-all ${
+                            isSubActive 
+                              ? 'bg-amber-500 text-black font-bold' 
+                              : 'text-neutral-400 active:text-white active:bg-white/5'
+                          }`}
                         >
                           {sub.name}
                         </Link>
-                      ))}
-                    </div>
-                  </>
+                      );
+                    })}
+                    {/* Săgeată decorativă */}
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 w-2 h-2 bg-black border-r border-b border-white/10 rotate-45 -mt-[5px]" />
+                  </div>
+                )}
+
+                {/* Tab button */}
+                {item.subOptions ? (
+                  <button
+                    onClick={() => setActiveMobileMenu(activeMobileMenu === item.name ? null : item.name)}
+                    className="flex flex-col items-center justify-center w-full h-full"
+                  >
+                    <IconComponent 
+                      size={20} 
+                      strokeWidth={isTabActive || activeMobileMenu === item.name ? 2.5 : 1.8} 
+                      className={`transition-all duration-300 ${
+                        isTabActive || activeMobileMenu === item.name ? 'text-amber-500 scale-110' : 'text-neutral-400'
+                      }`} 
+                    />
+                    <span className={`text-[9px] font-medium tracking-wide uppercase mt-1 transition-colors duration-300 ${
+                      isTabActive || activeMobileMenu === item.name ? 'text-white font-semibold' : 'text-neutral-500'
+                    }`}>
+                      {item.name}
+                    </span>
+                    {(isTabActive || activeMobileMenu === item.name) && (
+                      <span className="absolute bottom-1 w-1 h-1 rounded-full bg-amber-500" />
+                    )}
+                  </button>
                 ) : (
                   <Link
-                    key={item.name}
                     href={item.href}
-                    onClick={() => setIsOpen(false)}
-                    className={`text-2xl font-light tracking-wide text-white uppercase py-2 border-b border-white/10 transition-all duration-300 ${
-                      isOpen ? 'translate-x-0 opacity-100' : '-translate-x-4 opacity-0'
-                    }`}
-                    style={{ transitionDelay: `${index * 40}ms` }}
+                    onClick={() => setActiveMobileMenu(null)}
+                    className="flex flex-col items-center justify-center w-full h-full"
                   >
-                    {item.name}
+                    <IconComponent 
+                      size={20} 
+                      strokeWidth={isTabActive ? 2.5 : 1.8} 
+                      className={`transition-all duration-300 ${
+                        isTabActive ? 'text-amber-500 scale-110' : 'text-neutral-400'
+                      }`} 
+                    />
+                    <span className={`text-[9px] font-medium tracking-wide uppercase mt-1 transition-colors duration-300 ${
+                      isTabActive ? 'text-white font-semibold' : 'text-neutral-500'
+                    }`}>
+                      {item.name === 'shop' ? 'Shop' : item.name}
+                    </span>
+                    {isTabActive && (
+                      <span className="absolute bottom-1 w-1 h-1 rounded-full bg-amber-500" />
+                    )}
                   </Link>
                 )}
+
               </div>
-            ))}
-          </div>
-
-          {/* MOBILE CTA */}
-          <div className={`w-full transition-all duration-500 delay-200 ${isOpen ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0'}`}>
-            <Link
-              href="/contact"
-              onClick={() => setIsOpen(false)}
-              className="w-full inline-flex items-center justify-center bg-amber-500 text-black font-bold py-4 text-xs tracking-widest uppercase rounded-full"
-            >
-              Consultanță
-            </Link>
-          </div>
-
-        </div>
+            );
+          })}
+        </nav>
       </div>
     </>
   );

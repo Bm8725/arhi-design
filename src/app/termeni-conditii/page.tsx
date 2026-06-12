@@ -4,8 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
-import WhatsAppWidget from '@/components/WhatsAppWidget'
-import CookieBanner from "@/components/Cookiebanner";
+
 
 export default function TermeniConditiiPage() {
   const [mounted, setMounted] = useState(false)
@@ -215,8 +214,7 @@ export default function TermeniConditiiPage() {
           </div>
         </div>
 
-        <WhatsAppWidget />
-        <CookieBanner />
+
         <Footer />
       </div>
     </>

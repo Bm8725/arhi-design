@@ -75,7 +75,7 @@ export default function ProductDetailPage() {
 
   return (
     <div className="bg-[#0a0a0a] min-h-screen text-white">
-      <Navbar currentUserId={userId} />
+      <Navbar/>
 
       <div className="max-w-[1100px] mx-auto px-5 pt-[140px] pb-20">
         

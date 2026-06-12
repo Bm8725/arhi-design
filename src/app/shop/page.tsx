@@ -2,47 +2,28 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import Link from 'next/link'
 
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import WhatsAppWidget from '@/components/WhatsAppWidget'
 
-type Product = {
-  id: string
-  nume: string
-  descriere_scurta: string
-  pret: number
-  pret_vechi: number | null
-  imagine_url: string | null
-  featured: boolean
-}
-
 export default function ShopPage() {
   const supabase = createClient()
 
-  const [products, setProducts] = useState<Product[]>([])
+  const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    loadProducts()
+    load()
   }, [])
 
-  async function loadProducts() {
-    setLoading(true)
-    setError(null)
-
-    const { data, error } = await supabase
+  async function load() {
+    const { data } = await supabase
       .from('products')
       .select('*')
       .eq('activ', true)
       .order('created_at', { ascending: false })
-
-    if (error) {
-      setError(error.message)
-      setLoading(false)
-      return
-    }
 
     setProducts(data || [])
     setLoading(false)
@@ -53,71 +34,52 @@ export default function ShopPage() {
 
       <Navbar />
 
-      <div className="container">
+      {/* spacing mai jos + look premium */}
+      <div className="hero">
+        <h1>Shop</h1>
+        <p>Produse digitale premium selectate</p>
+      </div>
 
-        <h1 className="title">Shop</h1>
-        <p className="sub">Produse digitale disponibile instant</p>
+      {loading && (
+        <div className="loading">Se încarcă...</div>
+      )}
 
-        {/* ERROR */}
-        {error && (
-          <div className="error">
-            Eroare la încărcare: {error}
-          </div>
-        )}
+      <div className="grid">
+        {!loading && products.map(p => (
+          <div key={p.id} className="card">
 
-        {/* LOADING */}
-        {loading && (
-          <div className="loading">
-            Se încarcă produsele...
-          </div>
-        )}
+            <div className="img">
+              {p.imagine_url ? (
+                <img src={p.imagine_url} />
+              ) : (
+                <div className="noimg">No image</div>
+              )}
+            </div>
 
-        {/* EMPTY */}
-        {!loading && products.length === 0 && (
-          <div className="empty">
-            Nu există produse disponibile.
-          </div>
-        )}
+            <div className="content">
 
-        {/* GRID */}
-        <div className="grid">
-          {products.map((p) => (
-            <div key={p.id} className="card">
+              <h3>
+                {p.nume}
+                {p.featured && <span>★</span>}
+              </h3>
 
-              <div className="img">
-                {p.imagine_url ? (
-                  <img src={p.imagine_url} alt={p.nume} />
-                ) : (
-                  <div className="noimg">Fără imagine</div>
+              <p>{p.descriere_scurta}</p>
+
+              <div className="price">
+                {p.pret_vechi && (
+                  <span className="old">{p.pret_vechi} lei</span>
                 )}
+                <span className="new">{p.pret} lei</span>
               </div>
 
-              <div className="content">
-
-                <div className="top">
-                  <h3>{p.nume}</h3>
-                  {p.featured && <span className="badge">featured</span>}
-                </div>
-
-                <p>{p.descriere_scurta}</p>
-
-                <div className="price">
-                  {p.pret_vechi && (
-                    <span className="old">{p.pret_vechi} lei</span>
-                  )}
-                  <span className="new">{p.pret} lei</span>
-                </div>
-
-                <button className="btn">
-                  Vezi produs
-                </button>
-
-              </div>
+              <Link href={`/shop/${p.id}`} className="btn">
+                Vezi produs
+              </Link>
 
             </div>
-          ))}
-        </div>
 
+          </div>
+        ))}
       </div>
 
       <WhatsAppWidget />
@@ -125,55 +87,57 @@ export default function ShopPage() {
 
       <style jsx>{`
         .root{
-          background:#0c0c0c;
+          background:#f7f3ee; /* crem real */
           min-height:100vh;
-          color:#fff;
+          color:#111;
         }
 
-        .container{
-          max-width:1100px;
-          margin:0 auto;
-          padding:80px 20px;
+        /* 🔥 SPAȚIU MAI JOS (exact ce ai cerut) */
+        .hero{
+          text-align:center;
+          padding:140px 20px 60px;
         }
 
-        .title{
-          font-size:32px;
-          margin-bottom:6px;
+        .hero h1{
+          font-size:42px;
+          font-weight:500;
+          letter-spacing:-1px;
         }
 
-        .sub{
-          color:#aaa;
-          font-size:13px;
-          margin-bottom:30px;
+        .hero p{
+          color:#666;
+          font-size:14px;
+          margin-top:10px;
         }
 
-        .error{
-          background:#2a0f0f;
-          color:#ff6b6b;
-          padding:10px;
-          margin-bottom:20px;
-        }
-
-        .loading,.empty{
-          color:#e2b36e;
-          margin-bottom:20px;
+        .loading{
+          text-align:center;
+          color:#b08d57;
         }
 
         .grid{
+          max-width:1100px;
+          margin:0 auto;
           display:grid;
           grid-template-columns:repeat(3,1fr);
           gap:20px;
+          padding:20px;
         }
 
         .card{
-          background:#111;
-          border:1px solid #222;
-          overflow:hidden;
+          background:#fff;
+          border:1px solid #e7dfd4;
+          transition:.2s;
+        }
+
+        .card:hover{
+          transform:translateY(-4px);
+          border-color:#b08d57;
         }
 
         .img{
           height:180px;
-          background:#0a0a0a;
+          background:#eee;
         }
 
         .img img{
@@ -183,37 +147,26 @@ export default function ShopPage() {
         }
 
         .noimg{
-          height:100%;
           display:flex;
           align-items:center;
           justify-content:center;
-          color:#444;
+          height:100%;
+          color:#999;
         }
 
         .content{
           padding:14px;
         }
 
-        .top{
+        h3{
+          font-size:15px;
           display:flex;
           justify-content:space-between;
-          align-items:center;
-        }
-
-        h3{
-          font-size:14px;
-        }
-
-        .badge{
-          font-size:9px;
-          background:#e2b36e;
-          color:#000;
-          padding:3px 6px;
         }
 
         p{
           font-size:12px;
-          color:#aaa;
+          color:#666;
           margin:10px 0;
         }
 
@@ -224,21 +177,23 @@ export default function ShopPage() {
         }
 
         .old{
-          color:#666;
+          color:#aaa;
           text-decoration:line-through;
-          font-size:12px;
         }
 
         .new{
-          color:#e2b36e;
+          color:#b08d57;
+          font-weight:600;
         }
 
         .btn{
-          width:100%;
+          display:block;
+          text-align:center;
           padding:10px;
-          background:#e2b36e;
-          border:none;
-          cursor:pointer;
+          background:#b08d57;
+          color:#fff;
+          text-decoration:none;
+          font-size:12px;
         }
 
         @media(max-width:900px){

@@ -10,25 +10,18 @@ import WhatsAppWidget from '@/components/WhatsAppWidget'
 
 export default function ProductPage() {
   const supabase = createClient()
-
   const params = useParams()
-  const id = params?.id ? String(params.id) : null
+  const id = Array.isArray(params?.id) ? params.id[0] : params?.id
 
   const [product, setProduct] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    load()
-  }, [])
+    if (id) load()
+  }, [id])
 
   async function load() {
-    if (!id) {
-      setError('ID invalid')
-      setLoading(false)
-      return
-    }
-
     setLoading(true)
     setError(null)
 
@@ -38,7 +31,7 @@ export default function ProductPage() {
       .eq('id', id)
       .single()
 
-    if (error || !data) {
+    if (error) {
       setError('Produsul nu a fost găsit')
       setLoading(false)
       return
@@ -71,7 +64,7 @@ export default function ProductPage() {
         )}
 
         {/* PRODUCT */}
-        {!loading && product && (
+        {product && (
           <div className="grid">
 
             {/* IMAGE */}
@@ -205,6 +198,11 @@ export default function ProductPage() {
           cursor:pointer;
           font-weight:600;
           margin-bottom:10px;
+          transition:.2s;
+        }
+
+        .buy:hover{
+          opacity:0.9;
         }
 
         .secondary{
@@ -245,6 +243,7 @@ export default function ProductPage() {
         @media(max-width:900px){
           .grid{grid-template-columns:1fr}
           .img{height:380px}
+          .container{padding-top:120px}
         }
       `}</style>
 

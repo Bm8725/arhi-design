@@ -561,7 +561,7 @@ export default function AdminDashboardPage() {
       `}</style>
 
       <div className="root">
-        <Navbar />
+        
 
         <div className={`wrap ${mounted ? 'ready' : ''}`}>
 

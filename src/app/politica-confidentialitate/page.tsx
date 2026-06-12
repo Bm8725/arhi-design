@@ -1,4 +1,4 @@
-'use client'
+"use client";
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
@@ -7,8 +7,7 @@ import Footer from '@/components/Footer'
 import WhatsAppWidget from '@/components/WhatsAppWidget'
 import CookieBanner from "@/components/Cookiebanner";
 
-
-export default function CookiePage() {
+export default function PoliticaConfidentialitatePage() {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -45,7 +44,7 @@ export default function CookiePage() {
         .c-text p{margin-bottom:16px}
         .c-text p:last-child{margin-bottom:0}
         
-        /* Tabel tehnic pentru modulele de cookie */
+        /* Tabel tehnic pentru drepturile utilizatorului */
         .c-table{width:100%;border-collapse:collapse;margin-top:16px;font-size:12px}
         .c-table th{text-align:left;padding:10px 0;border-bottom:1px solid rgba(42,39,35,0.1);color:#1a1816;font-weight:500;text-transform:uppercase;letter-spacing:0.1em}
         .c-table td{padding:12px 0;border-bottom:1px solid rgba(42,39,35,0.05);color:#5c554c;vertical-align:top}
@@ -61,54 +60,53 @@ export default function CookiePage() {
         <Navbar />
 
         <div className={`c-wrap${mounted ? ' ready' : ''}`}>
-          <div className="c-eyebrow">Transparență tehnologică</div>
-          <h1 className="c-title">Utilizarea <em>fișierelor</em> cookie.</h1>
+          <div className="c-eyebrow">Cadru Legal GDPR</div>
+          <h1 className="c-title">Politica de <em>confidențialitate</em>.</h1>
 
           {/* Secțiunea 1 */}
           <div className="c-card">
-            <h2 className="c-section-title">01 / Concept</h2>
+            <h2 className="c-section-title">01 / Operatorul de date</h2>
             <div className="c-text">
               <p>
-                Pentru a asigura funcționarea optimă a platformei digitale PROARH.4D, utilizăm tehnologii 
-                standard de stocare temporară. Fișierele cookie sunt module de date pure salvate direct în 
-                browserul dumneavoastră, acționând ca elemente de memorie tehnică.
+                PROARH.4D activează ca operator digital de date. Respectăm integritatea spațiului dumneavoastră 
+                virtual și prelucrăm informațiile cu caracter personal în conformitate cu normele stricte stabilite 
+                de Regulamentul European GDPR.
               </p>
             </div>
           </div>
 
           {/* Secțiunea 2 */}
           <div className="c-card">
-            <h2 className="c-section-title">02 / Module Necesare Aplicației</h2>
+            <h2 className="c-section-title">02 / Structura datelor colectate</h2>
             <div className="c-text">
               <p>
-                Aplicația utilizează exclusiv cookie-uri esențiale. Fără acestea, procesele de securitate, 
-                autentificarea în contul de client și corelarea schițelor tehnice nu pot fi executate.
+                Interfața noastră colectează și procesează exclusiv vectorii de date minimi necesari bunei 
+                desfășurări a serviciilor de arhitectură, modelare 3D avansată și analiză nZEB.
               </p>
               
               <table className="c-table">
                 <thead>
                   <tr>
-                    <th style={{ width: '25%' }}>Modul</th>
-                    <th style={{ width: '45%' }}>Scop tehnic</th>
-                    <th style={{ width: '30%' }}>Păstrare</th>
+                    <th style={{ width: '30%' }}>Tip Data</th>
+                    <th style={{ width: '40%' }}>Scopul Procesării</th>
+                    <th style={{ width: '30%' }}>Temei Juridic</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td><strong>sb-auth-token</strong></td>
-                    <td>Menținerea securizată a sesiunii de Login prin Supabase.</td>
-                    <td>Sesiune curentă</td>
+                    <td><strong>Identitate (Nume)</strong></td>
+                    <td>Personalizarea documentației tehnice și contractare.</td>
+                    <td>Obligație Contractuală</td>
                   </tr>
                   <tr>
-                    <td><strong>app-theme</strong></td>
-                    <td>Salvarea preferințelor de interfață grafică pentru randări.</td>
-                    <td>1 An</td>
+                    <td><strong>Contact (E-mail/Tel)</strong></td>
+                    <td>Trimiterea randărilor, devizelor și consultanță rapidă.</td>
+                    <td>Consimțământ Direct</td>
                   </tr>
-                  {/* Modulul dedicat pentru widget-ul pe care îl ai în cod */}
                   <tr>
-                    <td><strong>wa-widget-state</strong></td>
-                    <td>Reținerea stării deschise/închise a modulului WhatsApp.</td>
-                    <td>Sesiune curentă</td>
+                    <td><strong>Date Cadastrale / Schițe</strong></td>
+                    <td>Analiza spațială și inițierea studiilor de proiectare.</td>
+                    <td>Executare Contract</td>
                   </tr>
                 </tbody>
               </table>
@@ -117,23 +115,23 @@ export default function CookiePage() {
 
           {/* Secțiunea 3 */}
           <div className="c-card">
-            <h2 className="c-section-title">03 / Controlul datelor</h2>
+            <h2 className="c-section-title">03 / Drepturile utilizatorului</h2>
             <div className="c-text">
               <p>
-                Aveți dreptul deplin de a restricționa sau șterge aceste fișiere în orice moment prin 
-                intermediul setărilor native ale browserului dumneavoastră. Dezactivarea modulelor esențiale 
-                va întrerupe însă procesul de randare 3D și accesul în Dashboard.
+                În calitate de proprietar al datelor, beneficiați de control absolut asupra acestora. Aveți dreptul 
+                nativ de acces, rectificare imediată, restricționare a fluxului sau ștergere definitivă din baza de date 
+                PROARH.4D. Orice solicitare oficială de eliminare poate fi adresată direct prin e-mail.
               </p>
             </div>
           </div>
 
           <div className="c-links">
-            <Link href="/politica-confidentialitate" className="c-link">Confidențialitate (GDPR)</Link>
+            <Link href="/politica-cookie" className="c-link">Politica de Cookie</Link>
             <Link href="/" className="c-link">← Home</Link>
           </div>
         </div>
 
-           <CookieBanner />
+
         <Footer />
       </div>
     </>

@@ -13,9 +13,6 @@ export default function ClientDashboardPage() {
   const supabase = createClient()
   const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(true)
-  
-  // Stări pentru datele de profil și tabele
-  const [clientName, setClientName] = useState('')
   const [projects, setProjects] = useState<any[]>([])
   const [updates, setUpdates] = useState<any[]>([])
   const [downloads, setDownloads] = useState<any[]>([])
@@ -27,30 +24,19 @@ export default function ClientDashboardPage() {
 
   async function fetchData() {
     try {
-      // 1. Verifică sesiunea din auth
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         router.push('/login')
         return
       }
 
-      // 2. Extrage numele complet din profilul salvat în DB
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('full_name')
-        .eq('id', user.id)
-        .single()
-      
-      // Dacă există numele în bază, îl punem, altfel folosim email-ul ca fallback
-      setClientName(profile?.full_name || user.email?.split('@')[0] || 'Client')
-
-      // 3. Proiecte active
+      // Proiecte active
       const { data: p } = await supabase
         .from('projects')
         .select('id, nume, status')
         .eq('client_id', user.id)
 
-      // 4. Jurnal activitate recent
+      // Jurnal activitate recent
       const { data: u } = await supabase
         .from('project_updates')
         .select('id, mesaj, created_at, projects(nume)')
@@ -58,7 +44,7 @@ export default function ClientDashboardPage() {
         .order('created_at', { ascending: false })
         .limit(2)
 
-      // 5. Produse digitale cumpărate
+      // Produse digitale cumpărate
       const { data: d } = await supabase
         .from('downloads')
         .select('id, token, products(nume)')
@@ -74,6 +60,15 @@ export default function ClientDashboardPage() {
     }
   }
 
+  if (loading) {
+    return (
+      <div className="a-loader">
+        <style>{`.a-loader{min-height:100vh;background:#0c0c0c;display:flex;align-items:center;justify-content:center;color:#e2b36e;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.2em}`}</style>
+        Se încarcă...
+      </div>
+    )
+  }
+
   return (
     <>
       <style>{`
@@ -85,12 +80,10 @@ export default function ClientDashboardPage() {
         .a-dash{position:relative;z-index:1;max-width:600px;width:100%;margin:0 auto;padding:140px 40px 100px;flex-grow:1;opacity:0;transform:translateY(15px);transition:opacity 0.6s ease,transform 0.6s ease}
         .a-dash.ready{opacity:1;transform:translateY(0)}
         
-        .a-top{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:24px;margin-bottom:40px}
-        .a-title{font-family:'Playfair Display',serif;font-size:28px;font-weight:400;color:#ffffff;line-height:1.2}
+        .a-top{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:24px;margin-bottom:40px}
+        .a-title{font-family:'Playfair Display',serif;font-size:28px;font-weight:400;color:#ffffff}
         .a-title em{font-style:italic;color:#e2b36e;font-weight:400}
-        .a-welcome{font-size:11px;color:rgba(255,255,255,0.4);margin-top:6px;letter-spacing:0.05em}
-        
-        .a-logout{background:none;border:none;color:rgba(255,255,255,0.4);font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;padding-top:6px;transition:color 0.2s}
+        .a-logout{background:none;border:none;color:rgba(255,255,255,0.4);font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;transition:color 0.2s}
         .a-logout:hover{color:#ff6b6b}
 
         .a-section{margin-bottom:40px}
@@ -117,10 +110,7 @@ export default function ClientDashboardPage() {
         <div className={`a-dash${mounted ? ' ready' : ''}`}>
           
           <div className="a-top">
-            <div>
-              <h1 className="a-title">Contul <em>tău.</em></h1>
-              {!loading && <div className="a-welcome">Bine ai venit, {clientName}</div>}
-            </div>
+            <h1 className="a-title">Contul <em>tău.</em></h1>
             <button onClick={async () => { await supabase.auth.signOut(); router.push('/login'); }} className="a-logout">
               Ieșire
             </button>
@@ -129,9 +119,7 @@ export default function ClientDashboardPage() {
           {/* 1. PROIECTE */}
           <div className="a-section">
             <h2 className="a-sec-title">Proiecte active</h2>
-            {loading ? (
-              <div className="a-empty">Se încarcă proiectele...</div>
-            ) : projects.length === 0 ? (
+            {projects.length === 0 ? (
               <div className="a-empty">Niciun proiect asignat.</div>
             ) : (
               projects.map(p => (
@@ -148,9 +136,7 @@ export default function ClientDashboardPage() {
           {/* 2. ACTUALIZĂRI */}
           <div className="a-section">
             <h2 className="a-sec-title">Noutăți</h2>
-            {loading ? (
-              <div className="a-empty">Se încarcă noutățile...</div>
-            ) : updates.length === 0 ? (
+            {updates.length === 0 ? (
               <div className="a-empty">Nicio notificare nouă.</div>
             ) : (
               updates.map(u => (
@@ -165,9 +151,7 @@ export default function ClientDashboardPage() {
           {/* 3. PRODUSE DIGITALE */}
           <div className="a-section">
             <h2 className="a-sec-title">Fișiere digitale</h2>
-            {loading ? (
-              <div className="a-empty">Se încarcă fișierele...</div>
-            ) : downloads.length === 0 ? (
+            {downloads.length === 0 ? (
               <div className="a-empty">Niciun produs achiziționat.</div>
             ) : (
               downloads.map(d => (

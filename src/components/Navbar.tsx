@@ -45,7 +45,7 @@ export default function Navbar() {
 
   const navigation = [
     { name: 'Acasă', href: '/', icon: Home },
-    { name: 'shop', href: '/404', icon: ShoppingBag },
+    { name: 'shop', href: '/shop', icon: ShoppingBag },
     { 
       name: 'Portofoliu', 
       href: '/dashboard',

@@ -11,14 +11,26 @@ import WhatsAppWidget from '@/components/WhatsAppWidget'
 export default function AdminDashboardPage() {
   const router = useRouter()
   const supabase = createClient()
+
   const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(true)
-  
-  // Stări pentru date administrative
+
   const [adminName, setAdminName] = useState('')
   const [allProjects, setAllProjects] = useState<any[]>([])
-  const [recentUpdates, setRecentUpdates] = useState<any[]>([])
-  const [recentOrders, setRecentOrders] = useState<any[]>([])
+  const [allUpdates, setAllUpdates] = useState<any[]>([])
+  const [allOrders, setAllOrders] = useState<any[]>([])
+  const [products, setProducts] = useState<any[]>([])
+
+  const [activeTab, setActiveTab] = useState('overview')
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
+
+  const [newProduct, setNewProduct] = useState({
+    nume: '',
+    descriere: '',
+    pret: 0,
+    categorie: '',
+    imagine_url: ''
+  })
 
   useEffect(() => {
     setTimeout(() => setMounted(true), 50)
@@ -27,12 +39,8 @@ export default function AdminDashboardPage() {
 
   async function fetchAdminData() {
     try {
-      // 1. Verifică sesiunea și rolul de admin/angajat
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/login')
-        return
-      }
+      if (!user) return router.push('/login')
 
       const { data: profile } = await supabase
         .from('profiles')
@@ -40,158 +48,254 @@ export default function AdminDashboardPage() {
         .eq('id', user.id)
         .single()
 
-      // Redirecționare dacă un client încearcă să spargă URL-ul de admin
-      if (profile?.rol !== 'superadmin' && profile?.rol !== 'angajat') {
-        router.push('/dashboard/client')
-        return
+      if (!profile || (profile.rol !== 'superadmin' && profile.rol !== 'angajat')) {
+        return router.push('/dashboard/client')
       }
-      
-      setAdminName(profile?.full_name || 'Administrator')
 
-      // 2. Extrage TOATE proiectele din birou (fără filtru de client_id)
+      setAdminName(profile.full_name || 'Admin')
+      setIsSuperAdmin(profile.rol === 'superadmin')
+
       const { data: p } = await supabase
         .from('projects')
-        .select('id, nume, status, profiles!projects_client_id_fkey(full_name)')
+        .select('id, nume, status, created_at')
         .order('created_at', { ascending: false })
 
-      // 3. Extrage ultimele actualizări adăugate în jurnal
       const { data: u } = await supabase
         .from('project_updates')
         .select('id, mesaj, created_at, projects(nume)')
         .order('created_at', { ascending: false })
-        .limit(3)
 
-      // 4. Extrage ultimele comenzi din magazinul digital
       const { data: o } = await supabase
         .from('orders')
         .select('id, email, total, status, created_at')
         .order('created_at', { ascending: false })
-        .limit(3)
+
+      const { data: prod } = await supabase
+        .from('products')
+        .select('*')
+        .order('created_at', { ascending: false })
 
       setAllProjects(p || [])
-      setRecentUpdates(u as any || [])
-      setRecentOrders(o || [])
-    } catch (e) {
-      console.error(e)
+      setAllUpdates(u || [])
+      setAllOrders(o || [])
+      setProducts(prod || [])
+
     } finally {
       setLoading(false)
     }
   }
 
+  async function createProduct() {
+    if (!newProduct.nume) return
+
+    await supabase.from('products').insert([newProduct])
+
+    setNewProduct({
+      nume: '',
+      descriere: '',
+      pret: 0,
+      categorie: '',
+      imagine_url: ''
+    })
+
+    fetchAdminData()
+  }
+
+  async function toggleProduct(id: string, field: string, value: any) {
+    await supabase.from('products')
+      .update({ [field]: value })
+      .eq('id', id)
+
+    fetchAdminData()
+  }
+
+  async function deleteProduct(id: string) {
+    await supabase.from('products')
+      .delete()
+      .eq('id', id)
+
+    fetchAdminData()
+  }
+
   return (
     <>
       <style>{`
-        @import url('https://googleapis.com');
-        .a-root*,.a-root *::before,.a-root *::after{box-sizing:border-box}
-        .a-root{min-height:100vh;background:#0c0c0c;font-family:'DM Mono',monospace;color:#e0e0e0;position:relative;overflow-x:hidden;display:flex;flex-direction:column;justify-content:space-between}
-        .a-ambient{position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse 80% 50% at 50% 15%,rgba(226,179,110,0.04) 0%,transparent 60%)}
-        
-        .a-dash{position:relative;z-index:1;max-width:600px;width:100%;margin:0 auto;padding:140px 40px 100px;flex-grow:1;opacity:0;transform:translateY(15px);transition:opacity 0.6s ease,transform 0.6s ease}
+        .a-root{min-height:100vh;background:#0c0c0c;color:#e0e0e0;font-family:DM Mono;display:flex;flex-direction:column}
+        .a-dash{max-width:900px;margin:auto;padding:120px 20px;opacity:0;transform:translateY(10px);transition:.4s}
         .a-dash.ready{opacity:1;transform:translateY(0)}
-        
-        .a-top{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:1px solid rgba(255,255,255,0.1);padding-bottom:24px;margin-bottom:40px}
-        .a-title{font-family:'Playfair Display',serif;font-size:28px;font-weight:400;color:#ffffff;line-height:1.2}
-        .a-title em{font-style:italic;color:#e2b36e;font-weight:400}
-        .a-welcome{font-size:11px;color:#e2b36e;margin-top:6px;letter-spacing:0.05em;text-transform:uppercase}
-        
-        .a-logout{background:none;border:none;color:rgba(255,255,255,0.4);font-family:'DM Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:0.1em;cursor:pointer;padding-top:6px;transition:color 0.2s}
-        .a-logout:hover{color:#ff6b6b}
 
-        .a-section{margin-bottom:40px}
-        .a-sec-title{font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:16px}
-        
-        .a-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
-        .a-row-link{color:#ffffff;text-decoration:none;font-size:14px;transition:color 0.2s}
-        .a-row-link:hover{color:#e2b36e}
-        
-        .a-status{font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.4)}
-        .a-client-name{font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px}
-        .a-msg{font-size:13px;line-height:1.5;color:rgba(255,255,255,0.75)}
-        .a-meta{font-size:9px;color:rgba(255,255,255,0.35);margin-top:4px}
-        
-        .a-price{font-size:13px;color:#e2b36e}
-        .a-empty{font-size:12px;color:rgba(255,255,255,0.35);font-style:italic}
+        .a-title{font-size:28px;color:#fff}
+
+        .tabs{display:flex;gap:10px;margin:20px 0 30px;flex-wrap:wrap}
+        .tab{
+          font-size:10px;
+          padding:10px 12px;
+          border:1px solid #222;
+          background:#111;
+          color:#aaa;
+          cursor:pointer;
+        }
+        .tab.active{border-color:#e2b36e;color:#e2b36e}
+
+        .card{
+          border:1px solid #1f1f1f;
+          background:rgba(255,255,255,0.02);
+          padding:12px;
+          margin-bottom:10px;
+        }
+
+        .grid{
+          display:grid;
+          grid-template-columns:repeat(2,1fr);
+          gap:12px;
+        }
+
+        @media(max-width:700px){
+          .grid{grid-template-columns:1fr}
+        }
+
+        .btn{
+          font-size:10px;
+          padding:8px 10px;
+          border:1px solid #222;
+          background:#111;
+          color:#aaa;
+          cursor:pointer;
+        }
+
+        .btn:hover{border-color:#e2b36e;color:#e2b36e}
+
+        .img{
+          width:100%;
+          height:140px;
+          object-fit:cover;
+          margin-bottom:10px;
+          background:#111;
+        }
+
+        input{
+          width:100%;
+          margin-bottom:8px;
+          padding:8px;
+          background:transparent;
+          border:1px solid #333;
+          color:#fff;
+        }
+
+        .meta{font-size:10px;color:#777}
+        .price{color:#e2b36e}
       `}</style>
 
       <div className="a-root">
-        <div className="a-ambient" />
-        
         <Navbar />
 
-        <div className={`a-dash${mounted ? ' ready' : ''}`}>
-          
-          <div className="a-top">
-            <div>
-              <h1 className="a-title">Panou <em>Birou.</em></h1>
-              {!loading && <div className="a-welcome">Arhitect: {adminName}</div>}
-            </div>
-            <button onClick={async () => { await supabase.auth.signOut(); router.push('/login'); }} className="a-logout">
-              Ieșire
+        <div className={`a-dash ${mounted ? 'ready' : ''}`}>
+          <h1 className="a-title">Admin — {adminName}</h1>
+
+          <button className="btn" onClick={() => supabase.auth.signOut().then(() => router.push('/login'))}>
+            Logout
+          </button>
+
+          {/* TABS */}
+          <div className="tabs">
+            <button className={`tab ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>
+              Overview
+            </button>
+
+            <button className={`tab ${activeTab === 'projects' ? 'active' : ''}`} onClick={() => setActiveTab('projects')}>
+              Proiecte
+            </button>
+
+            <button className={`tab ${activeTab === 'orders' ? 'active' : ''}`} onClick={() => setActiveTab('orders')}>
+              Comenzi
+            </button>
+
+            <button className={`tab ${activeTab === 'products' ? 'active' : ''}`} onClick={() => setActiveTab('products')}>
+              Magazin
             </button>
           </div>
 
-          {/* 1. TOATE PROIECTELE COLECTIVULUI */}
-          <div className="a-section">
-            <h2 className="a-sec-title">Toate Proiectele</h2>
-            {loading ? (
-              <div className="a-empty">Se încarcă baza de date...</div>
-            ) : allProjects.length === 0 ? (
-              <div className="a-empty">Nu există proiecte înregistrate în sistem.</div>
-            ) : (
-              allProjects.map(p => (
-                <div key={p.id} className="a-row">
-                  <div>
-                    <Link href={`/dashboard/admin/proiecte/${p.id}`} className="a-row-link">
-                      {p.nume} →
-                    </Link>
-                    <div className="a-client-name">Client: {p.profiles?.full_name || 'Neasignat'}</div>
+          {/* OVERVIEW */}
+          {activeTab === 'overview' && (
+            <>
+              <div className="card">Proiecte: {allProjects.length}</div>
+              <div className="card">Comenzi: {allOrders.length}</div>
+              <div className="card">Produse: {products.length}</div>
+            </>
+          )}
+
+          {/* PROJECTS */}
+          {activeTab === 'projects' && (
+            allProjects.map(p => (
+              <div key={p.id} className="card">
+                {p.nume}
+              </div>
+            ))
+          )}
+
+          {/* ORDERS */}
+          {activeTab === 'orders' && (
+            allOrders.map(o => (
+              <div key={o.id} className="card">
+                {o.email} — {o.total} lei
+              </div>
+            ))
+          )}
+
+          {/* PRODUCTS (SHOPIFY STYLE) */}
+          {activeTab === 'products' && (
+            <>
+              <div className="card">
+                <input placeholder="Nume" value={newProduct.nume}
+                  onChange={(e) => setNewProduct({ ...newProduct, nume: e.target.value })} />
+
+                <input placeholder="Descriere" value={newProduct.descriere}
+                  onChange={(e) => setNewProduct({ ...newProduct, descriere: e.target.value })} />
+
+                <input placeholder="Preț" type="number" value={newProduct.pret}
+                  onChange={(e) => setNewProduct({ ...newProduct, pret: Number(e.target.value) })} />
+
+                <input placeholder="Categorie" value={newProduct.categorie}
+                  onChange={(e) => setNewProduct({ ...newProduct, categorie: e.target.value })} />
+
+                <input placeholder="Imagine URL" value={newProduct.imagine_url}
+                  onChange={(e) => setNewProduct({ ...newProduct, imagine_url: e.target.value })} />
+
+                <button className="btn" onClick={createProduct}>
+                  + Adaugă produs
+                </button>
+              </div>
+
+              <div className="grid">
+                {products.map(p => (
+                  <div key={p.id} className="card">
+                    {p.imagine_url && <img src={p.imagine_url} className="img" />}
+
+                    <div>{p.nume}</div>
+                    <div className="meta">{p.categorie}</div>
+                    <div className="price">{p.pret} lei</div>
+
+                    <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                      <button className="btn" onClick={() => toggleProduct(p.id, 'activ', !p.activ)}>
+                        activ
+                      </button>
+
+                      <button className="btn" onClick={() => toggleProduct(p.id, 'featured', !p.featured)}>
+                        featured
+                      </button>
+
+                      <button className="btn" onClick={() => deleteProduct(p.id)}>
+                        șterge
+                      </button>
+                    </div>
                   </div>
-                  <span className="a-status">{p.status}</span>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* 2. ULTIMELE ACTUALIZĂRI SCRISE DE ECHIPĂ */}
-          <div className="a-section">
-            <h2 className="a-sec-title">Activitate Recentă Șantiere</h2>
-            {loading ? (
-              <div className="a-empty">Se încarcă noutățile...</div>
-            ) : recentUpdates.length === 0 ? (
-              <div className="a-empty">Niciun raport trimis recent.</div>
-            ) : (
-              recentUpdates.map(u => (
-                <div key={u.id} style={{ padding: '12px 0', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                  <div className="a-msg">{u.mesaj}</div>
-                  <div className="a-meta">Proiect: {u.projects?.nume} • {new Date(u.created_at).toLocaleDateString('ro-RO')}</div>
-                </div>
-              ))
-            )}
-          </div>
-
-          {/* 3. VÂNZĂRI COMPREHENSIVE MAGAZIN DIGITAL */}
-          <div className="a-section">
-            <h2 className="a-sec-title">Comenzi Recente Magazin</h2>
-            {loading ? (
-              <div className="a-empty">Se încarcă vânzările...</div>
-            ) : recentOrders.length === 0 ? (
-              <div className="a-empty">Nicio comandă înregistrată.</div>
-            ) : (
-              recentOrders.map(o => (
-                <div key={o.id} className="a-row">
-                  <div>
-                    <span style={{ fontSize: '13px', color: '#ffffff' }}>{o.email}</span>
-                    <div className="a-meta">{new Date(o.created_at).toLocaleDateString('ro-RO')} • Statut: {o.status}</div>
-                  </div>
-                  <span className="a-price">{o.total} lei</span>
-                </div>
-              ))
-            )}
-          </div>
-
+                ))}
+              </div>
+            </>
+          )}
         </div>
 
-        <WhatsAppWidget />
+      
         <Footer />
       </div>
     </>

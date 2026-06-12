@@ -29,7 +29,6 @@ const geistMono = Geist_Mono({
 
 // Configurare completă SEO, Favicon și Share (Open Graph)
 export const metadata: Metadata = {
-  metadataBase: new URL("https://proarh4d.ro"), // Adăugat pentru validarea corectă a link-urilor de imagini în rețelele sociale
   title: "Proarh.4d | Birou de Proiectare Arhitecturală & Design Interior",
   description: "Servicii premium de arhitectură, proiectare rezidențială și comercială, randări 3D și urbanism. Dambovita. Romnania. Targoviste.",
   
@@ -48,9 +47,9 @@ export const metadata: Metadata = {
     siteName: "Proarh.4d",
     images: [
       {
-        url: "/proarh3d.jpg", // Modificat: folosește imaginea ta landscape din folderul public
-        width: 1200,          // Modificat: lățime optimizată pentru WhatsApp/Facebook
-        height: 630,          // Modificat: înălțime optimizată pentru WhatsApp/Facebook
+        url: "/proarh4d.ro.png", // Imaginea care va apărea la share
+        width: 800,
+        height: 800,
         alt: "Proarh.4d Architecture Studio",
       },
     ],
@@ -63,7 +62,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Proarh.4d | Birou de Proiectare Arhitecturală",
     description: "Servicii premium de arhitectură, proiectare rezidențială și comercială. Dambovita. Targoviste.",
-    images: ["/proarh3d.jpg"], // Modificat: folosește imaginea ta landscape din folderul public
+    images: ["/proarh4d.ro.png"],
   },
 };
 
@@ -77,18 +76,15 @@ export default function RootLayout({
       lang="ro" // Schimbat din "en" în "ro" deoarece site-ul tău este în limba română
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <head>
-        {/* Corectat: Scriptul de înregistrare Service Worker mutat în interiorul blocului head */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('data:text/javascript,self.addEventListener("fetch",()=>{})');
-              }
-            `,
-          }}
-        />
-      </head>
+      <script
+  dangerouslySetInnerHTML={{
+    __html: `
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('data:text/javascript,self.addEventListener("fetch",()=>{})');
+      }
+    `,
+  }}
+/>
 
       <body className="min-h-full flex flex-col bg-black text-white">{children}</body>
     </html>

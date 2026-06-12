@@ -9,21 +9,17 @@ import WhatsAppWidget from '@/components/WhatsAppWidget'
 export default function AboutPage() {
   const [mounted, setMounted] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [origin, setOrigin] = useState('')
 
   useEffect(() => { 
     setTimeout(() => setMounted(true), 50)
-    if (typeof window !== 'undefined') {
-      setOrigin(window.location.origin)
-    }
   }, [])
 
-  // Datele folosite pentru partajarea pe canalele de Social Media
+  // Datele fixe pentru ca funcția de share să trimită link-ul curat pe rețelele sociale
   async function handleShare() {
     const shareData = {
-      title: 'proarh3d.ro | Birou de proiectare arhitecturala Dambovita. ',
-      text: 'Proiectare arhitretcturala . Dambovita. Romania',
-      url: typeof window !== 'undefined' ? `${window.location.origin}/noi` : ''
+      title: 'proarh3d.ro | Birou de proiectare arhitecturala Dambovita.',
+      text: 'Proiectare arhitecturala. Dambovita. Romania',
+      url: 'https://proarh3d.ro'
     }
 
     try {
@@ -39,21 +35,18 @@ export default function AboutPage() {
     }
   }
 
-  const fullImageUrl = origin ? `${origin}/proarh3d.jpg` : '/proarh3d.jpg'
-  const fullPageUrl = origin ? `${origin}/noi` : '/noi'
-
   return (
     <>
       <head>
         <title>Despre Noi | proarh3d.ro</title>
         <meta name="description" content="Suntem un colectiv de arhitecți dedicați spațiilor minimaliste și atemporale. Transformăm concepte riguroase în realitate." />
         
-        {/* Open Graph / Facebook / WhatsApp */}
+        {/* Open Graph / Facebook / WhatsApp - Link-uri text directe pe care WhatsApp le citește instant */}
         <meta property="og:type" content="website" />
-        <meta property="og:url" content={fullPageUrl} />
+        <meta property="og:url" content="https://proarh3d.ro" />
         <meta property="og:title" content="Despre Noi | proarh3d.ro" />
         <meta property="og:description" content="Formă. Funcție. Spațiu atemporal. Vezi manifestul echipei noastre de arhitectură." />
-        <meta property="og:image" content={fullImageUrl} />
+        <meta property="og:image" content="https://proarh3d.ro" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
 
@@ -61,7 +54,7 @@ export default function AboutPage() {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Despre Noi | proarh3d.ro" />
         <meta name="twitter:description" content="Formă. Funcție. Spațiu atemporal. Vezi manifestul echipei noastre de arhitectură." />
-        <meta name="twitter:image" content={fullImageUrl} />
+        <meta name="twitter:image" content="https://proarh3d.ro" />
       </head>
 
       <style>{`

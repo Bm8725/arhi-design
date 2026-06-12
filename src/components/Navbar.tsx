@@ -67,7 +67,7 @@ export default function Navbar() {
         { name: 'Avize & Urbanism (PUD/PUZ)', href: '/UrbanismSection' },
       ]
     },
-   { name: 'Noi', href: '/', icon: Users },
+   { name: 'Noi', href: '/noi', icon: Users },
 
   ];
 

@@ -26,7 +26,7 @@ export default function ProductPage() {
       .eq('id', id)
       .single()
 
-    setProduct(data)
+    setProduct(data || null)
     setLoading(false)
   }
 
@@ -37,14 +37,20 @@ export default function ProductPage() {
 
       <div className="container">
 
-        {loading && <div className="loading">Loading...</div>}
+        {loading && <div className="loading">Se încarcă...</div>}
+
+        {!loading && !product && (
+          <div className="empty">Produs inexistent</div>
+        )}
 
         {product && (
           <div className="grid">
 
             <div className="img">
-              {product.imagine_url && (
+              {product.imagine_url ? (
                 <img src={product.imagine_url} />
+              ) : (
+                <div className="noimg">No image</div>
               )}
             </div>
 
@@ -61,14 +67,9 @@ export default function ProductPage() {
                 <span className="new">{product.pret} lei</span>
               </div>
 
-              {/* CHECKOUT CTA */}
-              <button className="buy">
-                Cumpără acum
-              </button>
+              <button className="buy">Cumpără</button>
 
-              <button className="secondary">
-                Plată securizată
-              </button>
+              <button className="wa">WhatsApp</button>
 
             </div>
 
@@ -82,7 +83,7 @@ export default function ProductPage() {
 
       <style jsx>{`
         .root{
-          background:#f5f2ec;
+          background:#f7f3ee;
           min-height:100vh;
           color:#111;
         }
@@ -110,17 +111,17 @@ export default function ProductPage() {
           object-fit:cover;
         }
 
-        h1{
+        .info h1{
           font-size:30px;
         }
 
         p{
           color:#666;
-          margin:10px 0 20px;
+          margin:10px 0;
         }
 
         .price{
-          margin-bottom:20px;
+          margin:20px 0;
         }
 
         .old{
@@ -130,23 +131,22 @@ export default function ProductPage() {
 
         .new{
           color:#b08d57;
-          font-size:20px;
+          font-size:18px;
         }
 
         .buy{
           width:100%;
-          padding:14px;
-          background:#111;
+          padding:12px;
+          background:#b08d57;
           color:#fff;
           border:none;
           margin-bottom:10px;
         }
 
-        .secondary{
+        .wa{
           width:100%;
           padding:12px;
-          background:#b08d57;
-          color:#fff;
+          background:#25D366;
           border:none;
         }
 

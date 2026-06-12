@@ -29,7 +29,7 @@ const geistMono = Geist_Mono({
 
 // Configurare completă SEO, Favicon și Share (Open Graph)
 export const metadata: Metadata = {
-  metadataBase: new URL("https://proarh4d.ro"), // OBLIGATORIU în Next.js pentru ca link-ul pozei de share să fie valid
+  metadataBase: new URL("https://proarh4d.ro"), // Adăugat pentru validarea corectă a link-urilor de imagini în rețelele sociale
   title: "Proarh.4d | Birou de Proiectare Arhitecturală & Design Interior",
   description: "Servicii premium de arhitectură, proiectare rezidențială și comercială, randări 3D și urbanism. Dambovita. Romnania. Targoviste.",
   
@@ -44,13 +44,13 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Proarh.4d | Birou de Proiectare Arhitecturală. Arh. Sotangeanu Bogdan",
     description: "Servicii premium de arhitectură, proiectare rezidențială și comercială, randări 3D/4D și urbanism.",
-    url: "https://proarh4d.ro", // Domeniul tău final
+    url: "https://proarh4d.ro", // Pune aici domeniul tău final când va fi live
     siteName: "Proarh.4d",
     images: [
       {
-        url: "/proarh3d.jpg", // Modificat aici cu poza ta landscape din public pentru share perfect
-        width: 1200,
-        height: 630,
+        url: "/proarh3d.jpg", // Modificat: folosește imaginea ta landscape din folderul public
+        width: 1200,          // Modificat: lățime optimizată pentru WhatsApp/Facebook
+        height: 630,          // Modificat: înălțime optimizată pentru WhatsApp/Facebook
         alt: "Proarh.4d Architecture Studio",
       },
     ],
@@ -63,7 +63,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Proarh.4d | Birou de Proiectare Arhitecturală",
     description: "Servicii premium de arhitectură, proiectare rezidențială și comercială. Dambovita. Targoviste.",
-    images: ["/proarh3d.jpg"],
+    images: ["/proarh3d.jpg"], // Modificat: folosește imaginea ta landscape din folderul public
   },
 };
 
@@ -78,7 +78,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
-        {/* REPARAT: Scriptul PWA mutat corect în head pentru a evita erorile de build */}
+        {/* Corectat: Scriptul de înregistrare Service Worker mutat în interiorul blocului head */}
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -89,9 +89,8 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-full flex flex-col bg-black text-white">
-        {children}
-      </body>
+
+      <body className="min-h-full flex flex-col bg-black text-white">{children}</body>
     </html>
   );
 }

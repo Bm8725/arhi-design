@@ -19,7 +19,7 @@ export default function AboutPage() {
     const shareData = {
       title: 'proarh3d.ro | Birou de proiectare arhitecturala Dambovita.',
       text: 'Proiectare arhitecturala. Dambovita. Romania',
-      url: 'https://proarh3d.ro'
+      url: 'https://arhi-design.vercel.app'
     }
 
     try {
@@ -43,10 +43,10 @@ export default function AboutPage() {
         
         {/* Open Graph / Facebook / WhatsApp - Link-uri text directe pe care WhatsApp le citește instant */}
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://proarh3d.ro" />
+        <meta property="og:url" content="https://arhi-design.vercel.app" />
         <meta property="og:title" content="Despre Noi | proarh3d.ro" />
         <meta property="og:description" content="Formă. Funcție. Spațiu atemporal. Vezi manifestul echipei noastre de arhitectură." />
-        <meta property="og:image" content="https://proarh3d.ro" />
+        <meta property="og:image" content="https://arhi-design.vercel.app" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
 
@@ -54,7 +54,7 @@ export default function AboutPage() {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Despre Noi | proarh3d.ro" />
         <meta name="twitter:description" content="Formă. Funcție. Spațiu atemporal. Vezi manifestul echipei noastre de arhitectură." />
-        <meta name="twitter:image" content="https://proarh3d.ro" />
+        <meta name="twitter:image" content="https://arhi-design.vercel.app" />
       </head>
 
       <style>{`

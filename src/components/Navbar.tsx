@@ -36,15 +36,23 @@ export default function Navbar() {
   // Auth
   const [userName, setUserName] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   // Notifications
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
-  const notifRef = useRef<HTMLDivElement>(null);
+  const desktopNotifRef = useRef<HTMLDivElement>(null);
   const mobileNotifRef = useRef<HTMLDivElement>(null);
 
   const supabase = createClient();
+
+  // ── Dashboard href bazat pe rol ──────────────────────────────────────────
+  const dashboardHref = !userId
+    ? '/login'
+    : userRole === 'superadmin' || userRole === 'angajat'
+      ? '/dashboard/admin'
+      : '/dashboard/client';
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -54,10 +62,11 @@ export default function Navbar() {
         setUserId(user.id);
         const { data: profile } = await supabase
           .from('profiles')
-          .select('full_name')
+          .select('full_name, rol')
           .eq('id', user.id)
           .single();
         setUserName(profile?.full_name ?? user.email?.split('@')[0] ?? null);
+        setUserRole(profile?.rol ?? null);
       }
     };
     getUser();
@@ -67,15 +76,17 @@ export default function Navbar() {
         setUserId(session.user.id);
         supabase
           .from('profiles')
-          .select('full_name')
+          .select('full_name, rol')
           .eq('id', session.user.id)
           .single()
           .then(({ data }) => {
             setUserName(data?.full_name ?? session.user!.email?.split('@')[0] ?? null);
+            setUserRole(data?.rol ?? null);
           });
       } else {
         setUserId(null);
         setUserName(null);
+        setUserRole(null);
         setNotifications([]);
         setUnreadCount(0);
       }
@@ -117,13 +128,12 @@ export default function Navbar() {
     return () => { supabase.removeChannel(channel); };
   }, [userId]);
 
-  // ── Click outside notif dropdown ──────────────────────────────────────────
+  // ── Click outside ─────────────────────────────────────────────────────────
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (
-        notifRef.current && !notifRef.current.contains(e.target as Node) &&
-        mobileNotifRef.current && !mobileNotifRef.current.contains(e.target as Node)
-      ) {
+      const clickedDesktop = desktopNotifRef.current?.contains(e.target as Node);
+      const clickedMobile = mobileNotifRef.current?.contains(e.target as Node);
+      if (!clickedDesktop && !clickedMobile) {
         setShowNotifDropdown(false);
       }
     };
@@ -144,7 +154,7 @@ export default function Navbar() {
     setUnreadCount(0);
   };
 
-  // ── Scroll hide/show ──────────────────────────────────────────────────────
+  // ── Scroll ────────────────────────────────────────────────────────────────
   useEffect(() => {
     const controlNavbar = () => {
       if (window.scrollY > lastScrollY && window.scrollY > 80) {
@@ -160,7 +170,7 @@ export default function Navbar() {
 
   const navigation = [
     { name: 'Acasă', href: '/', icon: Home },
-    { name: 'shop', href: '/shop', icon: ShoppingBag },
+    { name: 'Shop', href: '/shop', icon: ShoppingBag },
     { 
       name: 'Portofoliu', 
       href: '/dashboard',
@@ -185,9 +195,9 @@ export default function Navbar() {
     { name: 'Noi', href: '/noi', icon: Users },
   ];
 
-  // ── Dropdown notificări (shared UI) ───────────────────────────────────────
-  const NotifDropdown = () => (
-    <div className="absolute right-0 top-full mt-3 w-80 bg-black/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.6)] z-[100] overflow-hidden">
+  // ── Lista notificări (shared) ─────────────────────────────────────────────
+  const NotifList = () => (
+    <>
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
         <span className="text-sm font-semibold text-white">Notificări</span>
         <div className="flex items-center gap-3">
@@ -199,28 +209,37 @@ export default function Navbar() {
               Marchează toate
             </button>
           )}
-          <button onClick={() => setShowNotifDropdown(false)} className="text-neutral-500 hover:text-white transition-colors">
+          <button
+            onClick={() => setShowNotifDropdown(false)}
+            className="text-neutral-500 hover:text-white transition-colors"
+          >
             <X size={14} />
           </button>
         </div>
       </div>
       <div className="max-h-72 overflow-y-auto divide-y divide-white/5">
         {notifications.length === 0 ? (
-          <p className="text-sm text-neutral-500 text-center py-8">Nu ai nicio notificare.</p>
+          <p className="text-sm text-neutral-500 text-center py-8">
+            Nu ai nicio notificare.
+          </p>
         ) : (
           notifications.map((notif) => (
             <div
               key={notif.id}
               onClick={() => markAsRead(notif.id)}
-              className={`px-4 py-3 text-sm cursor-pointer transition-colors hover:bg-white/5 ${
+              className={`px-4 py-3 cursor-pointer transition-colors hover:bg-white/5 ${
                 notif.citit ? 'opacity-50' : 'border-l-2 border-amber-500'
               }`}
             >
               <div className="flex items-start justify-between gap-2">
-                <h4 className="font-semibold text-white text-xs">{notif.titlu}</h4>
-                {!notif.citit && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1 shrink-0" />}
+                <h4 className="font-semibold text-white text-xs leading-snug">{notif.titlu}</h4>
+                {!notif.citit && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1 shrink-0" />
+                )}
               </div>
-              {notif.mesaj && <p className="text-[11px] text-neutral-400 mt-0.5">{notif.mesaj}</p>}
+              {notif.mesaj && (
+                <p className="text-[11px] text-neutral-400 mt-0.5 leading-relaxed">{notif.mesaj}</p>
+              )}
               {notif.link && (
                 <a href={notif.link} className="text-[11px] text-amber-400 underline block mt-1">
                   Vezi detalii →
@@ -228,20 +247,20 @@ export default function Navbar() {
               )}
               <span className="text-[10px] text-neutral-600 mt-1 block">
                 {new Date(notif.created_at).toLocaleDateString('ro-RO', {
-                  day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+                  day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
                 })}
               </span>
             </div>
           ))
         )}
       </div>
-    </div>
+    </>
   );
 
   return (
     <>
       {/* ================================================================= */}
-      {/* 1. DESKTOP NAVBAR — nemodificat structural față de original        */}
+      {/* 1. DESKTOP NAVBAR                                                  */}
       {/* ================================================================= */}
       <div className={`fixed top-0 md:top-6 left-0 w-full z-50 px-0 md:px-6 transition-transform duration-500 hidden md:block ${
         showNavbar ? 'translate-y-0' : '-translate-y-full md:-translate-y-28'
@@ -254,8 +273,8 @@ export default function Navbar() {
               <div className="relative w-9 h-9 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(245,158,11,0.3)]">
                 <Image src="/proarh4d.ro.png" alt="Proarh.4d Logo" fill className="object-contain" priority />
               </div>
-              <span className="text-xl font-light tracking-[0.25em] text-white uppercase transition-colors duration-300">
-                Pro<span className="font-semibold text-amber-500 transition-shadow duration-300 group-hover:text-amber-400">arh.4d</span>
+              <span className="text-xl font-light tracking-[0.25em] text-white uppercase">
+                Pro<span className="font-semibold text-amber-500 group-hover:text-amber-400 transition-colors duration-300">arh.4d</span>
               </span>
             </Link>
 
@@ -298,9 +317,8 @@ export default function Navbar() {
 
             {/* RIGHT: Bell + Buton cont */}
             <div className="hidden md:flex items-center gap-3">
-              {/* Bell — apare doar dacă e logat */}
               {userId && (
-                <div ref={notifRef} className="relative">
+                <div ref={desktopNotifRef} className="relative">
                   <button
                     onClick={() => setShowNotifDropdown((v) => !v)}
                     className="relative p-2 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-white transition-all"
@@ -312,14 +330,17 @@ export default function Navbar() {
                       </span>
                     )}
                   </button>
-                  {showNotifDropdown && <NotifDropdown />}
+                  {showNotifDropdown && (
+                    <div className="absolute right-0 top-full mt-3 w-80 bg-black/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.6)] z-[100] overflow-hidden">
+                      <NotifList />
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Buton login / nume */}
               <Link
-                href="/login"
-                className="relative inline-flex items-center justify-center bg-amber-500 text-black rounded-full px-6 py-3 text-[10px] font-bold tracking-[0.2em] uppercase overflow-hidden transition-all duration-300 hover:bg-amber-400 active:scale-95 max-w-[160px] truncate"
+                href={dashboardHref}
+                className="relative inline-flex items-center justify-center bg-amber-500 text-black rounded-full px-6 py-3 text-[10px] font-bold tracking-[0.2em] uppercase transition-all duration-300 hover:bg-amber-400 active:scale-95 max-w-[160px] truncate"
               >
                 {userName ?? 'Contul meu'}
               </Link>
@@ -330,7 +351,7 @@ export default function Navbar() {
       </div>
 
       {/* ================================================================= */}
-      {/* 2. MOBILE HEADER — identic cu originalul, + bell dacă e logat     */}
+      {/* 2. MOBILE HEADER                                                   */}
       {/* ================================================================= */}
       <div className="fixed top-0 left-0 w-full z-50 bg-black/50 backdrop-blur-lg border-b border-white/5 md:hidden h-16 flex items-center justify-between px-4">
 
@@ -344,7 +365,7 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* Dreapta: Bell (dacă logat) + buton user */}
+        {/* Dreapta: Bell + User */}
         <div className="flex items-center gap-2">
 
           {/* Bell mobile */}
@@ -361,57 +382,21 @@ export default function Navbar() {
                   </span>
                 )}
               </button>
-              {/* Dropdown aliniat la dreapta ecranului pe mobile */}
+
+              {/* Dropdown mobile — fixed, sub header, full width cu margini */}
               {showNotifDropdown && (
-                <div className="absolute right-0 top-full mt-3 w-[calc(100vw-2rem)] max-w-sm bg-black/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.6)] z-[100] overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
-                    <span className="text-sm font-semibold text-white">Notificări</span>
-                    <div className="flex items-center gap-3">
-                      {unreadCount > 0 && (
-                        <button onClick={markAllAsRead} className="text-[10px] text-amber-400 uppercase tracking-wider">
-                          Marchează toate
-                        </button>
-                      )}
-                      <button onClick={() => setShowNotifDropdown(false)} className="text-neutral-500 hover:text-white">
-                        <X size={14} />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="max-h-72 overflow-y-auto divide-y divide-white/5">
-                    {notifications.length === 0 ? (
-                      <p className="text-sm text-neutral-500 text-center py-8">Nu ai nicio notificare.</p>
-                    ) : (
-                      notifications.map((notif) => (
-                        <div
-                          key={notif.id}
-                          onClick={() => markAsRead(notif.id)}
-                          className={`px-4 py-3 text-sm cursor-pointer transition-colors hover:bg-white/5 ${
-                            notif.citit ? 'opacity-50' : 'border-l-2 border-amber-500'
-                          }`}
-                        >
-                          <div className="flex items-start justify-between gap-2">
-                            <h4 className="font-semibold text-white text-xs">{notif.titlu}</h4>
-                            {!notif.citit && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1 shrink-0" />}
-                          </div>
-                          {notif.mesaj && <p className="text-[11px] text-neutral-400 mt-0.5">{notif.mesaj}</p>}
-                          {notif.link && <a href={notif.link} className="text-[11px] text-amber-400 underline block mt-1">Vezi detalii →</a>}
-                          <span className="text-[10px] text-neutral-600 mt-1 block">
-                            {new Date(notif.created_at).toLocaleDateString('ro-RO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                          </span>
-                        </div>
-                      ))
-                    )}
-                  </div>
+                <div className="fixed top-16 left-0 right-0 mx-3 bg-black/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.8)] z-[100] overflow-hidden">
+                  <NotifList />
                 </div>
               )}
             </div>
           )}
 
-          {/* Buton user — exact ca originalul, href mereu /login */}
+          {/* Buton user */}
           <Link
-            href="/login"
+            href={dashboardHref}
             className={`p-2 rounded-full border transition-all ${
-              pathname === '/login'
+              pathname === '/login' || pathname.startsWith('/dashboard')
                 ? 'bg-amber-500 text-black border-amber-500'
                 : 'text-white border-white/10 bg-white/5 hover:bg-white/10'
             }`}
@@ -423,7 +408,7 @@ export default function Navbar() {
       </div>
 
       {/* ================================================================= */}
-      {/* 3. MOBILE BOTTOM TAB BAR — identic cu originalul                  */}
+      {/* 3. MOBILE BOTTOM TAB BAR                                           */}
       {/* ================================================================= */}
       <div className="fixed bottom-0 left-0 w-full z-50 px-4 pb-5 pt-2 bg-gradient-to-t from-black via-black/90 to-transparent md:hidden">
         <nav className="w-full bg-[#0d0d0d]/90 backdrop-blur-2xl border border-white/10 rounded-2xl h-16 flex items-center justify-around px-2 shadow-[0_-10px_30px_rgba(0,0,0,0.8)]">
@@ -432,10 +417,10 @@ export default function Navbar() {
             const isTabActive = pathname === item.href || (item.subOptions?.some(sub => pathname === sub.href));
 
             return (
-              <div key={item.name} className="flex-1 h-full flex items-center justify-center relative group">
+              <div key={item.name} className="flex-1 h-full flex items-center justify-center relative">
 
                 {item.subOptions && activeMobileMenu === item.name && (
-                  <div className="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 w-52 bg-black/95 backdrop-blur-xl border border-white/10 rounded-xl p-2 flex flex-col gap-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.6)] animate-fade-in z-50">
+                  <div className="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 w-52 bg-black/95 backdrop-blur-xl border border-white/10 rounded-xl p-2 flex flex-col gap-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.6)] z-50">
                     {item.subOptions.map((sub) => {
                       const isSubActive = pathname === sub.href;
                       return (
@@ -468,7 +453,9 @@ export default function Navbar() {
                     }`}>
                       {item.name}
                     </span>
-                    {(isTabActive || activeMobileMenu === item.name) && <span className="absolute bottom-1 w-1 h-1 rounded-full bg-amber-500" />}
+                    {(isTabActive || activeMobileMenu === item.name) && (
+                      <span className="absolute bottom-1 w-1 h-1 rounded-full bg-amber-500" />
+                    )}
                   </button>
                 ) : (
                   <Link
@@ -482,9 +469,11 @@ export default function Navbar() {
                     <span className={`text-[9px] font-medium tracking-wide uppercase mt-1 transition-colors duration-300 ${
                       isTabActive ? 'text-white font-semibold' : 'text-neutral-500'
                     }`}>
-                      {item.name === 'shop' ? 'Shop' : item.name}
+                      {item.name}
                     </span>
-                    {isTabActive && <span className="absolute bottom-1 w-1 h-1 rounded-full bg-amber-500" />}
+                    {isTabActive && (
+                      <span className="absolute bottom-1 w-1 h-1 rounded-full bg-amber-500" />
+                    )}
                   </Link>
                 )}
               </div>

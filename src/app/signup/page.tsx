@@ -93,9 +93,7 @@ export default function SignupPage() {
                 <CheckCircle2 size={26} strokeWidth={1} />
               </div>
               <div className="s-success-title">Cont creat.</div>
-              <p className="s-success-sub">
-                Verifică emailul <strong>{email}</strong> pentru a confirma contul. Vei fi redirecționat după confirmare.
-              </p>
+
               <Link href="/login" className="s-link" style={{ marginTop: 8 }}>
                 Mergi la login →
               </Link>

@@ -29,6 +29,7 @@ const geistMono = Geist_Mono({
 
 // Configurare completă SEO, Favicon și Share (Open Graph)
 export const metadata: Metadata = {
+  metadataBase: new URL("https://proarh4d.ro"), // OBLIGATORIU în Next.js pentru ca link-ul pozei de share să fie valid
   title: "Proarh.4d | Birou de Proiectare Arhitecturală & Design Interior",
   description: "Servicii premium de arhitectură, proiectare rezidențială și comercială, randări 3D și urbanism. Dambovita. Romnania. Targoviste.",
   
@@ -43,13 +44,13 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Proarh.4d | Birou de Proiectare Arhitecturală. Arh. Sotangeanu Bogdan",
     description: "Servicii premium de arhitectură, proiectare rezidențială și comercială, randări 3D/4D și urbanism.",
-    url: "https://proarh4d.ro", // Pune aici domeniul tău final când va fi live
+    url: "https://proarh4d.ro", // Domeniul tău final
     siteName: "Proarh.4d",
     images: [
       {
-        url: "/proarh4d.ro.png", // Imaginea care va apărea la share
-        width: 800,
-        height: 800,
+        url: "/proarh3d.jpg", // Modificat aici cu poza ta landscape din public pentru share perfect
+        width: 1200,
+        height: 630,
         alt: "Proarh.4d Architecture Studio",
       },
     ],
@@ -62,7 +63,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Proarh.4d | Birou de Proiectare Arhitecturală",
     description: "Servicii premium de arhitectură, proiectare rezidențială și comercială. Dambovita. Targoviste.",
-    images: ["/proarh4d.ro.png"],
+    images: ["/proarh3d.jpg"],
   },
 };
 
@@ -76,17 +77,21 @@ export default function RootLayout({
       lang="ro" // Schimbat din "en" în "ro" deoarece site-ul tău este în limba română
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <script
-  dangerouslySetInnerHTML={{
-    __html: `
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('data:text/javascript,self.addEventListener("fetch",()=>{})');
-      }
-    `,
-  }}
-/>
-
-      <body className="min-h-full flex flex-col bg-black text-white">{children}</body>
+      <head>
+        {/* REPARAT: Scriptul PWA mutat corect în head pentru a evita erorile de build */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('data:text/javascript,self.addEventListener("fetch",()=>{})');
+              }
+            `,
+          }}
+        />
+      </head>
+      <body className="min-h-full flex flex-col bg-black text-white">
+        {children}
+      </body>
     </html>
   );
 }

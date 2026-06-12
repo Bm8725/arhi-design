@@ -22,7 +22,7 @@ export default function AboutPage() {
   async function handleShare() {
     const shareData = {
       title: 'proarh3d.ro | Birou de proiectare arhitecturala Dambovita. ',
-      text: 'Descoperă manifestul și echipa din spatele proiectelor noastre de arhitectură atemporală. Dambovita. Romania',
+      text: 'Proiectare arhitretcturala . Dambovita. Romania',
       url: typeof window !== 'undefined' ? `${window.location.origin}/noi` : ''
     }
 

@@ -143,7 +143,7 @@ export default function AboutPage() {
           </div>
 
           <div className="a-links">
-            <Link href="/contact" className="a-link">Să discutăm proiectul tău</Link>
+           
             <Link href="/" className="a-link">← Acasă</Link>
           </div>
         </div>

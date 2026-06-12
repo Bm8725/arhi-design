@@ -66,6 +66,10 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  themeColor: '#000000', // Setează headerul browserului pe negru pur
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{

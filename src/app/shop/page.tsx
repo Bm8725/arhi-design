@@ -1,31 +1,43 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import Link from 'next/link'
 
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import WhatsAppWidget from '@/components/WhatsAppWidget'
 
-export default function ShopPage() {
+export default function ProductPage() {
   const supabase = createClient()
+  const params = useParams()
+  const id = Array.isArray(params?.id) ? params.id[0] : params?.id
 
-  const [products, setProducts] = useState<any[]>([])
+  const [product, setProduct] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    load()
-  }, [])
+    if (id) load()
+  }, [id])
 
   async function load() {
-    const { data } = await supabase
+    setLoading(true)
+    setError(null)
+
+    const { data, error } = await supabase
       .from('products')
       .select('*')
-      .eq('activ', true)
-      .order('created_at', { ascending: false })
+      .eq('id', id)
+      .single()
 
-    setProducts(data || [])
+    if (error) {
+      setError('Produsul nu a fost găsit')
+      setLoading(false)
+      return
+    }
+
+    setProduct(data)
     setLoading(false)
   }
 
@@ -34,52 +46,65 @@ export default function ShopPage() {
 
       <Navbar />
 
-      {/* spacing mai jos + look premium */}
-      <div className="hero">
-        <h1>Shop</h1>
-        <p>Produse digitale premium selectate</p>
-      </div>
+      <div className="container">
 
-      {loading && (
-        <div className="loading">Se încarcă...</div>
-      )}
+        {/* LOADING */}
+        {loading && (
+          <div className="loading">
+            <div className="spinner" />
+            <p>Se încarcă produsul...</p>
+          </div>
+        )}
 
-      <div className="grid">
-        {!loading && products.map(p => (
-          <div key={p.id} className="card">
+        {/* ERROR */}
+        {error && (
+          <div className="error">
+            {error}
+          </div>
+        )}
 
+        {/* PRODUCT */}
+        {product && (
+          <div className="grid">
+
+            {/* IMAGE */}
             <div className="img">
-              {p.imagine_url ? (
-                <img src={p.imagine_url} />
+              {product.imagine_url ? (
+                <img src={product.imagine_url} />
               ) : (
                 <div className="noimg">No image</div>
               )}
             </div>
 
-            <div className="content">
+            {/* INFO */}
+            <div className="info">
 
-              <h3>
-                {p.nume}
-                {p.featured && <span>★</span>}
-              </h3>
+              <div className="badge">Digital Product</div>
 
-              <p>{p.descriere_scurta}</p>
+              <h1>{product.nume}</h1>
+
+              <p>{product.descriere}</p>
 
               <div className="price">
-                {p.pret_vechi && (
-                  <span className="old">{p.pret_vechi} lei</span>
+                {product.pret_vechi && (
+                  <span className="old">{product.pret_vechi} lei</span>
                 )}
-                <span className="new">{p.pret} lei</span>
+                <span className="new">{product.pret} lei</span>
               </div>
 
-              <Link href={`/shop/${p.id}`} className="btn">
-                Vezi produs
-              </Link>
+              <button className="buy">
+                Cumpără acum
+              </button>
+
+              <button className="secondary">
+                Plată securizată & instant download
+              </button>
 
             </div>
 
           </div>
-        ))}
+        )}
+
       </div>
 
       <WhatsAppWidget />
@@ -87,57 +112,29 @@ export default function ShopPage() {
 
       <style jsx>{`
         .root{
-          background:#f7f3ee; /* crem real */
+          background:#0a0a0a;
           min-height:100vh;
-          color:#111;
+          color:#fff;
         }
 
-        /* 🔥 SPAȚIU MAI JOS (exact ce ai cerut) */
-        .hero{
-          text-align:center;
-          padding:140px 20px 60px;
-        }
-
-        .hero h1{
-          font-size:42px;
-          font-weight:500;
-          letter-spacing:-1px;
-        }
-
-        .hero p{
-          color:#666;
-          font-size:14px;
-          margin-top:10px;
-        }
-
-        .loading{
-          text-align:center;
-          color:#b08d57;
+        .container{
+          max-width:1100px;
+          margin:0 auto;
+          padding:140px 20px 80px;
         }
 
         .grid{
-          max-width:1100px;
-          margin:0 auto;
           display:grid;
-          grid-template-columns:repeat(3,1fr);
-          gap:20px;
-          padding:20px;
-        }
-
-        .card{
-          background:#fff;
-          border:1px solid #e7dfd4;
-          transition:.2s;
-        }
-
-        .card:hover{
-          transform:translateY(-4px);
-          border-color:#b08d57;
+          grid-template-columns:1fr 1fr;
+          gap:50px;
+          align-items:center;
         }
 
         .img{
-          height:180px;
-          background:#eee;
+          height:480px;
+          background:#111;
+          border:1px solid #1f1f1f;
+          overflow:hidden;
         }
 
         .img img{
@@ -151,57 +148,102 @@ export default function ShopPage() {
           align-items:center;
           justify-content:center;
           height:100%;
-          color:#999;
+          color:#444;
         }
 
-        .content{
-          padding:14px;
+        .badge{
+          display:inline-block;
+          font-size:10px;
+          letter-spacing:1px;
+          text-transform:uppercase;
+          color:#e2b36e;
+          margin-bottom:10px;
         }
 
-        h3{
-          font-size:15px;
-          display:flex;
-          justify-content:space-between;
+        h1{
+          font-size:34px;
+          margin-bottom:10px;
         }
 
         p{
-          font-size:12px;
-          color:#666;
-          margin:10px 0;
+          color:#aaa;
+          font-size:14px;
+          line-height:1.6;
+          margin-bottom:20px;
         }
 
         .price{
           display:flex;
-          gap:10px;
-          margin-bottom:10px;
+          gap:12px;
+          align-items:center;
+          margin-bottom:25px;
         }
 
         .old{
-          color:#aaa;
+          color:#666;
           text-decoration:line-through;
         }
 
         .new{
-          color:#b08d57;
-          font-weight:600;
+          color:#e2b36e;
+          font-size:22px;
         }
 
-        .btn{
-          display:block;
+        .buy{
+          width:100%;
+          padding:14px;
+          background:#e2b36e;
+          color:#000;
+          border:none;
+          cursor:pointer;
+          font-weight:600;
+          margin-bottom:10px;
+          transition:.2s;
+        }
+
+        .buy:hover{
+          opacity:0.9;
+        }
+
+        .secondary{
+          width:100%;
+          padding:12px;
+          background:#111;
+          border:1px solid #222;
+          color:#aaa;
+        }
+
+        .loading{
           text-align:center;
-          padding:10px;
-          background:#b08d57;
-          color:#fff;
-          text-decoration:none;
-          font-size:12px;
+          padding:120px 20px;
+          color:#e2b36e;
+        }
+
+        .spinner{
+          width:40px;
+          height:40px;
+          border:3px solid #222;
+          border-top:3px solid #e2b36e;
+          border-radius:50%;
+          margin:0 auto 15px;
+          animation:spin 1s linear infinite;
+        }
+
+        @keyframes spin{
+          0%{transform:rotate(0)}
+          100%{transform:rotate(360deg)}
+        }
+
+        .error{
+          text-align:center;
+          padding:100px;
+          color:#ff4d4d;
         }
 
         @media(max-width:900px){
-          .grid{grid-template-columns:repeat(2,1fr)}
-        }
-
-        @media(max-width:600px){
           .grid{grid-template-columns:1fr}
+          .img{height:380px}
+          .container{padding-top:120px}
         }
       `}</style>
 

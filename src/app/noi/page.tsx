@@ -19,7 +19,7 @@ export default function AboutPage() {
     const shareData = {
       title: 'proarh4d.ro | Birou de proiectare arhitecturala Dambovita.',
       text: 'Proiectare arhitecturala. Dambovita. Romania',
-      url: 'https://vercel.app'
+      url: 'https://arhi-design.vercel.app'
     }
 
     try {
@@ -41,14 +41,12 @@ export default function AboutPage() {
         <title>Despre Noi | proarh4d.ro</title>
         <meta name="description" content="Suntem un colectiv de arhitecți dedicați spațiilor minimaliste și atemporale. Transformăm concepte riguroase în realitate." />
         
-        {/* Open Graph / Facebook / WhatsApp */}
+        {/* Open Graph / Facebook / WhatsApp - Link-uri text directe pe care WhatsApp le citește instant */}
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://vercel.app" />
-        <meta property="og:title" content="Despre Noi | proarh4d.ro" />
+        <meta property="og:url" content="https://arhi-design.vercel.app" />
+        <meta property="og:title" content="Despre Noi | proarh3d.ro" />
         <meta property="og:description" content="Formă. Funcție. Spațiu atemporal. Vezi manifestul echipei noastre de arhitectură." />
-        
-        {/* REPARAT: Adăugat calea completă exact către fișierul tău proarh3d.jpg */}
-        <meta property="og:image" content="https://vercel.app" />
+        <meta property="og:image" content="https://arhi-design.vercel.app" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
 
@@ -56,7 +54,7 @@ export default function AboutPage() {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Despre Noi | proarh4d.ro" />
         <meta name="twitter:description" content="Formă. Funcție. Spațiu atemporal. Vezi manifestul echipei noastre de arhitectură." />
-        <meta name="twitter:image" content="https://vercel.app" />
+        <meta name="twitter:image" content="https://arhi-design.vercel.app" />
       </head>
 
       <style>{`
@@ -145,7 +143,7 @@ export default function AboutPage() {
           </div>
 
           <div className="a-links">
-            <Link href="/contact" className="a-link">Să discutăm proiectul tău</Link>
+           
             <Link href="/" className="a-link">← Acasă</Link>
           </div>
         </div>

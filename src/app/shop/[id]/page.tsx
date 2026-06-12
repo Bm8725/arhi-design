@@ -10,21 +10,32 @@ import WhatsAppWidget from '@/components/WhatsAppWidget'
 
 export default function ProductPage() {
   const supabase = createClient()
-  const { id } = useParams()
+  const params = useParams()
+  const id = Array.isArray(params?.id) ? params.id[0] : params?.id
 
   const [product, setProduct] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (id) load()
   }, [id])
 
   async function load() {
-    const { data } = await supabase
+    setLoading(true)
+    setError(null)
+
+    const { data, error } = await supabase
       .from('products')
       .select('*')
       .eq('id', id)
       .single()
+
+    if (error) {
+      setError('Produsul nu a fost găsit')
+      setLoading(false)
+      return
+    }
 
     setProduct(data)
     setLoading(false)
@@ -37,8 +48,21 @@ export default function ProductPage() {
 
       <div className="container">
 
-        {loading && <div className="loading">Loading...</div>}
+        {/* LOADING */}
+        {loading && (
+          <div className="loadingBox">
+            Se încarcă produsul...
+          </div>
+        )}
 
+        {/* ERROR */}
+        {error && (
+          <div className="errorBox">
+            {error}
+          </div>
+        )}
+
+        {/* PRODUCT */}
         {product && (
           <div className="grid">
 
@@ -61,7 +85,6 @@ export default function ProductPage() {
                 <span className="new">{product.pret} lei</span>
               </div>
 
-              {/* CHECKOUT CTA */}
               <button className="buy">
                 Cumpără acum
               </button>
@@ -148,6 +171,13 @@ export default function ProductPage() {
           background:#b08d57;
           color:#fff;
           border:none;
+        }
+
+        .loadingBox,
+        .errorBox{
+          text-align:center;
+          padding:80px;
+          color:#b08d57;
         }
 
         @media(max-width:900px){

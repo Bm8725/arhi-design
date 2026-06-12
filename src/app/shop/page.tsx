@@ -42,7 +42,7 @@ export default function ShopPage() {
 
       <div className="max-w-[1100px] mx-auto px-5 pt-[140px] pb-20">
         <div className="mb-10 text-center">
-          <span className="text-[#e2b36e] text-xs font-bold uppercase tracking-widest">SHOP</span>
+          <span className="text-[#e2b36e] text-3xl font-bold uppercase tracking-widest">SHOP</span>
           <h1 className="text-3xl md:text-4xl font-bold mt-2 tracking-tight">Digital products</h1>
         </div>
 

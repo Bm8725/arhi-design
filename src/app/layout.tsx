@@ -66,8 +66,8 @@ export const metadata: Metadata = {
   },
 };
 
-export const viewport: Viewport = {
-  themeColor: '#000000', // Setează headerul browserului pe negru pur
+export const viewport: import("next").Viewport = {
+  themeColor: '#000000',
 }
 
 export default function RootLayout({

@@ -15,6 +15,7 @@
 
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Script from "next/script"; // 1. IMPORTĂ COMPONENTA NATIVĂ NEXT.JS
 import "./globals.css";
 
 const geistSans = Geist({
@@ -77,20 +78,25 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="ro" // Schimbat din "en" în "ro" deoarece site-ul tău este în limba română
+      lang="ro"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <script
-  dangerouslySetInnerHTML={{
-    __html: `
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('data:text/javascript,self.addEventListener("fetch",()=>{})');
-      }
-    `,
-  }}
-/>
+      <body className="min-h-full flex flex-col bg-black text-white">
+      
+                <Script
+                  id="pwa-service-worker"
+                  strategy="afterInteractive"
+                  dangerouslySetInnerHTML={{
+                    __html: `
+                      if ('serviceWorker' in navigator) {
+                        navigator.serviceWorker.register('/sw.js');
+                      }
+                    `,
+                  }}
+                />
 
-      <body className="min-h-full flex flex-col bg-black text-white">{children}</body>
+        {children}
+      </body>
     </html>
   );
 }

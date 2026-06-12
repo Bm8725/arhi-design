@@ -82,7 +82,7 @@ export default function ProductDetailPage() {
         {loading && (
           <div className="text-center py-28 text-[#e2b36e]">
             <div className="w-10 h-10 border-2 border-zinc-800 border-t-[#e2b36e] rounded-full mx-auto mb-4 animate-spin" />
-            <p className="text-sm">Se încarcă detaliile proiectului...</p>
+            <p className="text-sm">Loading project details...</p>
           </div>
         )}
 
@@ -100,7 +100,7 @@ export default function ProductDetailPage() {
               {product.imagine_url ? (
                 <img src={product.imagine_url} alt={product.nume} className="w-full h-full object-cover" />
               ) : (
-                <div className="flex items-center justify-center h-full text-zinc-600 text-sm">Nicio imagine disponibilă</div>
+                <div className="flex items-center justify-center h-full text-zinc-600 text-sm">No image available</div>
               )}
             </div>
 
@@ -113,7 +113,7 @@ export default function ProductDetailPage() {
               <h1 className="text-3xl md:text-4xl font-bold mb-3 tracking-tight text-white">{product.nume}</h1>
 
               <p className="text-zinc-400 text-sm leading-relaxed mb-6">
-                {product.descriere || "Contactați-ne direct pentru a discuta detaliile tehnice, adaptarea proiectului sau opțiunile de livrare."}
+                {product.descriere || "Contact us directly to discuss technical details, project adaptation, or delivery options."}
               </p>
 
               {/* Caseta de preț (Opțională - o poți păstra sau șterge dacă vrei ofertă personalizată) */}
@@ -127,7 +127,7 @@ export default function ProductDetailPage() {
               {/* SECȚIUNE DE CONTACT INSTANT */}
               <div className="border-t border-zinc-800 pt-6 space-y-3">
                 <p className="text-xs uppercase tracking-wider text-zinc-400 font-semibold mb-1">
-                  Contactați-ne pentru achiziție & detalii
+                  Contact us for purchase & details
                 </p>
 
                 {/* Buton principal WhatsApp */}
@@ -137,7 +137,7 @@ export default function ProductDetailPage() {
                   rel="noopener noreferrer"
                   className="w-full py-4 bg-[#e2b36e] text-black font-bold text-xs uppercase tracking-widest hover:bg-[#d4a45f] transition text-center rounded-sm block"
                 >
-                  Discută pe WhatsApp
+                  Discuss on WhatsApp
                 </a>
 
                 {/* Buton secundar Email */}
@@ -145,7 +145,7 @@ export default function ProductDetailPage() {
                   href={`mailto:${EMAIL_STUDIO}?subject=${subiectEmail}`}
                   className="w-full py-3 bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700 text-xs text-center transition rounded-sm block font-medium tracking-wide"
                 >
-                  Trimite Email către Studio
+                  Send Email to us 
                 </a>
               </div>
 

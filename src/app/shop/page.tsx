@@ -42,17 +42,17 @@ export default function ShopPage() {
 
       <div className="max-w-[1100px] mx-auto px-5 pt-[140px] pb-20">
         <div className="mb-10 text-center">
-          <span className="text-[#e2b36e] text-xs font-bold uppercase tracking-widest">Proarh.4d Shop</span>
-          <h1 className="text-3xl md:text-4xl font-bold mt-2 tracking-tight">Proiecte Digitale & Resurse</h1>
+          <span className="text-[#e2b36e] text-xs font-bold uppercase tracking-widest">SHOP</span>
+          <h1 className="text-3xl md:text-4xl font-bold mt-2 tracking-tight">Digital products</h1>
         </div>
 
         {loading ? (
           <div className="text-center py-20 text-[#e2b36e]">
             <div className="w-10 h-10 border-2 border-zinc-800 border-t-[#e2b36e] rounded-full mx-auto mb-4 animate-spin" />
-            <p className="text-sm">Se încarcă catalogul...</p>
+            <p className="text-sm">Loading catalog...</p>
           </div>
         ) : products.length === 0 ? (
-          <p className="text-center text-zinc-500 py-20">Nu există produse disponibile momentan.</p>
+          <p className="text-center text-zinc-500 py-20">No products available at the moment.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
             {products.map((product) => (

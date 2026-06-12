@@ -51,9 +51,9 @@ export default function Navbar() {
       href: '/dashboard',
       icon: FolderGit2,
       subOptions: [
-        { name: 'Rezidențial', href: '/404' },
-        { name: 'Comercial & Office', href: '/404' },
-        { name: 'Peisagistică', href: '/404' },
+        { name: 'Rezidențial', href: '/' },
+        { name: 'Comercial & Office', href: '/' },
+        { name: 'Peisagistică', href: '/' },
       ]
     },
     { 
@@ -62,8 +62,8 @@ export default function Navbar() {
       icon: Briefcase,
       subOptions: [
         { name: 'Design Interior', href: '/DesignInterior' },
-        { name: 'Proiectare & Arhitectură', href: '/404' },
-        { name: 'Randări 3D & VR', href: '/404' },
+        { name: 'Proiectare & Arhitectură', href: '/' },
+        { name: 'Randări 3D & VR', href: '/' },
         { name: 'Avize & Urbanism (PUD/PUZ)', href: '/UrbanismSection' },
       ]
     },

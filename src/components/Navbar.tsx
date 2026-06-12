@@ -147,7 +147,7 @@ export default function Navbar() {
 
             <div className="hidden md:block">
               <Link 
-                href="/myaccount" 
+                href="/login" 
                 className="relative inline-flex items-center justify-center bg-amber-500 text-black rounded-full px-6 py-3 text-[10px] font-bold tracking-[0.2em] uppercase overflow-hidden transition-all duration-300 hover:bg-amber-400 active:scale-95"
               >
                Contul meu
@@ -181,9 +181,9 @@ export default function Navbar() {
 
   {/* Butonul de cont rămâne fixat în dreapta */}
   <Link 
-    href="/myaccount" 
+    href="/login" 
     className={`p-2 rounded-full border transition-all ${
-      pathname === '/myaccount' 
+      pathname === '/login' 
         ? 'bg-amber-500 text-black border-amber-500' 
         : 'text-white border-white/10 bg-white/5 hover:bg-white/10'
     }`}

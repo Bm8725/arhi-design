@@ -648,7 +648,7 @@ export default function ClientDashboardPage() {
 
         </div>
 
-        <WhatsAppWidget />
+        
         <Footer />
       </div>
     </>

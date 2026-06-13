@@ -267,7 +267,7 @@ export default function ClientDashboardPage() {
 
   if (loading) return (
     <div style={{ minHeight: '100vh', background: '#0c0c0c', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'DM Mono, monospace', color: '#e2b36e', fontSize: 11, letterSpacing: '0.2em' }}>
-      SE ÎNCARCĂ...
+      Loading...
     </div>
   )
 
@@ -287,15 +287,15 @@ export default function ClientDashboardPage() {
         .c-logout:hover{color:#f87171}
 
         .c-nav{display:flex;gap:6px;margin-bottom:28px;flex-wrap:wrap}
-        .c-pill{font-size:9px;padding:8px 14px;border:1px solid #1a1a1a;background:transparent;color:#444;cursor:pointer;letter-spacing:.15em;transition:.2s;text-transform:uppercase;font-family:inherit}
+        .c-pill{font-size:9px;padding:10px 14px;border:1px solid #1a1a1a;background:transparent;color:#444;cursor:pointer;letter-spacing:.15em;transition:.2s;text-transform:uppercase;font-family:inherit}
         .c-pill:hover{color:#aaa;border-color:#333}
         .c-pill.on{border-color:#e2b36e;color:#e2b36e;background:rgba(226,179,110,.05)}
 
         /* Proiecte */
         .c-proj-card{border:1px solid #1a1a1a;padding:18px;margin-bottom:10px;cursor:pointer;transition:.2s;background:rgba(255,255,255,.01)}
         .c-proj-card:hover{border-color:#333;background:rgba(255,255,255,.03)}
-        .c-proj-name{font-size:14px;color:#fff;margin-bottom:6px}
-        .c-proj-meta{font-size:10px;color:#444;display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px}
+        .c-proj-name{font-size:20px;color:#fff;margin-bottom:6px}
+        .c-proj-meta{font-size:15px;color:#444;display:flex;gap:14px;flex-wrap:wrap;margin-bottom:10px}
         .c-proj-footer{display:flex;align-items:center;justify-content:space-between;gap:10px}
         .c-badge{font-size:9px;padding:3px 8px;border:1px solid currentColor;letter-spacing:.1em;display:inline-block}
         .c-prog-track{flex:1;height:2px;background:#1a1a1a}
@@ -304,7 +304,7 @@ export default function ClientDashboardPage() {
         /* Detail */
         .c-back{font-size:9px;color:#444;cursor:pointer;letter-spacing:.2em;margin-bottom:18px;display:inline-flex;align-items:center;gap:6px;text-transform:uppercase;transition:.2s;background:none;border:none;font-family:inherit}
         .c-back:hover{color:#e2b36e}
-        .c-detail-name{font-size:18px;color:#fff;margin-bottom:8px;font-weight:300}
+        .c-detail-name{font-size:20px;color:#fff;margin-bottom:8px;font-weight:300}
         .c-detail-meta{font-size:10px;color:#444;display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:8px}
 
         .c-subtabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid #1a1a1a}
@@ -315,31 +315,31 @@ export default function ClientDashboardPage() {
         /* Faze */
         .c-phase{padding:14px 0;border-bottom:1px solid #111}
         .c-phase-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;flex-wrap:wrap}
-        .c-phase-name{font-size:12px;color:#e0e0e0}
+        .c-phase-name{font-size:20px;color:#e0e0e0}
         .c-phase-prog{display:flex;align-items:center;gap:8px}
         .c-phase-track{width:80px;height:2px;background:#1a1a1a;flex-shrink:0}
-        .c-phase-fill{height:2px;background:#e2b36e}
+        .c-phase-fill{height:10px;background:#e2b36e}
         .c-phase-pct{font-size:10px;color:#e2b36e;min-width:28px}
         .c-phase-dates{font-size:9px;color:#444;margin-top:4px}
 
         /* Documente */
         .c-doc{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #111;gap:12px}
-        .c-doc-name{font-size:12px;color:#e0e0e0}
-        .c-doc-meta{font-size:9px;color:#444;margin-top:2px}
-        .c-doc-link{font-size:10px;color:#e2b36e;text-decoration:none;border-bottom:1px solid rgba(226,179,110,.3);transition:.2s;white-space:nowrap;flex-shrink:0}
+        .c-doc-name{font-size:20px;color:#e0e0e0}
+        .c-doc-meta{font-size:20px;color:#444;margin-top:2px}
+        .c-doc-link{font-size:20px;color:#e2b36e;text-decoration:none;border-bottom:1px solid rgba(226,179,110,.3);transition:.2s;white-space:nowrap;flex-shrink:0}
         .c-doc-link:hover{color:#fff;border-bottom-color:#fff}
 
         /* Mesaje */
         .c-msgs{max-height:320px;overflow-y:auto;margin-bottom:12px}
-        .c-msg{padding:10px 12px;margin-bottom:6px;font-size:11px;line-height:1.5}
+        .c-msg{padding:10px 15px;margin-bottom:6px;font-size:11px;line-height:1.5}
         .c-msg.mine{background:rgba(226,179,110,.07);border-left:2px solid #e2b36e}
         .c-msg.theirs{background:rgba(255,255,255,.03);border-left:2px solid #2a2a2a}
         .c-msg-text{color:#e0e0e0}
-        .c-msg-meta{font-size:9px;color:#444;margin-top:4px}
+        .c-msg-meta{font-size:16px;color:#444;margin-top:4px}
         .c-msg-input{display:flex;gap:8px}
-        .c-inp{flex:1;padding:10px 12px;background:transparent;border:1px solid #2a2a2a;color:#e0e0e0;font-family:inherit;font-size:11px}
+        .c-inp{flex:1;padding:15px 16px;background:transparent;border:1px solid #2a2a2a;color:#e0e0e0;font-family:inherit;font-size:11px}
         .c-inp:focus{outline:none;border-color:#e2b36e}
-        .c-send{font-size:9px;padding:10px 16px;border:1px solid #e2b36e;background:rgba(226,179,110,.07);color:#e2b36e;cursor:pointer;font-family:inherit;letter-spacing:.15em;transition:.2s;white-space:nowrap}
+        .c-send{font-size:16px;padding:10px 16px;border:1px solid #e2b36e;background:rgba(226,179,110,.07);color:#e2b36e;cursor:pointer;font-family:inherit;letter-spacing:.15em;transition:.2s;white-space:nowrap}
         .c-send:hover:not(:disabled){background:rgba(226,179,110,.15)}
         .c-send:disabled{opacity:.4;cursor:not-allowed}
 
@@ -421,7 +421,7 @@ export default function ClientDashboardPage() {
           {!activeProjectId && section === 'proiecte' && (
             <>
               {projects.length === 0
-                ? <div className="c-empty">Niciun proiect asignat momentan.</div>
+                ? <div className="c-empty">Niciun proiect atribuit momentan!</div>
                 : projects.map(p => (
                   <div key={p.id} className="c-proj-card" onClick={() => openProject(p.id)}>
                     <div className="c-proj-name">{p.nume}</div>

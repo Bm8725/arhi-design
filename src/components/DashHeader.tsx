@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image'; // 1. IMPORTĂM COMPONENTA NATIVĂ IMAGE
 
 export default function DashHeader() {
   const [time, setTime] = useState('');
@@ -21,8 +22,20 @@ export default function DashHeader() {
     <header style={styles.header}>
       {/* Partea stângă: Brand & Core Info */}
       <div style={styles.left}>
-        <Link href="/dashboard" style={styles.logo}>
-          PROARH<span>.4D</span>
+        <Link href="/dashboard" style={styles.logoContainer}>
+          {/* 2. LOGO IMAGINE INTEGRATĂ CU DIMENSIUNE CORECTĂ PENTRU ÎNĂLȚIMEA DE 60PX A HEADERULUI */}
+          <div style={styles.logoImgWrapper}>
+            <Image
+              src="/proarh4d.ro.png"
+              alt="Proarh.4d Logo"
+              fill
+              style={{ objectFit: 'contain' }}
+              priority
+            />
+          </div>
+          <span style={styles.logoText}>
+            PROARH<span style={{ color: '#e2b36e' }}>.4D</span>
+          </span>
         </Link>
         <div style={styles.badge}>DASHBOARD</div>
       </div>
@@ -30,13 +43,9 @@ export default function DashHeader() {
       {/* Partea dreaptă: Versiune, Status & Ceas */}
       <div style={styles.right}>
         <div style={styles.item}>
-          <span style={styles.label}>app powered by BM</span>
+          <span style={styles.label}>app designed by BM</span>
           <span style={styles.value}>V. 0.1.13</span>
         </div>
-        
-
-
-
       </div>
 
       {/* Injectare stiluri responsive direct în componentă */}
@@ -49,13 +58,13 @@ export default function DashHeader() {
   );
 }
 
-/// Obiectul de stiluri inline optimizat pentru design-ul tău Antracit
+// Obiectul de stiluri inline optimizat pentru design-ul tău Antracit
 const styles: Record<string, React.CSSProperties> = {
   header: {
     width: '100%',
     height: '60px',
-    background: '#0f0f0f',       /* Fundal puțin mai deschis decât antracitul general pentru separare */
-    borderBottom: '2px solid #1f1f1f', /* Linie groasă de demarcație specifică Monaco */
+    background: '#0f0f0f',
+    borderBottom: '2px solid #1f1f1f',
     padding: '0 24px',
     display: 'flex',
     alignItems: 'center',
@@ -64,25 +73,35 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'fixed',
     top: 0,
     left: 0,
-    zIndex: 100,                 /* REPARAT: Schimbat din z-index în zIndex */
+    zIndex: 100,
   },
   left: {
     display: 'flex',
     alignItems: 'center',
     gap: '16px',
   },
-  logo: {
+  logoContainer: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '10px',
+    textDecoration: 'none',
+  },
+  logoImgWrapper: {
+    position: 'relative',
+    width: '24px',
+    height: '24px',
+  },
+  logoText: {
     fontSize: '16px',
     fontWeight: 700,
     color: '#ffffff',
-    textDecoration: 'none',
     letterSpacing: '0.05em',
   },
   badge: {
     fontSize: '10px',
     fontWeight: 700,
     background: '#1a1a1a',
-    color: '#e2b36e',           /* Auriul caracteristic ca accent */
+    color: '#e2b36e',
     padding: '4px 8px',
     border: '1px solid #222222',
     letterSpacing: '0.1em',
@@ -100,7 +119,7 @@ const styles: Record<string, React.CSSProperties> = {
     gap: '6px',
   },
   label: {
-    color: '#555555',           /* Text gri închis pentru etichete tehnice */
+    color: '#555555',
   },
   value: {
     color: '#ffffff',

@@ -146,14 +146,17 @@ export default function Navbar() {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, citit: true } : n)));
     setUnreadCount((prev) => Math.max(0, prev - 1));
   };
-
-  const markAllAsRead = async () => {
-    if (!userId) return;
-    await supabase.from('notifications').update({ citit: true }).eq('user_id', userId).eq('citit', false);
-    setNotifications((prev) => prev.map((n) => ({ ...n, citit: true })));
-    setUnreadCount(0);
-  };
-
+//**unred/read mark message */
+const markAllAsRead = async () => {
+  if (!userId || unreadCount === 0) return
+  await supabase
+    .from('notifications')
+    .update({ citit: true })
+    .eq('user_id', userId)
+    .eq('citit', false)
+  setNotifications((prev) => prev.map((n) => ({ ...n, citit: true })))
+  setUnreadCount(0)
+}
   // ── Scroll ────────────────────────────────────────────────────────────────
   useEffect(() => {
     const controlNavbar = () => {
@@ -327,17 +330,23 @@ export default function Navbar() {
 <div className="hidden md:flex items-center gap-3">
   {userId && (
     <div ref={desktopNotifRef} className="relative">
-      <button
-        onClick={() => setShowNotifDropdown((v) => !v)}
-        className="relative p-2 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-white transition-all"
-      >
-        <Bell size={16} />
-        {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-            {unreadCount > 9 ? '9+' : unreadCount}
-          </span>
-        )}
-      </button>
+<button
+  onClick={async () => {
+    const opening = !showNotifDropdown
+    setShowNotifDropdown(opening)
+    if (opening && unreadCount > 0) {
+      await markAllAsRead()
+    }
+  }}
+  className="relative p-2 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-white transition-all"
+>
+  <Bell size={16} />
+  {unreadCount > 0 && (
+    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+      {unreadCount > 9 ? '9+' : unreadCount}
+    </span>
+  )}
+</button>
       {showNotifDropdown && (
         <div className="absolute right-0 top-full mt-3 w-80 bg-black/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.6)] z-[100] overflow-hidden">
           <NotifList />

@@ -420,7 +420,7 @@ export default function ClientDashboardPage() {
               <div className="c-name">{userName.split(' ')[0]} <span>.</span></div>
             </div>
             <button className="c-logout" onClick={() => supabase.auth.signOut().then(() => router.push('/login'))}>
-              Ieșire
+              Logout
             </button>
           </div>
 

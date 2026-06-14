@@ -279,72 +279,80 @@ export default function Navbar() {
             </Link>
 
             {/* NAV LINKS */}
-            <div className="flex items-center gap-10 text-xs font-semibold tracking-[0.15em] uppercase text-neutral-400">
-              {navigation.map((item) => (
-                <div
-                  key={item.name}
-                  className="relative list-none"
-                  onMouseEnter={() => item.subOptions && setActiveDropdown(item.name)}
-                  onMouseLeave={() => setActiveDropdown(null)}
-                >
-                  {item.subOptions ? (
-                    <button className="flex items-center gap-1 py-2 hover:text-white transition-colors duration-300 cursor-pointer focus:outline-none">
-                      {item.name}
-                      <ChevronDown size={14} className={`transition-transform duration-300 ${activeDropdown === item.name ? 'rotate-180 text-amber-500' : ''}`} />
-                    </button>
-                  ) : (
-                    <Link href={item.href} className="relative py-2 hover:text-white transition-colors duration-300 after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-amber-500 hover:after:w-full after:transition-all after:duration-300">
-                      {item.name}
-                    </Link>
-                  )}
+          {/* NAV LINKS */}
+<div className="flex items-center gap-10 text-xs font-bold tracking-[0.15em] uppercase">
+  {navigation.map((item) => (
+    <div
+      key={item.name}
+      className="relative list-none"
+      onMouseEnter={() => item.subOptions && setActiveDropdown(item.name)}
+      onMouseLeave={() => setActiveDropdown(null)}
+    >
+      {item.subOptions ? (
+        <button className="flex items-center gap-1 py-2 cursor-pointer focus:outline-none text-white [text-shadow:0_0_10px_rgba(0,0,0,1),0_2px_8px_rgba(0,0,0,1),-1px_-1px_0_#000,1px_-1px_0_#000,-1px_1px_0_#000,1px_1px_0_#000] hover:text-amber-400 transition-colors duration-300">
+          {item.name}
+          <ChevronDown size={14} className={`transition-transform duration-300 ${activeDropdown === item.name ? 'rotate-180 text-amber-500' : ''}`} />
+        </button>
+      ) : (
+        <Link
+          href={item.href}
+          className="relative py-2 text-white [text-shadow:0_0_10px_rgba(0,0,0,1),0_2px_8px_rgba(0,0,0,1),-1px_-1px_0_#000,1px_-1px_0_#000,-1px_1px_0_#000,1px_1px_0_#000] hover:text-amber-400 transition-colors duration-300 after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-amber-500 hover:after:w-full after:transition-all after:duration-300"
+        >
+          {item.name}
+        </Link>
+      )}
 
-                  {item.subOptions && (
-                    <div className={`absolute left-0 top-full pt-4 w-64 transition-all duration-300 ${
-                      activeDropdown === item.name ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-2 pointer-events-none'
-                    }`}>
-                      <div className="bg-black/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex flex-col gap-3 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-                        {item.subOptions.map((sub) => (
-                          <Link key={sub.name} href={sub.href} className="text-[11px] tracking-wider text-neutral-400 hover:text-white transition-colors duration-200 py-1 border-b border-transparent hover:border-white/5">
-                            {sub.name}
-                          </Link>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* RIGHT: Bell + Buton cont */}
-            <div className="hidden md:flex items-center gap-3">
-              {userId && (
-                <div ref={desktopNotifRef} className="relative">
-                  <button
-                    onClick={() => setShowNotifDropdown((v) => !v)}
-                    className="relative p-2 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-white transition-all"
-                  >
-                    <Bell size={16} />
-                    {unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-                        {unreadCount > 9 ? '9+' : unreadCount}
-                      </span>
-                    )}
-                  </button>
-                  {showNotifDropdown && (
-                    <div className="absolute right-0 top-full mt-3 w-80 bg-black/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.6)] z-[100] overflow-hidden">
-                      <NotifList />
-                    </div>
-                  )}
-                </div>
-              )}
-
+      {item.subOptions && (
+        <div className={`absolute left-0 top-full pt-4 w-64 transition-all duration-300 ${
+          activeDropdown === item.name ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-2 pointer-events-none'
+        }`}>
+          <div className="bg-black/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex flex-col gap-3 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+            {item.subOptions.map((sub) => (
               <Link
-                href={dashboardHref}
-                className="relative inline-flex items-center justify-center bg-amber-500 text-black rounded-full px-6 py-3 text-[10px] font-bold tracking-[0.2em] uppercase transition-all duration-300 hover:bg-amber-400 active:scale-95 max-w-[160px] truncate"
+                key={sub.name}
+                href={sub.href}
+                className="text-[11px] tracking-wider text-neutral-400 hover:text-white transition-colors duration-200 py-1 border-b border-transparent hover:border-white/5"
               >
-                {userName ?? 'Contul meu'}
+                {sub.name}
               </Link>
-            </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  ))}
+</div>
+
+{/* RIGHT: Bell + Buton cont */}
+<div className="hidden md:flex items-center gap-3">
+  {userId && (
+    <div ref={desktopNotifRef} className="relative">
+      <button
+        onClick={() => setShowNotifDropdown((v) => !v)}
+        className="relative p-2 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-white transition-all"
+      >
+        <Bell size={16} />
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+            {unreadCount > 9 ? '9+' : unreadCount}
+          </span>
+        )}
+      </button>
+      {showNotifDropdown && (
+        <div className="absolute right-0 top-full mt-3 w-80 bg-black/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.6)] z-[100] overflow-hidden">
+          <NotifList />
+        </div>
+      )}
+    </div>
+  )}
+
+  <Link
+    href={dashboardHref}
+    className="relative inline-flex items-center justify-center bg-amber-500 text-black rounded-full px-6 py-3 text-[10px] font-bold tracking-[0.2em] uppercase transition-all duration-300 hover:bg-amber-400 active:scale-95 max-w-[160px] truncate"
+  >
+    {userName ?? 'Contul meu'}
+  </Link>
+</div>
 
           </div>
         </nav>

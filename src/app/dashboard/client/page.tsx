@@ -545,7 +545,7 @@ export default function ClientDashboardPage() {
                         <div className="c-doc-name">{d.nume}</div>
                         <div className="c-doc-meta">{d.tip}{d.marime_bytes ? ` · ${fmtBytes(d.marime_bytes)}` : ''} · {fmt(d.created_at)}</div>
                       </div>
-                      <a href={d.url} target="_blank" rel="noreferrer" className="c-doc-link">Descarcă →</a>
+                      <a href={d.url} target="_blank" rel="noreferrer" className="c-doc-link">Deschide →</a>
                     </div>
                   ))
               )}

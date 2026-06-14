@@ -117,98 +117,92 @@ export default function WhatsAppWidget() {
       )}
 
       {/* FEREASTRA CHAT */}
-      <div className={`fixed sm:absolute bottom-0 sm:bottom-16 right-0 w-full h-[100dvh] sm:h-[600px] sm:w-[420px] bg-[#0b141a] sm:border sm:border-white/10 sm:rounded-2xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.8)] transition-all duration-400 ease-out origin-bottom-right flex flex-col ${
+      <div className={`absolute bottom-16 right-0 w-[340px] sm:w-[380px] bg-[#111] border border-white/10 rounded-2xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.8)] transition-all duration-400 ease-out origin-bottom-right ${
         isOpen ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto' : 'opacity-0 translate-y-6 scale-95 pointer-events-none'
       }`}>
 
         {/* HEADER */}
-        <div className="bg-[#075E54] px-4 py-4 sm:py-3.5 flex items-center justify-between flex-shrink-0 safe-top z-10">
-          <div className="flex items-center gap-3 sm:gap-3">
-            <div className="w-10 h-10 sm:w-9 sm:h-9 rounded-full bg-white/10 flex items-center justify-center text-white">
-              <WhatsAppIcon size={20} className="sm:w-5 sm:h-5" />
+        <div className="bg-[#075E54] px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white">
+              <WhatsAppIcon size={16} />
             </div>
             <div>
-              <p className="text-[14px] sm:text-[13px] font-semibold text-white tracking-wide">
+              <p className="text-[11px] font-semibold text-white tracking-wide">
                 {step === 'list' ? 'Alege un consultant' : selectedArchitect.name}
               </p>
-              <p className="text-[11px] sm:text-[10px] text-emerald-200/70 mt-0.5">
+              <p className="text-[9px] text-emerald-200/70 mt-0.5">
                 {step === 'list' ? 'Proarh.4d Studio' : selectedArchitect.specialty}
               </p>
             </div>
           </div>
-          <button onClick={handleClose} className="p-2 sm:p-1.5 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors">
-            <X size={20} className="sm:w-5 sm:h-5" />
+          <button onClick={handleClose} className="p-1.5 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors">
+            <X size={16} />
           </button>
         </div>
 
         {/* STEP: LISTA ARHITECTI */}
         {step === 'list' && (
-          <div className="p-4 sm:p-4 flex flex-col gap-3 bg-[#0d0d0d] flex-1 overflow-y-auto">
-            <p className="text-[11px] sm:text-[10px] text-neutral-500 px-1 pb-1 uppercase tracking-widest font-medium">Echipa noastră</p>
+          <div className="p-3 flex flex-col gap-2 bg-[#0d0d0d]">
+            <p className="text-[10px] text-neutral-500 px-1 pb-1 uppercase tracking-widest">Echipa noastră</p>
             {architects.map((arch) => (
               <button
                 key={arch.id}
                 onClick={() => handleSelectArchitect(arch)}
-                className="w-full flex items-center gap-4 bg-[#1a1a1a] hover:bg-[#222] border border-white/5 hover:border-emerald-500/20 rounded-xl px-4 py-4 sm:py-3.5 transition-all group text-left active:bg-[#222]"
+                className="w-full flex items-center gap-3 bg-[#1a1a1a] hover:bg-[#222] border border-white/5 hover:border-emerald-500/20 rounded-xl px-3 py-3 transition-all group text-left"
               >
                 <div className="relative flex-shrink-0">
-                  <div className="w-12 h-12 sm:w-11 sm:h-11 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-base font-bold">
+                  <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-sm font-bold">
                     {arch.avatar}
                   </div>
                   {available && (
-                    <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-[#1a1a1a]" />
+                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[#1a1a1a]" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[14px] sm:text-[13px] font-semibold text-white truncate">{arch.name}</p>
-                  <p className="text-[12px] sm:text-[11px] text-neutral-400 truncate mt-0.5">{arch.role}</p>
-                  <p className="text-[10px] mt-1">
+                  <p className="text-[12px] font-semibold text-white truncate">{arch.name}</p>
+                  <p className="text-[10px] text-neutral-400 truncate">{arch.role}</p>
+                  <p className="text-[9px] mt-0.5">
                     {available
                       ? <span className="text-emerald-400/80">● Disponibil acum</span>
                       : <span className="text-neutral-500">● {arch.schedule}</span>
                     }
                   </p>
                 </div>
-                <ChevronRight size={16} className="text-neutral-600 group-hover:text-emerald-400 transition-colors flex-shrink-0" />
+                <ChevronRight size={14} className="text-neutral-600 group-hover:text-emerald-400 transition-colors flex-shrink-0" />
               </button>
             ))}
           </div>
         )}
 
-        {/* STEP: CHAT (Aici apare fundalul specific WhatsApp cu Doodle/Pattern) */}
+        {/* STEP: CHAT */}
         {(step === 'chat' || step === 'redirect') && (
           <>
-            <div 
-              className="px-4 py-4 flex flex-col gap-4 overflow-y-auto flex-1 relative min-h-[180px]"
-              style={{ 
-                backgroundColor: '#0b141a',
-                backgroundImage: `url('https://githubusercontent.com')`,
-                backgroundSize: 'contain',
-                backgroundRepeat: 'repeat',
-                opacity: '0.99' // Forțează stacking context corect pentru background
-              }}
+            <div
+              className="px-4 py-3 flex flex-col gap-3 overflow-y-auto"
+              style={{ minHeight: '180px', maxHeight: '220px', background: '#0d0d0d' }}
             >
               {/* Mesaj bun venit */}
-              <div className="self-start max-w-[88%] sm:max-w-[82%] z-10">
-                <div className="bg-[#1f2c34] rounded-2xl rounded-tl-none px-3.5 py-2.5 shadow-sm">
-                  <p className="text-[13px] sm:text-[12.5px] text-neutral-200 leading-relaxed">
+              <div className="self-start max-w-[85%]">
+                <div className="bg-[#1f2c34] rounded-2xl rounded-tl-none px-3 py-2">
+                  <p className="text-[12px] text-neutral-200 leading-relaxed">
                     Bună! 👋 Sunt {selectedArchitect.name.replace('Arh. ', '')}. Cu ce te pot ajuta?
                   </p>
                   <div className="flex items-center justify-end gap-1 mt-1">
-                    <span className="text-[10px] sm:text-[9px] text-neutral-400/60">Acum</span>
-                    <CheckCheck size={12} className="text-[#53bdeb]" />
+                    <span className="text-[9px] text-neutral-500">Acum</span>
+                    <CheckCheck size={10} className="text-emerald-400" />
                   </div>
                 </div>
               </div>
 
               {/* Mesajul trimis */}
               {sentMessage !== '' && (
-                <div className="self-end max-w-[88%] sm:max-w-[82%] z-10">
-                  <div className="bg-[#005c4b] rounded-2xl rounded-tr-none px-3.5 py-2.5 shadow-sm">
-                    <p className="text-[13px] sm:text-[12.5px] text-neutral-100 leading-relaxed">{sentMessage}</p>
+                <div className="self-end max-w-[85%]">
+                  <div className="bg-[#005c4b] rounded-2xl rounded-tr-none px-3 py-2">
+                    <p className="text-[12px] text-neutral-100 leading-relaxed">{sentMessage}</p>
                     <div className="flex items-center justify-end gap-1 mt-1">
-                      <span className="text-[10px] sm:text-[9px] text-emerald-300/50">Acum</span>
-                      <CheckCheck size={12} className="text-[#53bdeb]" />
+                      <span className="text-[9px] text-neutral-400">Acum</span>
+                      <CheckCheck size={10} className="text-emerald-400" />
                     </div>
                   </div>
                 </div>
@@ -216,8 +210,8 @@ export default function WhatsAppWidget() {
 
               {/* Typing */}
               {showTyping && (
-                <div className="self-start z-10">
-                  <div className="bg-[#1f2c34] rounded-2xl rounded-tl-none px-4 py-3 flex items-center gap-1.5 shadow-sm">
+                <div className="self-start">
+                  <div className="bg-[#1f2c34] rounded-2xl rounded-tl-none px-4 py-3 flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '0ms' }} />
                     <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '150ms' }} />
                     <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '300ms' }} />
@@ -227,21 +221,21 @@ export default function WhatsAppWidget() {
 
               {/* Reply + buton */}
               {showReply && (
-                <div className="self-start max-w-[88%] sm:max-w-[82%] flex flex-col gap-3 z-10">
-                  <div className="bg-[#1f2c34] rounded-2xl rounded-tl-none px-3.5 py-2.5 shadow-sm">
-                    <p className="text-[13px] sm:text-[12.5px] text-neutral-200 leading-relaxed">
+                <div className="self-start max-w-[85%] flex flex-col gap-2">
+                  <div className="bg-[#1f2c34] rounded-2xl rounded-tl-none px-3 py-2">
+                    <p className="text-[12px] text-neutral-200 leading-relaxed">
                       Mulțumesc! 🙏 Continuăm pe WhatsApp.
                     </p>
                     <div className="flex items-center justify-end gap-1 mt-1">
-                      <span className="text-[10px] sm:text-[9px] text-neutral-400/60">Acum</span>
-                      <CheckCheck size={12} className="text-[#53bdeb]" />
+                      <span className="text-[9px] text-neutral-500">Acum</span>
+                      <CheckCheck size={10} className="text-emerald-400" />
                     </div>
                   </div>
                   <button
                     onClick={handleOpenWhatsApp}
-                    className="flex items-center justify-center gap-2 bg-[#00a884] hover:bg-[#009675] text-white text-[13px] sm:text-[12px] font-semibold py-3 px-5 rounded-xl transition-all active:scale-95 shadow-[0_4px_15px_rgba(0,168,132,0.3)]"
+                    className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold py-2.5 px-4 rounded-xl transition-all active:scale-95 shadow-[0_4px_15px_rgba(16,185,129,0.25)]"
                   >
-                    <WhatsAppIcon size={16} />
+                    <WhatsAppIcon size={14} />
                     Deschide WhatsApp
                   </button>
                 </div>
@@ -250,28 +244,28 @@ export default function WhatsAppWidget() {
 
             {/* INPUT */}
             {step === 'chat' && (
-              <form onSubmit={handleSendMessage} className="px-3.5 py-3.5 sm:py-3 bg-[#111b21] border-t border-white/5 flex items-center gap-3 flex-shrink-0 safe-bottom z-10">
+              <form onSubmit={handleSendMessage} className="px-3 py-2.5 bg-[#1a1a1a] border-t border-white/5 flex items-center gap-2">
                 <input
                   type="text"
                   value={userMessage}
                   onChange={(e) => setUserMessage(e.target.value)}
                   placeholder="Scrie un mesaj..."
                   autoFocus
-                  className="flex-1 bg-[#2a3942] border border-transparent rounded-xl px-4 py-3 sm:py-2.5 text-[14px] sm:text-[13px] text-white placeholder-neutral-400 focus:outline-none focus:border-transparent transition-colors"
+                  className="flex-1 bg-[#2a2a2a] border border-white/10 rounded-full px-4 py-2 text-[12px] text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500/40 transition-colors"
                 />
                 <button
                   type="submit"
-                  className="w-10 h-10 sm:w-9 sm:h-9 bg-[#00a884] text-white rounded-full hover:bg-[#009675] transition-all active:scale-95 flex items-center justify-center flex-shrink-0 shadow-md"
+                  className="w-8 h-8 bg-emerald-500 text-white rounded-full hover:bg-emerald-400 transition-all active:scale-95 flex items-center justify-center flex-shrink-0"
                 >
-                  <Send size={16} />
+                  <Send size={13} />
                 </button>
               </form>
             )}
 
             {step === 'redirect' && (
-              <div className="px-3 py-4 sm:py-3 bg-[#111b21] border-t border-white/5 flex items-center justify-center flex-shrink-0 safe-bottom z-10">
-                <p className="text-[12px] sm:text-[11px] text-[#00a884] font-medium flex items-center gap-2">
-                  <WhatsAppIcon size={14} /> Continuați conversația pe WhatsApp
+              <div className="px-3 py-2.5 bg-[#1a1a1a] border-t border-white/5 flex items-center justify-center">
+                <p className="text-[10px] text-neutral-600 flex items-center gap-1.5">
+                  <WhatsAppIcon size={10} /> Continuați conversația pe WhatsApp
                 </p>
               </div>
             )}
@@ -279,7 +273,6 @@ export default function WhatsAppWidget() {
         )}
 
       </div>
-
 
       {/* BUTON PLUTITOR */}
       <button

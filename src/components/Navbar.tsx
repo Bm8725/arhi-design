@@ -12,6 +12,7 @@ import {
   Users,
   ChevronDown,
   Bell,
+  ShoppingCart,
   X
 } from 'lucide-react';
 import Image from 'next/image';
@@ -195,7 +196,7 @@ const markAllAsRead = async () => {
         { name: 'Avize & Urbanism (PUD/PUZ)', href: '/UrbanismSection' },
       ]
     },
-    { name: 'Noi', href: '/noi', icon: Users },
+    { name: 'cart', href: '/shopping-cart', icon: ShoppingCart },
   ];
 
   // ── Lista notificări (shared) ─────────────────────────────────────────────

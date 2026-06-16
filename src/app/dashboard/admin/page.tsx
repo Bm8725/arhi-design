@@ -1,4 +1,3 @@
-
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
@@ -110,10 +109,73 @@ const STATUS_COLORS: Record<string, string> = {
   finalizata: '#34d399', blocata: '#f87171',
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  nou: 'Nou', in_progres: 'În Progres', in_asteptare: 'Așteptare',
+  finalizat: 'Finalizat', anulat: 'Anulat',
+}
+
+// ── Mini Pie Chart ──────────────────────────────────────────────────────────
+function PieChart({ data }: { data: { label: string; value: number; color: string }[] }) {
+  const total = data.reduce((s, d) => s + d.value, 0)
+  if (total === 0) return <div style={{ fontSize: 11, color: '#444', padding: 20, textAlign: 'center' }}>Fără date</div>
+
+  let cumulative = 0
+  const size = 140
+  const cx = size / 2
+  const cy = size / 2
+  const r = 52
+  const ir = 28
+
+  const slices = data.filter(d => d.value > 0).map(d => {
+    const pct = d.value / total
+    const startAngle = cumulative * 2 * Math.PI - Math.PI / 2
+    cumulative += pct
+    const endAngle = cumulative * 2 * Math.PI - Math.PI / 2
+    const x1 = cx + r * Math.cos(startAngle)
+    const y1 = cy + r * Math.sin(startAngle)
+    const x2 = cx + r * Math.cos(endAngle)
+    const y2 = cy + r * Math.sin(endAngle)
+    const ix1 = cx + ir * Math.cos(startAngle)
+    const iy1 = cy + ir * Math.sin(startAngle)
+    const ix2 = cx + ir * Math.cos(endAngle)
+    const iy2 = cy + ir * Math.sin(endAngle)
+    const large = pct > 0.5 ? 1 : 0
+    return {
+      ...d, pct,
+      path: `M ${ix1} ${iy1} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} L ${ix2} ${iy2} A ${ir} ${ir} 0 ${large} 0 ${ix1} ${iy1} Z`
+    }
+  })
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
+      <svg width={size} height={size} style={{ flexShrink: 0 }}>
+        {slices.map((s, i) => (
+          <path key={i} d={s.path} fill={s.color} stroke="#0a0a0a" strokeWidth={2}>
+            <title>{s.label}: {s.value}</title>
+          </path>
+        ))}
+        <text x={cx} y={cy - 6} textAnchor="middle" fill="#fff" fontSize={18} fontWeight={700}>{total}</text>
+        <text x={cx} y={cy + 12} textAnchor="middle" fill="#555" fontSize={9}>TOTAL</text>
+      </svg>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {slices.map((s, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11 }}>
+            <span style={{ width: 10, height: 10, background: s.color, display: 'inline-block', flexShrink: 0 }} />
+            <span style={{ color: '#aaa' }}>{s.label}</span>
+            <span style={{ color: s.color, fontWeight: 700 }}>{s.value}</span>
+            <span style={{ color: '#444' }}>({(s.pct * 100).toFixed(0)}%)</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export default function AdminDashboardPage() {
   const router = useRouter()
   const supabase = createClient()
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const imgInputRef = useRef<HTMLInputElement>(null)
   const msgEndRef = useRef<HTMLDivElement>(null)
 
   const [mounted, setMounted] = useState(false)
@@ -143,6 +205,7 @@ export default function AdminDashboardPage() {
   const [showNotifyModal, setShowNotifyModal] = useState(false)
   const [notifyTarget, setNotifyTarget] = useState<{ id: string; name: string } | null>(null)
   const [notifyForm, setNotifyForm] = useState({ titlu: '', mesaj: '', link: '' })
+  const [previewImg, setPreviewImg] = useState<string | null>(null)
 
   const [newProject, setNewProject] = useState({
     nume: '', descriere: '', status: 'nou', client_id: '', responsabil_id: '',
@@ -150,14 +213,17 @@ export default function AdminDashboardPage() {
   })
   const [newProduct, setNewProduct] = useState({
     nume: '', descriere: '', descriere_scurta: '', pret: '', pret_vechi: '',
-    categorie: '', imagine_url: '', fisier_url: '', activ: true, featured: false
+    categorie: '', imagine_url: '', fisier_url: '', activ: true, featured: false,
+    tags: [] as string[]
   })
+  const [newTagInput, setNewTagInput] = useState('')
+  const [editTagInput, setEditTagInput] = useState('')
   const [newPhase, setNewPhase] = useState({
     nume: '', descriere: '', status: 'neinceputa', progres: 0, data_start: '', data_sfarsit: ''
   })
   const [newMessage, setNewMessage] = useState('')
 
-  // Upload state
+  // Upload doc state
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [uploadName, setUploadName] = useState('')
   const [uploadTip, setUploadTip] = useState('altul')
@@ -166,6 +232,10 @@ export default function AdminDashboardPage() {
   const [uploadError, setUploadError] = useState('')
   const [dragOver, setDragOver] = useState(false)
 
+  // Upload image state
+  const [imgUploading, setImgUploading] = useState(false)
+  const [editImgUploading, setEditImgUploading] = useState(false)
+
   const [projectFilter, setProjectFilter] = useState('')
   const [orderFilter, setOrderFilter] = useState('')
   const [clientFilter, setClientFilter] = useState('')
@@ -173,7 +243,6 @@ export default function AdminDashboardPage() {
   useEffect(() => { setTimeout(() => setMounted(true), 50); fetchAll() }, [])
   useEffect(() => { msgEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
-  // Realtime messages
   useEffect(() => {
     if (!activeProjectId) return
     const ch = supabase.channel('admin-msg-' + activeProjectId)
@@ -221,6 +290,27 @@ export default function AdminDashboardPage() {
     setPhases(ph || [])
     setDocuments(dc || [])
     setMessages(ms || [])
+  }
+
+  // ── Image upload pentru produs nou ──
+  async function uploadProductImage(file: File, isEdit = false) {
+    if (isEdit) setEditImgUploading(true)
+    else setImgUploading(true)
+    try {
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+      const path = `products/${Date.now()}_${safeName}`
+      const { error } = await supabase.storage.from('products').upload(path, file, { upsert: false })
+      if (error) throw new Error(error.message)
+      const { data: pub } = supabase.storage.from('products').getPublicUrl(path)
+      const url = pub.publicUrl
+      if (isEdit) setEditProduct(prev => prev ? { ...prev, imagine_url: url } : prev)
+      else setNewProduct(prev => ({ ...prev, imagine_url: url }))
+    } catch (err: any) {
+      alert('Eroare upload imagine: ' + err.message)
+    } finally {
+      if (isEdit) setEditImgUploading(false)
+      else setImgUploading(false)
+    }
   }
 
   // ── Project CRUD ──
@@ -272,9 +362,15 @@ export default function AdminDashboardPage() {
   // ── Product CRUD ──
   async function createProduct() {
     if (!newProduct.nume) return
-    await supabase.from('products').insert([{ ...newProduct, pret: Number(newProduct.pret) || 0, pret_vechi: newProduct.pret_vechi ? Number(newProduct.pret_vechi) : null }])
+    await supabase.from('products').insert([{
+      ...newProduct,
+      pret: Number(newProduct.pret) || 0,
+      pret_vechi: newProduct.pret_vechi ? Number(newProduct.pret_vechi) : null,
+      tags: newProduct.tags.length > 0 ? newProduct.tags : null
+    }])
     setShowNewProduct(false)
-    setNewProduct({ nume: '', descriere: '', descriere_scurta: '', pret: '', pret_vechi: '', categorie: '', imagine_url: '', fisier_url: '', activ: true, featured: false })
+    setNewProduct({ nume: '', descriere: '', descriere_scurta: '', pret: '', pret_vechi: '', categorie: '', imagine_url: '', fisier_url: '', activ: true, featured: false, tags: [] })
+    setNewTagInput('')
     fetchProducts()
   }
   async function updateProduct() {
@@ -290,6 +386,11 @@ export default function AdminDashboardPage() {
     if (!confirm('Ștergi produsul?')) return
     await supabase.from('products').delete().eq('id', id); fetchProducts()
   }
+  async function duplicateProduct(p: Product) {
+    const { id, created_at, ...rest } = p
+    await supabase.from('products').insert([{ ...rest, nume: rest.nume + ' (copie)', activ: false }])
+    fetchProducts()
+  }
 
   // ── Order ──
   async function updateOrderStatus(id: string, status: string) {
@@ -298,6 +399,22 @@ export default function AdminDashboardPage() {
   async function deleteOrder(id: string) {
     if (!confirm('Ștergi comanda?')) return
     await supabase.from('orders').delete().eq('id', id); fetchOrders()
+  }
+
+  // ── Export CSV comenzi ──
+  function exportCSV() {
+    const headers = ['ID', 'Email', 'Total', 'Status', 'Data', 'Stripe']
+    const rows = orders.map(o => [
+      o.id, o.email, o.total, o.status,
+      new Date(o.created_at).toLocaleDateString('ro-RO'),
+      o.stripe_payment_id || ''
+    ])
+    const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = `comenzi_${new Date().toISOString().slice(0, 10)}.csv`
+    a.click(); URL.revokeObjectURL(url)
   }
 
   // ── Clients ──
@@ -329,7 +446,6 @@ export default function AdminDashboardPage() {
   function handleFile(f: File) {
     setUploadFile(f)
     if (!uploadName) setUploadName(f.name.replace(/\.[^.]+$/, ''))
-    // auto-detect tip
     const ext = f.name.split('.').pop()?.toLowerCase() || ''
     if (['dxf', 'dwg'].includes(ext)) setUploadTip(ext)
     else if (ext === 'pdf') setUploadTip('pdf')
@@ -385,142 +501,129 @@ export default function AdminDashboardPage() {
   const revenue = orders.filter(o => o.status === 'paid' || o.status === 'completed').reduce((s, o) => s + Number(o.total), 0)
   const overallProgress = phases.length > 0 ? Math.round(phases.reduce((s, p) => s + p.progres, 0) / phases.length) : 0
 
+  // ── Pie chart data ──
+  const pieData = PROJECT_STATUSES.map(s => ({
+    label: STATUS_LABELS[s] || s,
+    value: projects.filter(p => p.status === s).length,
+    color: STATUS_COLORS[s] || '#555'
+  }))
+
+  // ── Top produse ──
+  const topProducts = [...products].sort((a, b) => b.nr_descarcari - a.nr_descarcari).slice(0, 5)
+
   if (loading) return (
-    <div style={{ minHeight: '100vh', background: '#0c0c0c', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ color: '#e2b36e', fontFamily: 'DM Mono,monospace', fontSize: 12, letterSpacing: '0.2em' }}>SE ÎNCARCĂ...</div>
     </div>
   )
 
   return (
     <>
-<style>{`
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  
-  .root {
-    min-height: 100vh;
-    background: #0a0a0a; /* Gri Antracit închis (Premium) */
-    color: #ffffff;      /* Text alb pur pentru lizibilitate maximă */
-    font-family: 'DM Mono', 'Monaco', monospace;
-    display: flex;
-    flex-direction: column;
-    -webkit-font-smoothing: antialiased;
-  }
-  
-  .wrap {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 120px 20px 80px;
-    width: 100%;
-    opacity: 0;
-    transform: translateY(8px);
-    transition: .4s ease-out;
-  }
-  .wrap.ready { opacity: 1; transform: translateY(0); }
+      <style>{`
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        .root { min-height: 100vh; background: #0a0a0a; color: #ffffff; font-family: 'DM Mono', 'Monaco', monospace; display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; }
+        .wrap { max-width: 1200px; margin: 0 auto; padding: 120px 20px 80px; width: 100%; opacity: 0; transform: translateY(8px); transition: .4s ease-out; }
+        .wrap.ready { opacity: 1; transform: translateY(0); }
+        .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 44px; flex-wrap: wrap; gap: 20px; }
+        .title { font-size: clamp(24px, 4vw, 32px); font-weight: 700; letter-spacing: -0.01em; }
+        .title span { color: #e2b36e; }
+        .logout { font-size: 14px; padding: 12px 22px; border: 2px solid #ffffff; background: #0a0a0a; color: #ffffff; font-weight: 700; cursor: pointer; font-family: inherit; }
+        .logout:hover { border-color: #f87171; color: #f87171; }
+        .tabs { display: flex; gap: 10px; margin-bottom: 40px; flex-wrap: wrap; }
+        .tab { font-size: 14px; padding: 14px 24px; border: 2px solid #222; background: #0f0f0f; color: #ccc; font-weight: 700; cursor: pointer; font-family: inherit; }
+        .tab:hover { border-color: #fff; color: #fff; }
+        .tab.on { border-color: #e2b36e; color: #e2b36e; background: rgba(226,179,110,0.04); }
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 20px; margin-bottom: 20px; }
+        .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 44px; }
+        .card { border: 2px solid #1f1f1f; padding: 28px; background: #0f0f0f; transition: .2s; }
+        .card:hover { border-color: #e2b36e; }
+        .stat { border: 2px solid #1f1f1f; padding: 28px 24px; background: #0f0f0f; }
+        .stat-val { font-size: clamp(32px, 5vw, 42px); color: #e2b36e; font-weight: 700; margin-bottom: 8px; }
+        .stat-lbl { font-size: 13px; color: #777; text-transform: uppercase; font-weight: 700; }
+        .scroll-x { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 2px solid #1f1f1f; margin-bottom: 24px; background: #0f0f0f; }
+        .tbl { width: 100%; border-collapse: collapse; font-size: 15px; min-width: 600px; color: #fff; }
+        .tbl th { text-align: left; font-size: 13px; padding: 16px 18px; border-bottom: 3px solid #fff; font-weight: 700; text-transform: uppercase; background: #151515; color: #888; }
+        .tbl td { padding: 18px 18px; border-bottom: 2px solid #151515; font-weight: 700; }
+        .tbl tr:hover td { background: #121212; }
+        .inp { width: 100%; padding: 14px 16px; border: 2px solid #333; background: #0a0a0a; color: #fff; font-size: 15px; margin-bottom: 14px; font-weight: 700; font-family: inherit; }
+        .inp:focus { outline: none; border-color: #e2b36e; }
+        select.inp { cursor: pointer; }
+        .inp-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        .btn { font-size: 13px; padding: 14px 24px; border: 2px solid #fff; background: #0a0a0a; color: #fff; font-weight: 700; text-transform: uppercase; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+        .btn:hover { border-color: #e2b36e; color: #e2b36e; }
+        .btn.primary { border-color: #e2b36e; color: #000; background: #e2b36e; }
+        .btn.primary:hover { background: #c59653; border-color: #c59653; }
+        .btn.danger { border-color: #f87171; color: #f87171; }
+        .btn.danger:hover { background: #f87171; color: #000; }
+        .btn.sm { padding: 8px 14px; font-size: 12px; }
+        .btn.sm:disabled { opacity: .3; cursor: not-allowed; border-color: #333; color: #555; }
+        .btn-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+        .badge { font-size: 12px; padding: 6px 14px; border: 2px solid #fff; font-weight: 700; display: inline-block; }
+        .prog-wrap { background: #222; height: 6px; flex: 1; min-width: 100px; }
+        .prog-bar { height: 6px; background: #e2b36e; transition: .4s; }
+        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.88); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(4px); }
+        .modal { background: #0a0a0a; border: 2px solid #222; padding: 32px 24px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
+        .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 28px; }
+        .modal-title span { color: #e2b36e; }
+        .sub-tabs { display: flex; gap: 8px; margin-bottom: 28px; border-bottom: 3px solid #1f1f1f; overflow-x: auto; }
+        .sub-tab { font-size: 13px; padding: 12px 20px 14px; border: none; background: transparent; color: #555; font-weight: 700; text-transform: uppercase; border-bottom: 4px solid transparent; cursor: pointer; font-family: inherit; white-space: nowrap; margin-bottom: -3px; }
+        .sub-tab:hover { color: #fff; }
+        .sub-tab.on { color: #e2b36e; border-bottom-color: #e2b36e; }
+        .msgs { max-height: 380px; overflow-y: auto; margin-bottom: 20px; }
+        .msg { padding: 16px 20px; margin-bottom: 10px; font-size: 14px; line-height: 1.6; border: 2px solid #1f1f1f; background: #0f0f0f; }
+        .msg.admin-msg { background: rgba(226,179,110,0.02); border-left: 5px solid #e2b36e; }
+        .msg.client-msg { background: #151515; border-left: 5px solid #fff; }
+        .msg-meta { font-size: 11px; color: #555; margin-top: 8px; font-weight: 700; }
+        .upload-zone { border: 3px dashed #222; background: #0f0f0f; padding: 44px 20px; text-align: center; font-weight: 700; font-size: 15px; cursor: pointer; color: #666; transition: .2s; }
+        .upload-zone:hover,.upload-zone.drag { border-color: #e2b36e; color: #fff; background: rgba(226,179,110,0.02); }
+        .upload-zone.has-file { border-color: #e2b36e; }
+        .img-upload-zone { border: 2px dashed #333; background: #0f0f0f; padding: 16px; text-align: center; cursor: pointer; transition: .2s; margin-bottom: 14px; }
+        .img-upload-zone:hover { border-color: #e2b36e; }
+        .section-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
+        .section-title { font-size: 14px; font-weight: 700; text-transform: uppercase; color: #555; }
+        .empty { font-size: 14px; color: #444; padding: 48px 20px; text-align: center; border: 2px dashed #1f1f1f; background: #0f0f0f; font-weight: 700; }
+        .search { width: 100%; max-width: 340px; padding: 13px 16px; border: 2px solid #333; background: #0a0a0a; color: #fff; font-size: 15px; margin-bottom: 24px; font-weight: 700; font-family: inherit; }
+        .search:focus { outline: none; border-color: #e2b36e; }
+        .tag { font-size: 11px; padding: 4px 10px; background: rgba(226,179,110,0.1); color: #e2b36e; margin-right: 6px; margin-bottom: 4px; display: inline-flex; align-items: center; gap: 4px; font-weight: 700; }
+        .tag-x { cursor: pointer; color: #e2b36e; opacity: .6; }
+        .tag-x:hover { opacity: 1; }
+        .detail-back { font-size: 13px; font-weight: 700; text-transform: uppercase; cursor: pointer; background: none; border: none; font-family: inherit; color: #fff; margin-bottom: 20px; display: inline-block; }
+        .detail-back:hover { color: #e2b36e; }
+        .chip { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; padding: 6px 12px; border: 2px solid #1f1f1f; background: #0f0f0f; font-weight: 700; color: #fff; }
+        .sep { height: 2px; background: #1f1f1f; margin: 28px 0; }
+        .prod-img { width: 100%; height: 160px; object-fit: cover; background: #111; display: block; margin-bottom: 12px; }
+        .prod-img-placeholder { width: 100%; height: 160px; background: #111; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; cursor: pointer; border: 2px dashed #222; transition: .2s; }
+        .prod-img-placeholder:hover { border-color: #e2b36e; }
+        .overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 32px; }
+        .overview-card { border: 2px solid #1f1f1f; padding: 24px; background: #0f0f0f; }
+        .overview-card-title { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: .15em; margin-bottom: 16px; font-weight: 700; }
+        @media(max-width: 800px) { .overview-grid { grid-template-columns: 1fr; } }
+        @media(max-width: 650px) { .inp-row { grid-template-columns: 1fr; } }
+        @media(max-width: 500px) { .tab { flex-grow: 1; text-align: center; padding: 12px 16px; } }
+        @media(max-width: 480px) {
+          .stat-grid { grid-template-columns: repeat(2,1fr); }
+          .card-grid { grid-template-columns: 1fr; }
+          .btn { width: 100%; padding: 16px; }
+          .btn-row { flex-direction: column; gap: 10px; }
+          .search { max-width: 100%; }
+        }
+      `}</style>
 
-  /* Header & Navigation */
-  .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 44px; flex-wrap: wrap; gap: 20px; }
-  .title { font-size: clamp(24px, 4vw, 32px); font-weight: 700; letter-spacing: -0.01em; } 
-  .title span { color: #e2b36e; font-weight: 700; } /* Accent auriu arhitectural */
-  
-  .logout { font-size: 14px; padding: 12px 22px; border: 2px solid #ffffff; background: #0a0a0a; color: #ffffff; font-weight: 700; cursor: pointer; font-family: inherit; }
-  .logout:hover { border-color: #f87171; color: #f87171; background: #1f0d0d; }
-
-  .tabs { display: flex; gap: 10px; margin-bottom: 40px; flex-wrap: wrap; }
-  .tab { font-size: 14px; padding: 14px 24px; border: 2px solid #222222; background: #0f0f0f; color: #cccccc; font-weight: 700; cursor: pointer; font-family: inherit; }
-  .tab:hover { border-color: #ffffff; color: #ffffff; }
-  .tab.on { border-color: #e2b36e; color: #e2b36e; background: rgba(226,179,110,0.04); }
-
-  /* Responsive Grids & Blocks */
-  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 20px; margin-bottom: 20px; }
-  .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 44px; }
-
-  .card { border: 2px solid #1f1f1f; padding: 28px; background: #0f0f0f; transition: .2s; }
-  .card:hover { border-color: #e2b36e; }
-  
-  .stat { border: 2px solid #1f1f1f; padding: 28px 24px; background: #0f0f0f; }
-  .stat-val { font-size: clamp(32px, 5vw, 42px); color: #e2b36e; font-weight: 700; margin-bottom: 8px; }
-  .stat-lbl { font-size: 13px; color: #777777; text-transform: uppercase; font-weight: 700; }
-
-  /* Tables & Layout Scroll (Safe Mobile) */
-  .scroll-x { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 2px solid #1f1f1f; margin-bottom: 24px; background: #0f0f0f; }
-  .tbl { width: 100%; border-collapse: collapse; font-size: 15px; min-width: 600px; color: #ffffff; }
-  .tbl th { text-align: left; font-size: 13px; padding: 16px 18px; border-bottom: 3px solid #ffffff; font-weight: 700; text-transform: uppercase; background: #151515; color: #888888; }
-  .tbl td { padding: 18px 18px; border-bottom: 2px solid #151515; font-weight: 700; }
-  .tbl tr:hover td { background: #121212; }
-
-  /* Forms & Inputs */
-  .inp { width: 100%; padding: 14px 16px; border: 2px solid #333333; background: #0a0a0a; color: #ffffff; font-size: 15px; margin-bottom: 14px; font-weight: 700; font-family: inherit; }
-  .inp:focus { outline: none; border-color: #e2b36e; background: #0d0c08; }
-  .inp-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-
-  /* Buttons */
-  .btn { font-size: 13px; padding: 14px 24px; border: 2px solid #ffffff; background: #0a0a0a; color: #ffffff; font-weight: 700; text-transform: uppercase; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; justify-content: center; }
-  .btn:hover { border-color: #e2b36e; color: #e2b36e; }
-  .btn.primary { border-color: #e2b36e; color: #000000; background: #e2b36e; }
-  .btn.primary:hover { background: #c59653; border-color: #c59653; }
-  .btn.danger { border-color: #f87171; color: #f87171; }
-  .btn.danger:hover { background: #f87171; color: #000000; }
-  .btn.sm { padding: 8px 14px; font-size: 12px; width: auto; }
-  .btn.sm:disabled { opacity: .3; cursor: not-allowed; border-color: #333333; color: #555555; }
-  .btn-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
-
-  /* Components & Modals */
-  .badge { font-size: 12px; padding: 6px 14px; border: 2px solid #ffffff; font-weight: 700; display: inline-block; }
-  .prog-wrap { background: #222222; height: 6px; flex: 1; min-width: 100px; }
-  .prog-bar { height: 6px; background: #e2b36e; transition: .4s; }
-
-  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.85); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(4px); }
-  .modal { background: #0a0a0a; border: 2px solid #222222; padding: 32px 24px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
-  .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 28px; }
-  .modal-title span { color: #e2b36e; }
-
-  .sub-tabs { display: flex; gap: 8px; margin-bottom: 28px; border-bottom: 3px solid #1f1f1f; overflow-x: auto; }
-  .sub-tab { font-size: 13px; padding: 12px 20px 14px; border: none; background: transparent; color: #555555; font-weight: 700; text-transform: uppercase; border-bottom: 4px solid transparent; cursor: pointer; font-family: inherit; white-space: nowrap; }
-  .sub-tab:hover { color: #ffffff; }
-  .sub-tab.on { color: #e2b36e; border-bottom-color: #e2b36e; }
-
-  /* Chat Logs & Upload */
-  .msgs { max-height: 380px; overflow-y: auto; margin-bottom: 20px; }
-  .msg { padding: 16px 20px; margin-bottom: 10px; font-size: 14px; line-height: 1.6; border: 2px solid #1f1f1f; background: #0f0f0f; }
-  .msg.admin-msg { background: rgba(226,179,110,0.02); border-left: 5px solid #e2b36e; }
-  .msg.client-msg { background: #151515; border-left: 5px solid #ffffff; }
-  .msg-meta { font-size: 11px; color: #555555; margin-top: 8px; font-weight: 700; }
-
-  .upload-zone { border: 3px dashed #222222; background: #0f0f0f; padding: 44px 20px; text-align: center; font-weight: 700; font-size: 15px; cursor: pointer; color: #666666; }
-  .upload-zone:hover { border-color: #e2b36e; color: #ffffff; background: rgba(226,179,110,0.02); }
-
-  /* Utilities */
-  .section-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
-  .section-title { font-size: 14px; font-weight: 700; text-transform: uppercase; color: #555555; }
-  .empty { font-size: 14px; color: #444444; padding: 48px 20px; text-align: center; border: 2px dashed #1f1f1f; background: #0f0f0f; font-weight: 700; }
-  
-  .search { width: 100%; max-width: 340px; padding: 13px 16px; border: 2px solid #333333; background: #0a0a0a; color: #ffffff; font-size: 15px; margin-bottom: 24px; font-weight: 700; font-family: inherit; }
-  .search:focus { border-color: #e2b36e; }
-  
-  .tag { font-size: 11px; padding: 4px 10px; background: rgba(226,179,110,0.1); color: #e2b36e; margin-right: 8px; display: inline-block; font-weight: 700; }
-  .detail-back { font-size: 13px; font-weight: 700; text-transform: uppercase; cursor: pointer; background: none; border: none; font-family: inherit; color: #ffffff; }
-  .detail-back:hover { color: #e2b36e; }
-  .chip { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; padding: 6px 12px; border: 2px solid #1f1f1f; background: #0f0f0f; font-weight: 700; color: #ffffff; }
-  .sep { height: 2px; background: #1f1f1f; margin: 28px 0; }
-
-  /* Mobile Responsive Steps */
-  @media(max-width: 650px) { .inp-row { grid-template-columns: 1fr; } }
-  @media(max-width: 500px) { .tab { flex-grow: 1; text-align: center; padding: 12px 16px; } }
-  @media(max-width: 480px) {
-    .stat-grid { grid-template-columns: repeat(2, 1fr); }
-    .card-grid { grid-template-columns: 1fr; }
-    .btn { width: 100%; padding: 16px; }
-    .btn-row { flex-direction: column; gap: 10px; }
-    .search { max-width: 100%; }
-  }
-`}</style>
-
+      {/* Image preview modal */}
+      {previewImg && (
+        <div className="overlay" onClick={() => setPreviewImg(null)} style={{ zIndex: 300 }}>
+          <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh' }}>
+            <img src={previewImg} alt="preview" style={{ maxWidth: '90vw', maxHeight: '80vh', objectFit: 'contain', display: 'block' }} />
+            <button onClick={() => setPreviewImg(null)} style={{ position: 'absolute', top: -16, right: -16, background: '#e2b36e', color: '#000', border: 'none', borderRadius: '50%', width: 32, height: 32, fontSize: 16, cursor: 'pointer', fontWeight: 700 }}>×</button>
+          </div>
+        </div>
+      )}
 
       <div className="root">
-       <DashHeader />
+        <DashHeader />
         <div className={`wrap ${mounted ? 'ready' : ''}`}>
 
-          {/* ── Header ── */}
+          {/* Header */}
           <div className="top">
             <div>
               <div className="title">ADMIN — <span>{adminName}</span></div>
@@ -529,7 +632,7 @@ export default function AdminDashboardPage() {
             <button className="logout" onClick={() => supabase.auth.signOut().then(() => router.push('/login'))}>LOGOUT</button>
           </div>
 
-          {/* ── Main tabs ── */}
+          {/* Tabs */}
           <div className="tabs">
             {['overview', 'proiecte', 'comenzi', 'magazin', 'clienti'].map(t => (
               <button key={t} className={`tab ${activeTab === t ? 'on' : ''}`}
@@ -539,7 +642,7 @@ export default function AdminDashboardPage() {
             ))}
           </div>
 
-          {/* ════════════ OVERVIEW ════════════ */}
+          {/* ════════ OVERVIEW ════════ */}
           {activeTab === 'overview' && (
             <>
               <div className="stat-grid">
@@ -551,20 +654,39 @@ export default function AdminDashboardPage() {
                 <div className="stat"><div className="stat-val">{clients.filter(c => c.rol === 'client').length}</div><div className="stat-lbl">CLIENȚI</div></div>
               </div>
 
-              <div className="section-title" style={{ marginBottom: 12 }}>PROIECTE RECENTE</div>
-              {projects.slice(0, 5).map(p => (
-                <div key={p.id} className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, cursor: 'pointer' }}
-                  onClick={() => { setActiveTab('proiecte'); setActiveProjectId(p.id); fetchProjectDetails(p.id) }}>
-                  <div>
-                    <div style={{ fontSize: 12, color: '#e0e0e0', marginBottom: 3 }}>{p.nume}</div>
-                    <div style={{ fontSize: 10, color: '#444' }}>{p.profiles_client?.full_name || '—'} · {fmt(p.created_at)}</div>
-                  </div>
-                  <span className="badge" style={{ color: STATUS_COLORS[p.status] || '#777' }}>{p.status}</span>
+              {/* Overview cards */}
+              <div className="overview-grid">
+                {/* Pie chart proiecte */}
+                <div className="overview-card">
+                  <div className="overview-card-title">PROIECTE PER STATUS</div>
+                  <PieChart data={pieData} />
                 </div>
-              ))}
 
-              <div className="sep" />
-              <div className="section-title" style={{ marginBottom: 12 }}>COMENZI RECENTE</div>
+                {/* Top produse */}
+                <div className="overview-card">
+                  <div className="overview-card-title">TOP PRODUSE DESCĂRCATE</div>
+                  {topProducts.length === 0
+                    ? <div style={{ fontSize: 12, color: '#444' }}>Fără date</div>
+                    : topProducts.map((p, i) => (
+                      <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: i < topProducts.length - 1 ? '1px solid #1a1a1a' : 'none' }}>
+                        <span style={{ fontSize: 18, color: '#333', fontWeight: 700, minWidth: 24 }}>#{i + 1}</span>
+                        {p.imagine_url && <img src={p.imagine_url} alt="" style={{ width: 36, height: 28, objectFit: 'cover', background: '#111', flexShrink: 0 }} />}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 12, color: '#e0e0e0', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.nume}</div>
+                          <div style={{ fontSize: 10, color: '#555' }}>{p.nr_descarcari} descărcări</div>
+                        </div>
+                        <span style={{ fontSize: 12, color: '#e2b36e', fontWeight: 700 }}>{Number(p.pret).toLocaleString('ro-RO')} lei</span>
+                      </div>
+                    ))
+                  }
+                </div>
+              </div>
+
+              {/* Export + recent */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
+                <div className="section-title">COMENZI RECENTE</div>
+                <button className="btn sm" onClick={exportCSV}>⬇ EXPORT CSV</button>
+              </div>
               {orders.slice(0, 5).map(o => (
                 <div key={o.id} className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                   <div>
@@ -577,10 +699,23 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
               ))}
+
+              <div className="sep" />
+              <div className="section-title" style={{ marginBottom: 12 }}>PROIECTE RECENTE</div>
+              {projects.slice(0, 5).map(p => (
+                <div key={p.id} className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, cursor: 'pointer' }}
+                  onClick={() => { setActiveTab('proiecte'); setActiveProjectId(p.id); fetchProjectDetails(p.id) }}>
+                  <div>
+                    <div style={{ fontSize: 12, color: '#e0e0e0', marginBottom: 3 }}>{p.nume}</div>
+                    <div style={{ fontSize: 10, color: '#444' }}>{p.profiles_client?.full_name || '—'} · {fmt(p.created_at)}</div>
+                  </div>
+                  <span className="badge" style={{ color: STATUS_COLORS[p.status] || '#777' }}>{p.status}</span>
+                </div>
+              ))}
             </>
           )}
 
-          {/* ════════════ PROIECTE LIST ════════════ */}
+          {/* ════════ PROIECTE LIST ════════ */}
           {activeTab === 'proiecte' && !activeProjectId && (
             <>
               <div className="section-hd">
@@ -614,7 +749,7 @@ export default function AdminDashboardPage() {
                       <select className="btn sm" style={{ background: 'transparent' }} value={p.status} onChange={e => updateProjectStatus(p.id, e.target.value)}>
                         {PROJECT_STATUSES.map(s => <option key={s} value={s} style={{ background: '#111' }}>{s}</option>)}
                       </select>
-                      <button className="btn sm" onClick={() => openNotify(p.client_id!, p.profiles_client?.full_name || 'client')} disabled={!p.client_id}>NOTIFY CLIENT</button>
+                      <button className="btn sm" onClick={() => openNotify(p.client_id!, p.profiles_client?.full_name || 'client')} disabled={!p.client_id}>NOTIFY</button>
                       {isSuperAdmin && <button className="btn sm danger" onClick={() => deleteProject(p.id)}>ȘTERGE</button>}
                     </div>
                   </div>
@@ -623,19 +758,17 @@ export default function AdminDashboardPage() {
             </>
           )}
 
-          {/* ════════════ PROIECT DETAIL ════════════ */}
+          {/* ════════ PROIECT DETAIL ════════ */}
           {activeTab === 'proiecte' && activeProjectId && activeProject && (
             <>
               <button className="detail-back" onClick={() => setActiveProjectId(null)}>← ÎNAPOI LA PROIECTE</button>
-
-              {/* Project header card */}
               <div className="card" style={{ marginBottom: 20 }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: 18, color: '#fff', marginBottom: 8, fontWeight: 300 }}>{activeProject.nume}</div>
                     <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', fontSize: 10, color: '#555', marginBottom: 8 }}>
-                      <span>👤 Client: <span style={{ color: '#aaa' }}>{activeProject.profiles_client?.full_name || '—'}</span></span>
-                      <span>📋 Resp: <span style={{ color: '#aaa' }}>{activeProject.profiles_responsabil?.full_name || '—'}</span></span>
+                      <span>👤 <span style={{ color: '#aaa' }}>{activeProject.profiles_client?.full_name || '—'}</span></span>
+                      <span>📋 <span style={{ color: '#aaa' }}>{activeProject.profiles_responsabil?.full_name || '—'}</span></span>
                       {activeProject.adresa && <span>📍 {activeProject.adresa}</span>}
                       {activeProject.buget && <span>💰 {Number(activeProject.buget).toLocaleString('ro-RO')} lei</span>}
                       {activeProject.suprafata && <span>📐 {activeProject.suprafata} m²</span>}
@@ -657,12 +790,9 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
-              {/* Sub tabs */}
               <div className="sub-tabs">
                 {[['faze', `Faze (${phases.length})`], ['documente', `Documente (${documents.length})`], ['mesaje', `Mesaje (${messages.length})`]].map(([t, label]) => (
-                  <button key={t} className={`sub-tab ${activeProjectTab === t ? 'on' : ''}`} onClick={() => setActiveProjectTab(t)}>
-                    {label}
-                  </button>
+                  <button key={t} className={`sub-tab ${activeProjectTab === t ? 'on' : ''}`} onClick={() => setActiveProjectTab(t)}>{label}</button>
                 ))}
               </div>
 
@@ -673,14 +803,11 @@ export default function AdminDashboardPage() {
                     <div className="section-title">FAZE PROIECT</div>
                     <button className="btn sm primary" onClick={() => setShowNewPhase(true)}>+ FAZĂ NOUĂ</button>
                   </div>
-                  {phases.length === 0
-                    ? <div className="empty">Nicio fază adăugată.</div>
+                  {phases.length === 0 ? <div className="empty">Nicio fază adăugată.</div>
                     : phases.map(ph => (
                       <div key={ph.id} className="card">
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
-                          <div style={{ fontSize: 12, color: '#e0e0e0', flex: 1 }}>
-                            <span style={{ color: '#444', marginRight: 8 }}>{ph.ordine + 1}.</span>{ph.nume}
-                          </div>
+                          <div style={{ fontSize: 12, color: '#e0e0e0', flex: 1 }}><span style={{ color: '#444', marginRight: 8 }}>{ph.ordine + 1}.</span>{ph.nume}</div>
                           <span className="badge" style={{ color: STATUS_COLORS[ph.status] || '#777' }}>{ph.status}</span>
                         </div>
                         {ph.descriere && <div style={{ fontSize: 10, color: '#444', marginBottom: 10 }}>{ph.descriere}</div>}
@@ -689,7 +816,7 @@ export default function AdminDashboardPage() {
                           <span style={{ fontSize: 11, color: '#e2b36e', minWidth: 36 }}>{ph.progres}%</span>
                         </div>
                         {(ph.data_start || ph.data_sfarsit) && (
-                          <div style={{ fontSize: 9, color: '#444', display: 'flex', gap: 12, marginBottom: 8 }}>
+                          <div style={{ fontSize: 9, color: '#444', display: 'flex', gap: 12 }}>
                             {ph.data_start && <span>Start: {ph.data_start}</span>}
                             {ph.data_sfarsit && <span>Sfârșit: {ph.data_sfarsit}</span>}
                           </div>
@@ -707,42 +834,26 @@ export default function AdminDashboardPage() {
               {/* DOCUMENTE */}
               {activeProjectTab === 'documente' && (
                 <>
-                  {/* Upload zone */}
                   <div style={{ border: '1px solid #1a1a1a', padding: 16, marginBottom: 16, background: 'rgba(255,255,255,.01)' }}>
                     <div className="section-title" style={{ marginBottom: 12 }}>ÎNCARCĂ DOCUMENT</div>
-
-                    <div
-                      className={`upload-zone ${dragOver ? 'drag' : ''} ${uploadFile ? 'has-file' : ''}`}
+                    <div className={`upload-zone ${dragOver ? 'drag' : ''} ${uploadFile ? 'has-file' : ''}`}
                       onClick={() => fileInputRef.current?.click()}
                       onDragOver={e => { e.preventDefault(); setDragOver(true) }}
                       onDragLeave={() => setDragOver(false)}
-                      onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f) }}
-                    >
+                      onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f) }}>
                       {uploadFile ? (
-                        <div>
-                          <div style={{ fontSize: 13, color: '#e2b36e', marginBottom: 4 }}>✓ {uploadFile.name}</div>
-                          <div style={{ fontSize: 10, color: '#555' }}>{fmtBytes(uploadFile.size)}</div>
-                        </div>
+                        <div><div style={{ fontSize: 13, color: '#e2b36e', marginBottom: 4 }}>✓ {uploadFile.name}</div><div style={{ fontSize: 10, color: '#555' }}>{fmtBytes(uploadFile.size)}</div></div>
                       ) : (
-                        <div>
-                          <div style={{ fontSize: 24, marginBottom: 8, color: '#333' }}>↑</div>
-                          <div style={{ fontSize: 11, color: '#444' }}>Click sau drag & drop</div>
-                          <div style={{ fontSize: 9, color: '#2a2a2a', marginTop: 6, letterSpacing: '.1em' }}>
-                            PDF · DXF · DWG · DOC · XLS · PNG · ZIP · IFC · SKP
-                          </div>
-                        </div>
+                        <div><div style={{ fontSize: 24, marginBottom: 8, color: '#333' }}>↑</div><div style={{ fontSize: 11, color: '#444' }}>Click sau drag & drop</div><div style={{ fontSize: 9, color: '#2a2a2a', marginTop: 6 }}>PDF · DXF · DWG · DOC · XLS · PNG · ZIP · IFC · SKP</div></div>
                       )}
                     </div>
-                    <input ref={fileInputRef} type="file" accept={DOC_ACCEPT} style={{ display: 'none' }}
-                      onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }} />
-
+                    <input ref={fileInputRef} type="file" accept={DOC_ACCEPT} style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }} />
                     <div className="inp-row">
                       <input className="inp" style={{ margin: 0 }} placeholder="Nume document" value={uploadName} onChange={e => setUploadName(e.target.value)} />
                       <select className="inp" style={{ margin: 0 }} value={uploadTip} onChange={e => setUploadTip(e.target.value)}>
                         {DOC_TIPURI.map(t => <option key={t} value={t} style={{ background: '#111' }}>{t}</option>)}
                       </select>
                     </div>
-
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4, flexWrap: 'wrap', gap: 8 }}>
                       <label style={{ fontSize: 10, color: '#555', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
                         <input type="checkbox" checked={uploadVizibil} onChange={e => setUploadVizibil(e.target.checked)} style={{ accentColor: '#e2b36e' }} />
@@ -757,34 +868,19 @@ export default function AdminDashboardPage() {
                     </div>
                     {uploadError && <div style={{ fontSize: 10, color: '#f87171', marginTop: 8 }}>⚠ {uploadError}</div>}
                   </div>
-
-                  {/* Documents list */}
-                  <div className="section-hd">
-                    <div className="section-title">DOCUMENTE ({documents.length})</div>
-                  </div>
-                  {documents.length === 0
-                    ? <div className="empty">Niciun document încărcat.</div>
+                  <div className="section-hd"><div className="section-title">DOCUMENTE ({documents.length})</div></div>
+                  {documents.length === 0 ? <div className="empty">Niciun document încărcat.</div>
                     : (
                       <div className="scroll-x">
                         <table className="tbl">
-                          <thead>
-                            <tr><th>NUME</th><th>TIP</th><th>MĂRIME</th><th>VIZIBIL CLIENT</th><th>DATA</th><th></th></tr>
-                          </thead>
+                          <thead><tr><th>NUME</th><th>TIP</th><th>MĂRIME</th><th>VIZIBIL</th><th>DATA</th><th></th></tr></thead>
                           <tbody>
                             {documents.map(d => (
                               <tr key={d.id}>
-                                <td>
-                                  <a href={d.url} target="_blank" rel="noreferrer" style={{ color: '#e2b36e', textDecoration: 'none' }}>
-                                    {d.nume} ↗
-                                  </a>
-                                </td>
+                                <td><a href={d.url} target="_blank" rel="noreferrer" style={{ color: '#e2b36e', textDecoration: 'none' }}>{d.nume} ↗</a></td>
                                 <td><span className="badge" style={{ color: '#555' }}>{d.tip}</span></td>
                                 <td style={{ color: '#555' }}>{fmtBytes(d.marime_bytes)}</td>
-                                <td>
-                                  <span style={{ color: d.vizibil_client ? '#34d399' : '#444', fontSize: 10 }}>
-                                    {d.vizibil_client ? '✓ DA' : '✗ NU'}
-                                  </span>
-                                </td>
+                                <td><span style={{ color: d.vizibil_client ? '#34d399' : '#444', fontSize: 10 }}>{d.vizibil_client ? '✓ DA' : '✗ NU'}</span></td>
                                 <td style={{ color: '#444' }}>{fmt(d.created_at)}</td>
                                 <td><button className="btn sm danger" onClick={() => deleteDocument(d.id, d.url)}>ȘT</button></td>
                               </tr>
@@ -801,8 +897,7 @@ export default function AdminDashboardPage() {
               {activeProjectTab === 'mesaje' && (
                 <>
                   <div className="msgs">
-                    {messages.length === 0
-                      ? <div className="empty">Niciun mesaj.</div>
+                    {messages.length === 0 ? <div className="empty">Niciun mesaj.</div>
                       : messages.map(m => {
                         const isAdmin = m.sender_id === currentAdminId
                         return (
@@ -825,15 +920,16 @@ export default function AdminDashboardPage() {
             </>
           )}
 
-          {/* ════════════ COMENZI ════════════ */}
+          {/* ════════ COMENZI ════════ */}
           {activeTab === 'comenzi' && (
             <>
-              <input className="search" placeholder="Caută după email sau status..." value={orderFilter} onChange={e => setOrderFilter(e.target.value)} />
+              <div className="section-hd">
+                <input className="search" placeholder="Caută după email sau status..." value={orderFilter} onChange={e => setOrderFilter(e.target.value)} />
+                <button className="btn sm" onClick={exportCSV}>⬇ EXPORT CSV</button>
+              </div>
               <div className="scroll-x">
                 <table className="tbl">
-                  <thead>
-                    <tr><th>EMAIL</th><th>TOTAL</th><th>STATUS</th><th>DATA</th><th>STRIPE</th><th>ACȚIUNI</th></tr>
-                  </thead>
+                  <thead><tr><th>EMAIL</th><th>TOTAL</th><th>STATUS</th><th>DATA</th><th>STRIPE</th><th>ACȚIUNI</th></tr></thead>
                   <tbody>
                     {filteredOrders.length === 0
                       ? <tr><td colSpan={6} style={{ textAlign: 'center', color: '#2a2a2a', padding: 32 }}>Nicio comandă.</td></tr>
@@ -864,7 +960,7 @@ export default function AdminDashboardPage() {
             </>
           )}
 
-          {/* ════════════ MAGAZIN ════════════ */}
+          {/* ════════ MAGAZIN ════════ */}
           {activeTab === 'magazin' && (
             <>
               <div className="section-hd">
@@ -875,33 +971,40 @@ export default function AdminDashboardPage() {
                 {products.length === 0
                   ? <div className="empty" style={{ gridColumn: '1/-1' }}>Niciun produs.</div>
                   : products.map(p => (
-                    <div key={p.id} className="card">
-                      {p.imagine_url && <img src={p.imagine_url} alt={p.nume} style={{ width: '100%', height: 130, objectFit: 'cover', marginBottom: 12, background: '#111' }} />}
-                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
-                        <div style={{ fontSize: 12, color: '#e0e0e0', flex: 1 }}>{p.nume}</div>
-                        <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                          {p.activ && <span style={{ fontSize: 8, color: '#34d399', border: '1px solid #34d399', padding: '2px 5px' }}>ACTIV</span>}
-                          {p.featured && <span style={{ fontSize: 8, color: '#e2b36e', border: '1px solid #e2b36e', padding: '2px 5px' }}>TOP</span>}
+                    <div key={p.id} className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                      {/* Imagine produs — click pentru preview */}
+                      {p.imagine_url
+                        ? <img src={p.imagine_url} alt={p.nume} className="prod-img" style={{ cursor: 'zoom-in' }} onClick={() => setPreviewImg(p.imagine_url)} />
+                        : (
+                          <div className="prod-img-placeholder" onClick={() => { setEditProduct({ ...p }); setTimeout(() => imgInputRef.current?.click(), 100) }}>
+                            <span style={{ fontSize: 11, color: '#333', letterSpacing: '.1em' }}>+ ADAUGĂ IMAGINE</span>
+                          </div>
+                        )
+                      }
+                      <div style={{ padding: '16px 20px 20px' }}>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+                          <div style={{ fontSize: 13, color: '#e0e0e0', flex: 1, fontWeight: 700 }}>{p.nume}</div>
+                          <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                            {p.activ && <span style={{ fontSize: 8, color: '#34d399', border: '1px solid #34d399', padding: '2px 5px' }}>ACTIV</span>}
+                            {p.featured && <span style={{ fontSize: 8, color: '#e2b36e', border: '1px solid #e2b36e', padding: '2px 5px' }}>TOP</span>}
+                          </div>
                         </div>
-                      </div>
-                      <div style={{ fontSize: 10, color: '#444', marginBottom: 6 }}>{p.categorie || '—'}</div>
-                      <div style={{ fontSize: 14, color: '#e2b36e', marginBottom: 4 }}>
-                        {Number(p.pret).toLocaleString('ro-RO')} lei
-                        {p.pret_vechi && <span style={{ fontSize: 10, color: '#333', textDecoration: 'line-through', marginLeft: 8 }}>{Number(p.pret_vechi).toLocaleString('ro-RO')}</span>}
-                      </div>
-                      {p.tags && <div style={{ marginBottom: 8 }}>{p.tags.map(t => <span key={t} className="tag">{t}</span>)}</div>}
-                      <div style={{ fontSize: 9, color: '#333', marginBottom: 12 }}>{p.nr_descarcari} descărcări</div>
-                      <div className="btn-row">
-                        <button className="btn sm" onClick={() => setEditProduct({ ...p })}>EDIT</button>
-                        <button className="btn sm" style={{ color: p.activ ? '#34d399' : '#444', borderColor: p.activ ? '#34d399' : '#252525' }}
-                          onClick={() => toggleProduct(p.id, 'activ', !p.activ)}>
-                          {p.activ ? 'ACTIV' : 'INACTIV'}
-                        </button>
-                        <button className="btn sm" style={{ color: p.featured ? '#e2b36e' : '#444', borderColor: p.featured ? '#e2b36e' : '#252525' }}
-                          onClick={() => toggleProduct(p.id, 'featured', !p.featured)}>
-                          {p.featured ? '★ TOP' : '☆ TOP'}
-                        </button>
-                        {isSuperAdmin && <button className="btn sm danger" onClick={() => deleteProduct(p.id)}>ȘT</button>}
+                        <div style={{ fontSize: 10, color: '#444', marginBottom: 6 }}>{p.categorie || '—'}</div>
+                        <div style={{ fontSize: 16, color: '#e2b36e', fontWeight: 700, marginBottom: 6 }}>
+                          {Number(p.pret).toLocaleString('ro-RO')} lei
+                          {p.pret_vechi && <span style={{ fontSize: 10, color: '#333', textDecoration: 'line-through', marginLeft: 8 }}>{Number(p.pret_vechi).toLocaleString('ro-RO')}</span>}
+                        </div>
+                        {p.tags && <div style={{ marginBottom: 8 }}>{p.tags.map(t => <span key={t} className="tag">{t}</span>)}</div>}
+                        <div style={{ fontSize: 9, color: '#333', marginBottom: 14 }}>{p.nr_descarcari} descărcări</div>
+                        <div className="btn-row" style={{ marginTop: 0 }}>
+                          <button className="btn sm" onClick={() => setEditProduct({ ...p })}>EDIT</button>
+                          <button className="btn sm" style={{ color: p.activ ? '#34d399' : '#444', borderColor: p.activ ? '#34d399' : '#252525' }}
+                            onClick={() => toggleProduct(p.id, 'activ', !p.activ)}>{p.activ ? 'ACTIV' : 'INACTIV'}</button>
+                          <button className="btn sm" style={{ color: p.featured ? '#e2b36e' : '#444', borderColor: p.featured ? '#e2b36e' : '#252525' }}
+                            onClick={() => toggleProduct(p.id, 'featured', !p.featured)}>{p.featured ? '★' : '☆'}</button>
+                          <button className="btn sm" onClick={() => duplicateProduct(p)} title="Duplică produs">⧉</button>
+                          {isSuperAdmin && <button className="btn sm danger" onClick={() => deleteProduct(p.id)}>ȘT</button>}
+                        </div>
                       </div>
                     </div>
                   ))
@@ -910,15 +1013,13 @@ export default function AdminDashboardPage() {
             </>
           )}
 
-          {/* ════════════ CLIENȚI ════════════ */}
+          {/* ════════ CLIENȚI ════════ */}
           {activeTab === 'clienti' && (
             <>
               <input className="search" placeholder="Caută după nume sau rol..." value={clientFilter} onChange={e => setClientFilter(e.target.value)} />
               <div className="scroll-x">
                 <table className="tbl">
-                  <thead>
-                    <tr><th>NUME</th><th>COMPANIE</th><th>TELEFON</th><th>ROL</th><th>STATUS</th><th>DIN</th><th>ACȚIUNI</th></tr>
-                  </thead>
+                  <thead><tr><th>NUME</th><th>COMPANIE</th><th>TELEFON</th><th>ROL</th><th>STATUS</th><th>DIN</th><th>ACȚIUNI</th></tr></thead>
                   <tbody>
                     {filteredClients.length === 0
                       ? <tr><td colSpan={7} style={{ textAlign: 'center', color: '#2a2a2a', padding: 32 }}>Niciun utilizator.</td></tr>
@@ -929,8 +1030,7 @@ export default function AdminDashboardPage() {
                           <td style={{ color: '#555' }}>{c.phone || '—'}</td>
                           <td>
                             {isSuperAdmin
-                              ? <select className="btn sm" style={{ background: 'transparent', border: 'none' }} value={c.rol}
-                                  onChange={e => changeClientRole(c.id, e.target.value)}>
+                              ? <select className="btn sm" style={{ background: 'transparent', border: 'none' }} value={c.rol} onChange={e => changeClientRole(c.id, e.target.value)}>
                                   {['client', 'angajat', 'superadmin'].map(r => <option key={r} value={r} style={{ background: '#111' }}>{r}</option>)}
                                 </select>
                               : <span className="badge" style={{ color: '#555' }}>{c.rol}</span>
@@ -943,9 +1043,7 @@ export default function AdminDashboardPage() {
                               <button className="btn sm" onClick={() => openNotify(c.id, c.full_name || c.id)}>NOTIFY</button>
                               {isSuperAdmin && (
                                 <button className="btn sm" style={{ color: c.activ ? '#f87171' : '#34d399', borderColor: c.activ ? '#f87171' : '#34d399' }}
-                                  onClick={() => toggleClient(c.id, !c.activ)}>
-                                  {c.activ ? 'BLOCHEAZĂ' : 'ACTIVEAZĂ'}
-                                </button>
+                                  onClick={() => toggleClient(c.id, !c.activ)}>{c.activ ? 'BLOCHEAZĂ' : 'ACTIVEAZĂ'}</button>
                               )}
                             </div>
                           </td>
@@ -958,8 +1056,111 @@ export default function AdminDashboardPage() {
             </>
           )}
         </div>
-        
       </div>
+
+      {/* ════════ MODAL Produs nou ════════ */}
+      {showNewProduct && (
+        <div className="overlay" onClick={e => e.target === e.currentTarget && setShowNewProduct(false)}>
+          <div className="modal">
+            <div className="modal-title">PRODUS NOU</div>
+
+            {/* Upload imagine */}
+            <div className="section-title" style={{ marginBottom: 8 }}>IMAGINE PRODUS</div>
+            <div className="img-upload-zone" onClick={() => { const i = document.createElement('input'); i.type='file'; i.accept='image/*'; i.onchange=(e:any)=>{ const f=e.target.files?.[0]; if(f) uploadProductImage(f) }; i.click() }}>
+              {imgUploading
+                ? <div style={{ fontSize: 11, color: '#e2b36e' }}>SE ÎNCARCĂ...</div>
+                : newProduct.imagine_url
+                  ? <img src={newProduct.imagine_url} alt="" style={{ width: '100%', height: 120, objectFit: 'cover', display: 'block' }} />
+                  : <div style={{ fontSize: 11, color: '#444', padding: 20 }}>Click pentru upload imagine · JPG, PNG, WEBP</div>
+              }
+            </div>
+            {newProduct.imagine_url && (
+              <button className="btn sm danger" style={{ marginBottom: 14 }} onClick={() => setNewProduct(p => ({ ...p, imagine_url: '' }))}>ȘTERGE IMAGINE</button>
+            )}
+
+            <input className="inp" placeholder="Nume produs *" value={newProduct.nume} onChange={e => setNewProduct({ ...newProduct, nume: e.target.value })} />
+            <input className="inp" placeholder="Descriere scurtă" value={newProduct.descriere_scurta} onChange={e => setNewProduct({ ...newProduct, descriere_scurta: e.target.value })} />
+            <input className="inp" placeholder="Descriere completă" value={newProduct.descriere} onChange={e => setNewProduct({ ...newProduct, descriere: e.target.value })} />
+            <div className="inp-row">
+              <input className="inp" placeholder="Preț (lei) *" type="number" value={newProduct.pret} onChange={e => setNewProduct({ ...newProduct, pret: e.target.value })} />
+              <input className="inp" placeholder="Preț vechi (lei)" type="number" value={newProduct.pret_vechi} onChange={e => setNewProduct({ ...newProduct, pret_vechi: e.target.value })} />
+            </div>
+            <input className="inp" placeholder="Categorie" value={newProduct.categorie} onChange={e => setNewProduct({ ...newProduct, categorie: e.target.value })} />
+            <input className="inp" placeholder="URL fișier descărcare" value={newProduct.fisier_url} onChange={e => setNewProduct({ ...newProduct, fisier_url: e.target.value })} />
+
+            {/* Tags */}
+            <div className="section-title" style={{ marginBottom: 8 }}>TAGS</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+              {newProduct.tags.map(t => (
+                <span key={t} className="tag">{t} <span className="tag-x" onClick={() => setNewProduct(p => ({ ...p, tags: p.tags.filter(x => x !== t) }))}>×</span></span>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+              <input className="inp" style={{ margin: 0 }} placeholder="Adaugă tag..." value={newTagInput} onChange={e => setNewTagInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && newTagInput.trim()) { setNewProduct(p => ({ ...p, tags: [...p.tags, newTagInput.trim()] })); setNewTagInput('') }}} />
+              <button className="btn sm" onClick={() => { if (newTagInput.trim()) { setNewProduct(p => ({ ...p, tags: [...p.tags, newTagInput.trim()] })); setNewTagInput('') }}}>+</button>
+            </div>
+
+            <div className="btn-row">
+              <button className="btn primary" onClick={createProduct}>ADAUGĂ</button>
+              <button className="btn" onClick={() => setShowNewProduct(false)}>ANULEAZĂ</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ════════ MODAL Editare produs ════════ */}
+      {editProduct && (
+        <div className="overlay" onClick={e => e.target === e.currentTarget && setEditProduct(null)}>
+          <div className="modal">
+            <div className="modal-title">EDITEAZĂ PRODUS</div>
+
+            {/* Upload imagine edit */}
+            <div className="section-title" style={{ marginBottom: 8 }}>IMAGINE PRODUS</div>
+            <div className="img-upload-zone" onClick={() => imgInputRef.current?.click()}>
+              {editImgUploading
+                ? <div style={{ fontSize: 11, color: '#e2b36e', padding: 20 }}>SE ÎNCARCĂ...</div>
+                : editProduct.imagine_url
+                  ? <img src={editProduct.imagine_url} alt="" style={{ width: '100%', height: 120, objectFit: 'cover', display: 'block' }} />
+                  : <div style={{ fontSize: 11, color: '#444', padding: 20 }}>Click pentru upload imagine</div>
+              }
+            </div>
+            <input ref={imgInputRef} type="file" accept="image/*" style={{ display: 'none' }}
+              onChange={e => { const f = e.target.files?.[0]; if (f) uploadProductImage(f, true) }} />
+            {editProduct.imagine_url && (
+              <button className="btn sm danger" style={{ marginBottom: 14 }} onClick={() => setEditProduct(p => p ? { ...p, imagine_url: '' } : p)}>ȘTERGE IMAGINE</button>
+            )}
+
+            <input className="inp" placeholder="Nume *" value={editProduct.nume || ''} onChange={e => setEditProduct({ ...editProduct, nume: e.target.value })} />
+            <input className="inp" placeholder="Descriere scurtă" value={editProduct.descriere_scurta || ''} onChange={e => setEditProduct({ ...editProduct, descriere_scurta: e.target.value })} />
+            <input className="inp" placeholder="Descriere" value={editProduct.descriere || ''} onChange={e => setEditProduct({ ...editProduct, descriere: e.target.value })} />
+            <div className="inp-row">
+              <input className="inp" type="number" placeholder="Preț" value={editProduct.pret ?? ''} onChange={e => setEditProduct({ ...editProduct, pret: Number(e.target.value) })} />
+              <input className="inp" type="number" placeholder="Preț vechi" value={editProduct.pret_vechi ?? ''} onChange={e => setEditProduct({ ...editProduct, pret_vechi: Number(e.target.value) })} />
+            </div>
+            <input className="inp" placeholder="Categorie" value={editProduct.categorie || ''} onChange={e => setEditProduct({ ...editProduct, categorie: e.target.value })} />
+            <input className="inp" placeholder="URL fișier" value={editProduct.fisier_url || ''} onChange={e => setEditProduct({ ...editProduct, fisier_url: e.target.value })} />
+
+            {/* Tags edit */}
+            <div className="section-title" style={{ marginBottom: 8 }}>TAGS</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+              {(editProduct.tags || []).map(t => (
+                <span key={t} className="tag">{t} <span className="tag-x" onClick={() => setEditProduct(p => p ? { ...p, tags: (p.tags || []).filter(x => x !== t) } : p)}>×</span></span>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+              <input className="inp" style={{ margin: 0 }} placeholder="Adaugă tag..." value={editTagInput} onChange={e => setEditTagInput(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && editTagInput.trim()) { setEditProduct(p => p ? { ...p, tags: [...(p.tags || []), editTagInput.trim()] } : p); setEditTagInput('') }}} />
+              <button className="btn sm" onClick={() => { if (editTagInput.trim()) { setEditProduct(p => p ? { ...p, tags: [...(p.tags || []), editTagInput.trim()] } : p); setEditTagInput('') }}}>+</button>
+            </div>
+
+            <div className="btn-row">
+              <button className="btn primary" onClick={updateProduct}>SALVEAZĂ</button>
+              <button className="btn" onClick={() => setEditProduct(null)}>ANULEAZĂ</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ════════ MODAL Proiect nou ════════ */}
       {showNewProject && (
@@ -1073,52 +1274,6 @@ export default function AdminDashboardPage() {
             <div className="btn-row">
               <button className="btn primary" onClick={updatePhase}>SALVEAZĂ</button>
               <button className="btn" onClick={() => setEditPhase(null)}>ANULEAZĂ</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ════════ MODAL Produs nou ════════ */}
-      {showNewProduct && (
-        <div className="overlay" onClick={e => e.target === e.currentTarget && setShowNewProduct(false)}>
-          <div className="modal">
-            <div className="modal-title">PRODUS NOU</div>
-            <input className="inp" placeholder="Nume produs *" value={newProduct.nume} onChange={e => setNewProduct({ ...newProduct, nume: e.target.value })} />
-            <input className="inp" placeholder="Descriere scurtă" value={newProduct.descriere_scurta} onChange={e => setNewProduct({ ...newProduct, descriere_scurta: e.target.value })} />
-            <input className="inp" placeholder="Descriere completă" value={newProduct.descriere} onChange={e => setNewProduct({ ...newProduct, descriere: e.target.value })} />
-            <div className="inp-row">
-              <input className="inp" placeholder="Preț (lei) *" type="number" value={newProduct.pret} onChange={e => setNewProduct({ ...newProduct, pret: e.target.value })} />
-              <input className="inp" placeholder="Preț vechi (lei)" type="number" value={newProduct.pret_vechi} onChange={e => setNewProduct({ ...newProduct, pret_vechi: e.target.value })} />
-            </div>
-            <input className="inp" placeholder="Categorie" value={newProduct.categorie} onChange={e => setNewProduct({ ...newProduct, categorie: e.target.value })} />
-            <input className="inp" placeholder="URL imagine" value={newProduct.imagine_url} onChange={e => setNewProduct({ ...newProduct, imagine_url: e.target.value })} />
-            <input className="inp" placeholder="URL fișier descărcare" value={newProduct.fisier_url} onChange={e => setNewProduct({ ...newProduct, fisier_url: e.target.value })} />
-            <div className="btn-row">
-              <button className="btn primary" onClick={createProduct}>ADAUGĂ</button>
-              <button className="btn" onClick={() => setShowNewProduct(false)}>ANULEAZĂ</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ════════ MODAL Editare produs ════════ */}
-      {editProduct && (
-        <div className="overlay" onClick={e => e.target === e.currentTarget && setEditProduct(null)}>
-          <div className="modal">
-            <div className="modal-title">EDITEAZĂ PRODUS</div>
-            <input className="inp" placeholder="Nume *" value={editProduct.nume || ''} onChange={e => setEditProduct({ ...editProduct, nume: e.target.value })} />
-            <input className="inp" placeholder="Descriere scurtă" value={editProduct.descriere_scurta || ''} onChange={e => setEditProduct({ ...editProduct, descriere_scurta: e.target.value })} />
-            <input className="inp" placeholder="Descriere" value={editProduct.descriere || ''} onChange={e => setEditProduct({ ...editProduct, descriere: e.target.value })} />
-            <div className="inp-row">
-              <input className="inp" type="number" placeholder="Preț" value={editProduct.pret ?? ''} onChange={e => setEditProduct({ ...editProduct, pret: Number(e.target.value) })} />
-              <input className="inp" type="number" placeholder="Preț vechi" value={editProduct.pret_vechi ?? ''} onChange={e => setEditProduct({ ...editProduct, pret_vechi: Number(e.target.value) })} />
-            </div>
-            <input className="inp" placeholder="Categorie" value={editProduct.categorie || ''} onChange={e => setEditProduct({ ...editProduct, categorie: e.target.value })} />
-            <input className="inp" placeholder="URL imagine" value={editProduct.imagine_url || ''} onChange={e => setEditProduct({ ...editProduct, imagine_url: e.target.value })} />
-            <input className="inp" placeholder="URL fișier" value={editProduct.fisier_url || ''} onChange={e => setEditProduct({ ...editProduct, fisier_url: e.target.value })} />
-            <div className="btn-row">
-              <button className="btn primary" onClick={updateProduct}>SALVEAZĂ</button>
-              <button className="btn" onClick={() => setEditProduct(null)}>ANULEAZĂ</button>
             </div>
           </div>
         </div>

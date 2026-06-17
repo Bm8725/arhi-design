@@ -70,16 +70,19 @@ function detectFlow(text: string): string | null {
 
 function quickToFlow(opt: string): string {
   const t = opt.toLowerCase();
-  if (t.includes("whatsapp") || t.includes("deschide")) return "wa_redirect";
+  if (t.includes("whatsapp") || t.includes("deschide") || t.includes("trimite pe")) return "wa_redirect";
   if (t.includes("servicii") || t.includes("înapoi") || t.includes("alte")) return "servicii";
   if (t.includes("arhitectur") || t.includes("rezidențial")) return "arh";
   if (t.includes("design") || t.includes("interior")) return "design";
-  if (t.includes("consultan") || t.includes("consultație") || t.includes("programeaz")) return "consultanta";
-  if (t.includes("ofertă") || t.includes("oferta") || t.includes("pret") || t.includes("cât costă")) return "pret";
-  if (t.includes("portofol") || t.includes("exemple")) return "portofoliu";
-  if (t.includes("mai am") || t.includes("altceva")) return "servicii";
+  if (t.includes("programeaz") || t.includes("consultație")) return "pret";
+  if (t.includes("tehnică") || t.includes("consultanță")) return "consultanta";
+  if (t.includes("ofertă") || t.includes("oferta")) return "oferta";
+  if (t.includes("pret") || t.includes("cât costă")) return "pret";
+  if (t.includes("portofol") || t.includes("exemple") || t.includes("văd")) return "portofoliu";
+  if (t.includes("mai am") || t.includes("altceva") || t.includes("întrebări")) return "servicii";
   return "wa_redirect";
 }
+
 
 // ─── TYPES ────────────────────────────────────────────────────────────────────
 interface Message {
@@ -115,7 +118,7 @@ export default function ChatWidget() {
       if (!open) setNotifVisible(true);
     }, 2500);
     return () => clearTimeout(t);
-  }, []);
+  },  [open] );
 
   // Mesaj de bun venit la prima deschidere
   useEffect(() => {

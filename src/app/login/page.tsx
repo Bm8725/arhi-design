@@ -98,7 +98,7 @@ export default function LoginPage() {
             <div className="a-field">
               <input id="l-email" className="a-input" type="email" placeholder="x"
                 value={email} onChange={e => setEmail(e.target.value)} required />
-              <label htmlFor="l-email" className="a-label">Adresă email</label>
+              <label htmlFor="l-email" className="a-label">Adresă email/username</label>
             </div>
             <div className="a-field">
               <input id="l-pass" className="a-input" type="password" placeholder="x"

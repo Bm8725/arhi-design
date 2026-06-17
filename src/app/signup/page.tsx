@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import WhatsAppWidget from '@/components/WhatsAppWidget'
+import CookieBanner from '@/components/Cookiebanner'
 
 export default function SignupPage() {
   const supabase = createClient()
@@ -18,23 +19,41 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
 
-  useEffect(() => { setTimeout(() => setMounted(true), 50) }, [])
+  // ADAUGĂ ACESTE DOUĂ LINII PENTRU TELEFON ȘI GDPR:
+  const [phone, setPhone] = useState('')
+  const [gdprConsent, setGdprConsent] = useState(false)
 
+  useEffect(() => { setTimeout(() => setMounted(true), 50) }, [])
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+
+    // 1. Validare locală pentru GDPR
+    if (!gdprConsent) {
+      setError('Trebuie să accepți politica GDPR pentru a continua.')
+      return
+    }
+
     setLoading(true)
 
+    // 2. Trimiterea datelor către Supabase (cu tot cu phone)
     const { error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName, rol: 'client' } },
+      options: { 
+        data: { 
+          full_name: fullName, 
+          phone: phone,       // <-- ACEASTĂ LINIE LIPSEA! Trimite starea din React în DB
+          rol: 'client' 
+        } 
+      },
     })
 
     if (error) { setError(error.message); setLoading(false); return }
     setSuccess(true)
     setLoading(false)
   }
+
 
   return (
     <>
@@ -80,7 +99,6 @@ export default function SignupPage() {
         .s-success-sub{font-size:11.5px;line-height:1.85;color:rgba(255,255,255,0.6);max-width:340px;letter-spacing:0.05em}
       `}</style>
 
-
       <div className="s-root">
         <div className="s-ambient" />
         <div className="s-grid" />
@@ -112,13 +130,31 @@ export default function SignupPage() {
                 <div className="s-field">
                   <input id="s-email" className="s-input" type="email" placeholder="x"
                     value={email} onChange={e => setEmail(e.target.value)} required />
-                  <label htmlFor="s-email" className="s-label">Adresă email</label>
+                  <label htmlFor="s-email" className="s-label">Adresă email/username</label>
                 </div>
+                
+                {/* Câmp adăugat pentru Telefon */}
+                <div className="s-field">
+                  <input id="s-phone" className="s-input" type="tel" placeholder="x"
+                    value={phone} onChange={e => setPhone(e.target.value)} required />
+                  <label htmlFor="s-phone" className="s-label">Număr de telefon</label>
+                </div>
+
                 <div className="s-field">
                   <input id="s-pass" className="s-input" type="password" placeholder="x"
                     value={password} onChange={e => setPassword(e.target.value)} required minLength={6} />
                   <label htmlFor="s-pass" className="s-label">Parolă (minim 6 caractere)</label>
                 </div>
+
+                {/* Casetă adăugată pentru GDPR */}
+                <label className="s-gdpr-container">
+                  <input type="checkbox" className="s-gdpr-checkbox" checked={gdprConsent} 
+                    onChange={e => setGdprConsent(e.target.checked)} />
+                  <div className="s-gdpr-custom-box"></div>
+                  <span className="s-gdpr-text">
+                    Sunt de acord cu <Link href="/termeni">Termenii și Condițiile</Link> și prelucrarea datelor conform <Link href="/politica-confidentialitate">Politicilor noastre.</Link>.
+                  </span>
+                </label>
 
                 {error && <div className="s-error">{error}</div>}
 
@@ -136,10 +172,11 @@ export default function SignupPage() {
             </>
           )}
         </div>
-
+          <CookieBanner />
         <WhatsAppWidget />
         <Footer />
       </div>
+
     </>
   )
 }

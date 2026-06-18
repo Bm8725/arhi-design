@@ -261,10 +261,7 @@ export default function ChatWidget() {
           </div>
           <div className="relative z-10 flex-1 min-w-0">
             <h3 className="text-white font-semibold text-[15px] md:text-[14px] leading-tight truncate">Arhi.Design Studio</h3>
-            <p className="text-white/70 text-[11px] md:text-[10px] mt-1 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block flex-shrink-0" />
-              Online acum · răspunde instant
-            </p>
+
           </div>
 
           {/* buton X — vizibil DOAR pe desktop (pe mobil avem deja buton înapoi) */}
@@ -384,7 +381,7 @@ export default function ChatWidget() {
               ${showNotif ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3 pointer-events-none"}
             `}
           >
-            <span className="w-2 h-2 rounded-full bg-[#e8272d] flex-shrink-0 animate-pulse" />
+            <span className="w-2 h-2 rounded-full bg-[#0a83bb] flex-shrink-0 animate-pulse" />
             <span className="flex-1 sm:flex-initial">Bună ziua! Cu ce vă putem ajuta? 👋</span>
             <button
               onClick={() => { setNotifVisible(false); setNotifDismissed(true); }}
@@ -396,8 +393,8 @@ export default function ChatWidget() {
           <button
             onClick={handleToggle}
             aria-label="Deschide chat"
-            style={{ boxShadow: "0 0 0 0 rgba(232,39,45,0.4)", animation: "pulseRed 2.5s infinite" }}
-            className="pointer-events-auto mr-3 mb-3 sm:mr-4 sm:mb-4 md:mr-0 md:mb-0 self-end w-[58px] h-[58px] sm:w-[62px] sm:h-[62px] rounded-full bg-[#e8272d] hover:bg-[#cc2020] border-none flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-110 active:scale-95 flex-shrink-0"
+            style={{ boxShadow: "0 0 0 0 rgba(39,203,232,0.4)", animation: "pulseBlue 2.5s infinite" }}
+            className="pointer-events-auto mr-3 mb-3 sm:mr-4 sm:mb-4 md:mr-0 md:mb-0 self-end w-[58px] h-[58px] sm:w-[62px] sm:h-[62px] rounded-full bg-[#27cbe8] hover:bg-[#cc2020] border-none flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-110 active:scale-95 flex-shrink-0"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -407,9 +404,9 @@ export default function ChatWidget() {
       )}
 
       <style>{`
-        @keyframes pulseRed {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(232,39,45,0.45); }
-          60%       { box-shadow: 0 0 0 14px rgba(232,39,45,0); }
+        @keyframes pulseBlue {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(39,203,232,0.45); }
+          60%       { box-shadow: 0 0 0 14px rgba(39,203,232,0); }
         }
       `}</style>
     </>

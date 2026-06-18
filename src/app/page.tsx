@@ -12,6 +12,7 @@ import Footer from "@/components/Footer";
 import Manifestdesign from "@/components/Manifestdesign";
 import CookieBanner from "@/components/Cookiebanner";
 import WhatsAppWidget from "@/components/WhatsAppWidget";
+import ChatWidget from "@/components/ChatSupport";
 
 
 export default function Home() {
@@ -22,7 +23,8 @@ export default function Home() {
       <Hero />
       <Transformare3D />
       <Manifestdesign />
-      <WhatsAppWidget />
+   
+       <WhatsAppWidget />
        <CookieBanner />
       <Footer /> 
     </main>

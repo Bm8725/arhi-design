@@ -74,6 +74,24 @@ const PROJECTS: Project[] = [
     ],
     description: ["Foișor hexagonal din lemn masiv, pe soclu și pardoseală din piatră, cu parapet mixt lemn-piatră, arce traforate între stâlpi și acoperiș înalt din șiță, animat de lucarne triunghiulare."],
   },
+  {
+    id: "proj-04",
+    title: "Biserică parohială nouă – Parohia Poroinica I, în curs de execuție",
+    category: "lacas de cult",
+    year: "2026",
+    location: "sat Tețcoiu, com. Mătăsaru (DB)–",
+    area: "130 m²",
+    status: "realizat",
+    cover: "/biserica.png",
+    images: ["/biserica1.png",
+              "/biserica2.png",
+              "/biserica3.png",
+              "/biserica4.png",
+    ],
+    description: ["Biserică ortodoxă nouă cu plan treflat și turlă octogonală pe naos (H max = 16,50 m), în tradiția arhitecturii muntenești: pridvor pe coloane, fațade albe cu arcaturi decorative, soclu din piatră. Amplasată în sat Tețcoiu, com. Mătăsaru, în zona de protecție a unui monument istoric din 1678, pe un teren amenajat cu alei, parcare și spațiu verde generos. Proiectearh 4D S.R.L., arh. Bogdan Șotîngeanu."],
+  },
+
+
 ];
 
 export default function PortofoliuPage() {

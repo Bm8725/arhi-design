@@ -22,7 +22,7 @@ export default function DashHeader() {
     <header style={styles.header}>
       {/* Partea stângă: Brand & Core Info */}
       <div style={styles.left}>
-        <Link href="/dashboard" style={styles.logoContainer}>
+        <Link href="/" style={styles.logoContainer}>
           {/* 2. LOGO IMAGINE INTEGRATĂ CU DIMENSIUNE CORECTĂ PENTRU ÎNĂLȚIMEA DE 60PX A HEADERULUI */}
           <div style={styles.logoImgWrapper}>
             <Image

@@ -78,7 +78,7 @@ const PROJECTS: Project[] = [
     id: "proj-04",
     title: "Biserică parohială nouă – Parohia Poroinica I, în curs de execuție",
     category: "lacas de cult",
-    year: "2026",
+    year: "-",
     location: "sat Tețcoiu, com. Mătăsaru (DB)–",
     area: "130 m²",
     status: "realizat",

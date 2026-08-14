@@ -4,8 +4,8 @@ import { useState, useRef } from 'react';
 import type { MouseEvent as ReactMouseEvent, TouchEvent } from 'react';
 import { Eye, MoveHorizontal } from 'lucide-react';
 
-const IMG_AFTER  = 'https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1400&q=80';
-const IMG_BEFORE = 'https://images.unsplash.com/photo-1503387762-592deb58ef4e?w=1400&q=80';
+const IMG_AFTER  = '/design.png';
+const IMG_BEFORE = '/plan.png';
 
 export default function Transformare3D() {
   const [pos, setPos]           = useState(50);
@@ -167,7 +167,7 @@ export default function Transformare3D() {
                 <span className="t3-eyebrow-text">Concept vs Realitate</span>
               </div>
               <h2 className="t3-title">
-                De la schiță la <em>Hyper-Realism.</em>
+                De la schiță la <em>plan concret</em>
               </h2>
             </div>
             <p className="t3-desc">

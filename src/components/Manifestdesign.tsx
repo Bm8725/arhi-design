@@ -10,26 +10,26 @@ export default function ManifestDesign() {
     {
       id: 1,
       numar: "01",
-      titlu: "Pavilionul Brutalism Cald",
-      locatie: "Cluj-Napoca, RO",
+      titlu: "Centru training clădire P+1",
+      locatie: "Romania",
       tip: "Arhitectură Rezidențială",
-      imagine: "https://unsplash.com"
+      imagine: "/centru_training.jpg"
     },
     {
       id: 2,
       numar: "02",
-      titlu: "Atelierul Monolit",
-      locatie: "Ilfov, RO",
-      tip: "Spațiu Comercial / Birouri",
-      imagine: "https://unsplash.com"
+      titlu: "NIMET, zona industriala",
+      locatie: "Dambovita, Romania",
+      tip: "Spațiu administrativ / Birouri",
+      imagine: "/nimet.png"
     },
     {
       id: 3,
       numar: "03",
-      titlu: "Rezidența Nordică",
-      locatie: "Brașov, RO",
-      tip: "Design Interior Complet",
-      imagine: "https://unsplash.com"
+      titlu: " Parohia Poroinica",
+      locatie: "sat Tețcoiu, com. Mătăsaru (Dambovita), RO– în curs de execuție",
+      tip: "Lacas de Cult",
+      imagine: "/biserica.png"
     }
   ];
 
@@ -61,7 +61,7 @@ export default function ManifestDesign() {
         {/* INTERACTIVE EDITORIAL PORTFOLIO GRID */}
         <div className="space-y-4">
           <div className="flex justify-between items-end border-b border-[#e5e0d8] pb-4">
-            <span className="text-[10px] font-mono text-[#8c8275] tracking-widest uppercase">Index Lucrări de Semnătură</span>
+            <span className="text-[10px] font-mono text-[#8c8275] tracking-widest uppercase">Lucrari sub semnatura </span>
             <span className="text-[10px] font-mono text-[#8c8275] tracking-widest uppercase">Format [03 / EXP]</span>
           </div>
 

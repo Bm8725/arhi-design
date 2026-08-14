@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image'; // 1. IMPORTĂM COMPONENTA NATIVĂ IMAGE
+import Image from 'next/image'; // 
 
 export default function DashHeader() {
   const [time, setTime] = useState('');
 
-  // Ceas digital simplu pe format 24h
+  // 
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();

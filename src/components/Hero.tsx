@@ -1,36 +1,13 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
-
-const SERVICII = [
-  {
-    id: "01",
-    titlu: "Arhitectură Rezidențială",
-    descriere: "Vile unicat și ansambluri premium orientate spre integrare organică în sit și volumetrică sculpturală.",
-    imagine: "/arhi.jpg", 
-    detaliu: "CONCEPT / AUTORIZARE / EXECUȚIE"
-  },
-  {
-    id: "02",
-    titlu: "Design Interior Premium",
-    descriere: "Schițarea spațiilor interioare prin mobilier customizat, detalii riguroase și materiale brute atemporale.",
-    imagine: "/interior.jpg",
-    detaliu: "RANDĂRI 4K / DETALII TEHNICE"
-  },
-  {
-    id: "03",
-    titlu: "Proiectare Comercială",
-    descriere: "Spații de birouri boutique și showroom-uri conceptuale care combină funcționalitatea cu estetica.",
-    imagine: "/comercial.jpg",
-    detaliu: "RETAIL / CORPORATE / URBANISM"
-  }
-];
 
 export default function Hero() {
   const [rotate, setRotate] = useState({ x: 0, y: 0 });
-  const [indexCurent, setIndexCurent] = useState(0);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
+  // Efect pentru mișcarea 3D pe mouse
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (window.innerWidth < 1024) return;
@@ -43,18 +20,18 @@ export default function Hero() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  const urmatorulServiciu = () => {
-    setIndexCurent((prev) => (prev + 1) % SERVICII.length);
-  };
-
-  const anteriorServiciu = () => {
-    setIndexCurent((prev) => (prev - 1 + SERVICII.length) % SERVICII.length);
-  };
+  // Efect pentru încetinirea vitezei video-ului
+  useEffect(() => {
+    if (videoRef.current) {
+      // 1.0 = viteză normală | 0.75 = mai încet | 0.5 = jumătate din viteză
+      videoRef.current.playbackRate = 0.55; 
+    }
+  }, []);
 
   return (
     <section className="relative w-full h-screen bg-black text-white overflow-hidden select-none group/hero">
       
-      {/* 1. IMAGINEA FULL-SCREEN (LUMINOZITATE 100% - FĂRĂ FILTRU NEGRU) */}
+      {/* 1. BACKGROUND VIDEO MP4 FULL-SCREEN CU EFECT 3D TILT - VITEZĂ REDUSĂ */}
       <div 
         className="absolute inset-0 w-full h-full transition-transform duration-700 ease-out"
         style={{
@@ -62,17 +39,15 @@ export default function Hero() {
           transformStyle: 'preserve-3d'
         }}
       >
-        {SERVICII.map((serviciu, i) => (
-          <div
-            key={serviciu.id}
-            className={`absolute inset-0 bg-cover bg-center transition-all duration-1000 ease-in-out
-              grayscale contrast-115 brightness-100
-              group-hover/hero:grayscale-0
-              active:grayscale-0
-              ${i === indexCurent ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-102 invisible'}`}
-            style={{ backgroundImage: `url('${serviciu.imagine}')` }}
-          />
-        ))}
+        <video
+          ref={videoRef}
+          autoPlay
+          muted
+          loop
+          playsInline
+          src="/arhidesign.mp4"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
       </div>
 
       {/* GRILA TEHNICĂ ULTRA-DISCRETĂ PENTRU ASPECT DE SCHIȚĂ */}
@@ -86,7 +61,7 @@ export default function Hero() {
       {/* 2. CONȚINUTUL PLUTITOR - DROP-SHADOW INTENS PENTRU LIZIBILITATE PE ALB/CULORI */}
       <div className="absolute inset-0 z-20 flex flex-col justify-between p-6 sm:p-12 lg:p-20 drop-shadow-[0_4px_12px_rgba(0,0,0,0.95)]">
         
-        {/* TOP ROW: LOGO ȘI INDEX */}
+        {/* TOP ROW: LOGO ȘI CĂUTARE */}
         <div className="w-full flex justify-between items-start">
           <div className="space-y-1">
             <span className="text-[10px] font-mono tracking-[0.4em] text-white/70 uppercase block">
@@ -97,12 +72,10 @@ export default function Hero() {
             </div>
           </div>
           
-          <div className="font-mono text-xs text-white/70 tracking-widest mt-1 font-bold">
-            [{SERVICII[indexCurent].id}]
-          </div>
+
         </div>
 
-        {/* CENTER/MAIN ROW: TITLURI PESTE IMAGINEA CURATĂ */}
+        {/* CENTER/MAIN ROW: TITLURI PESTE VIDEO */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-end w-full my-auto">
           
           {/* SLOGAN STÂNGA */}
@@ -114,16 +87,16 @@ export default function Hero() {
             </h1>
           </div>
 
-          {/* CASĂ TEXT DINAMICĂ DREAPTA */}
+          {/* CASĂ TEXT DREAPTA FIXĂ PENTRU REZIDENȚIAL / PREMIUM */}
           <div className="lg:col-span-6 space-y-4 lg:max-w-md lg:justify-self-end border-l-2 border-white pl-6 lg:pl-8 py-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
             <span className="text-[10px] font-mono tracking-widest text-white/90 uppercase block font-bold">
-              {SERVICII[indexCurent].detaliu}
+              CONCEPT / AUTORIZARE / EXECUȚIE
             </span>
             <h2 className="text-xl sm:text-3xl font-bold tracking-tight text-white uppercase">
-              {SERVICII[indexCurent].titlu}
+              Arhitectură Rezidențială & Interior
             </h2>
             <p className="text-white font-medium text-xs sm:text-sm leading-relaxed tracking-wide opacity-95">
-              {SERVICII[indexCurent].descriere}
+              Vile unicat, ansambluri premium și spații interioare arhitecturale configurate prin detalii riguroase și materiale brute atemporale.
             </p>
           </div>
 
@@ -143,27 +116,9 @@ export default function Hero() {
             </Link>
           </div>
 
-          {/* CONTROALE NAVIGARE */}
+          {/* INDICAȚIE MEDIA ÎN LOC DE CONTROALE DE SLIDER */}
           <div className="flex items-center justify-between sm:justify-end gap-8 sm:min-w-[300px]">
-            <div className="text-white tracking-widest">
-              <span className="text-white font-black">{SERVICII[indexCurent].id}</span> / 0{SERVICII.length}
-            </div>
 
-            <div className="flex items-center gap-6">
-              <button 
-                onClick={anteriorServiciu}
-                className="text-white/80 hover:text-white transition-colors py-2 px-1 tracking-widest uppercase touch-manipulation"
-              >
-                PREV
-              </button>
-              <span className="text-white/40">|</span>
-              <button 
-                onClick={urmatorulServiciu}
-                className="text-white/80 hover:text-white transition-colors py-2 px-1 tracking-widest uppercase touch-manipulation"
-              >
-                NEXT
-              </button>
-            </div>
           </div>
 
         </div>

@@ -180,9 +180,8 @@ const markAllAsRead = async () => {
       href: '/dashboard',
       icon: FolderGit2,
       subOptions: [
-        { name: 'Rezidențial', href: '/noi' },
-        { name: 'Comercial & Office', href: '/noi' },
-        { name: 'Peisagistică', href: '/noi' },
+        { name: 'Proiecte proarh.4d', href: '/portofoliu' },
+
       ]
     },
     { 

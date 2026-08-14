@@ -24,7 +24,7 @@ export default function Hero() {
   useEffect(() => {
     if (videoRef.current) {
       // 1.0 = viteză normală | 0.75 = mai încet | 0.5 = jumătate din viteză
-      videoRef.current.playbackRate = 0.55; 
+      videoRef.current.playbackRate = 0.25; 
     }
   }, []);
 
@@ -96,7 +96,8 @@ export default function Hero() {
               Arhitectură Rezidențială & Interior
             </h2>
             <p className="text-white font-medium text-xs sm:text-sm leading-relaxed tracking-wide opacity-95">
-              Vile unicat, ansambluri premium și spații interioare arhitecturale configurate prin detalii riguroase și materiale brute atemporale.
+              Vile unicat, ansambluri premium și spații interioare
+               arhitecturale configurate prin detalii riguroase și materiale moderne.
             </p>
           </div>
 

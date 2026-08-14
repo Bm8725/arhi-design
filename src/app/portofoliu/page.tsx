@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-
+import WhatsAppWidget from '@/components/WhatsAppWidget'
 /* ─────────────────────────────────────────────────────────────
 
    ───────────────────────────────────────────────────────────── */
@@ -339,7 +339,7 @@ export default function PortofoliuPage() {
           </div>
         )}
       </section>
-
+    <WhatsAppWidget />
       <Footer />
     </main>
   );

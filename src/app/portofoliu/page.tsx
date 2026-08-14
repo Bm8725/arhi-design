@@ -55,21 +55,24 @@ const PROJECTS: Project[] = [
       "/centru.jpg",
       "/centru2.jpg",
       "/centru3.jpg",
-   
+      "/centru_training.jpg",
     ],
     description: ["Centru de training P+1, cu sală de curs cu tribună în trepte la parter și birouri la etaj. Volumetria combină un corp lung din panouri prefabricate de beton cu un volum de acces placat în cărămidă aparentă, deschis printr-un gol vitrat pe două niveluri care expune scara."],
   },
   {
     id: "proj-03",
-    title: "Pavilion Lac",
-    category: "Public",
-    year: "2024",
-    location: "Snagov, RO",
-    area: "85 m²",
-    status: "Concept",
-    cover: "/images/proiecte/pavilion-cover.jpg",
-    images: ["/images/proiecte/pavilion-1.jpg"],
-    description: ["Scrie aici descrierea proiectului."],
+    title: "Foișor hexagonal din lemn",
+    category: "Personal",
+    year: "2026",
+    location: "Targoviste, RO",
+    area: "12 m²",
+    status: "realizat",
+    cover: "/foisor1.png",
+    images: ["/foisor1.png",
+              "/foisor2.png",
+              "/foisor3.png",
+    ],
+    description: ["Foișor hexagonal din lemn masiv, pe soclu și pardoseală din piatră, cu parapet mixt lemn-piatră, arce traforate între stâlpi și acoperiș înalt din șiță, animat de lucarne triunghiulare."],
   },
 ];
 
@@ -133,7 +136,7 @@ export default function PortofoliuPage() {
               Portofoliu
             </span>
             <h2 className="text-3xl md:text-5xl font-light tracking-wide uppercase mt-2">
-              Proiecte selectate
+              Proiecte Proarh.4D
             </h2>
           </div>
           <span className="hidden md:block text-xs opacity-40 tracking-widest">

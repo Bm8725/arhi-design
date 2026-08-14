@@ -33,12 +33,12 @@ function isAvailableNow(): boolean {
 const architects = [
   {
     id: 1,
-    name: 'Alexandru Popescu',
+    name: 'Arh. Bogdan Șotîngeanu',
     role: 'suport clienti',
     specialty: 'Design Interior & Rezidențial',
     phone: '40743193627',
     avatar: 'AP',
-    schedule: 'Lun–Vin, 09:00–15:00',
+    schedule: 'Lun–Vin, 09:00–21:00',
   },
 ];
 

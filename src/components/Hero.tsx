@@ -93,10 +93,10 @@ export default function Hero() {
               CONCEPT / AUTORIZARE / EXECUȚIE
             </span>
             <h2 className="text-xl sm:text-3xl font-bold tracking-tight text-white uppercase">
-              Arhitectură Rezidențială & Interior
+              Arhitectură Rezidențială & proiectare.
             </h2>
             <p className="text-white font-medium text-xs sm:text-sm leading-relaxed tracking-wide opacity-95">
-              Vile unicat, ansambluri premium și spații interioare
+              Case si Vile unicat, ansambluri premium și spații interioare
                arhitecturale configurate prin detalii riguroase și materiale moderne.
             </p>
           </div>

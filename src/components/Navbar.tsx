@@ -192,8 +192,8 @@ const markAllAsRead = async () => {
       subOptions: [
         { name: 'Design Interior', href: '/DesignInterior' },
         { name: 'Proiectare & Arhitectură', href: '/noi' },
-        { name: 'Randări 3D & VR', href: '/noi' },
-        { name: 'Avize & Urbanism (PUD/PUZ)', href: '/UrbanismSection' },
+        { name: 'Randări 3D ', href: '/noi' },
+
       ]
     },
     { name: 'cart', href: '/shopping-cart', icon: ShoppingCart },

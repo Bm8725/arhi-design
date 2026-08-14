@@ -112,7 +112,7 @@ export default function WhatsAppWidget() {
             <X size={10} />
           </button>
          <p className="text-sm text-neutral-300 leading-relaxed">Salutare! 💬</p>
-<p className="text-xs text-neutral-500 mt-0.5">Răspundem rapid pe WhatsApp de luni până vineri, 09:00–15:00</p>
+<p className="text-xs text-neutral-500 mt-0.5">Răspundem rapid pe WhatsApp de luni până vineri, 09:00–21:00</p>
         </div>
       )}
 

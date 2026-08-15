@@ -1,13 +1,14 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import Image from 'next/image'; // 
+import Image from 'next/image';
 
 export default function DashHeader() {
   const [time, setTime] = useState('');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // 
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
@@ -18,12 +19,22 @@ export default function DashHeader() {
     return () => clearInterval(interval);
   }, []);
 
+  // Închide dropdown-ul la click în afara lui
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   return (
     <header style={styles.header}>
       {/* Partea stângă: Brand & Core Info */}
       <div style={styles.left}>
         <Link href="/" style={styles.logoContainer}>
-          {/* 2. LOGO IMAGINE INTEGRATĂ CU DIMENSIUNE CORECTĂ PENTRU ÎNĂLȚIMEA DE 60PX A HEADERULUI */}
           <div style={styles.logoImgWrapper}>
             <Image
               src="/proarh4d.ro.png"
@@ -40,11 +51,56 @@ export default function DashHeader() {
         <div style={styles.badge}>DASHBOARD</div>
       </div>
 
-      {/* Partea dreaptă: Versiune, Status & Ceas */}
+      {/* Partea dreaptă: Versiune + Dropdown (autor / contract) */}
       <div style={styles.right}>
-        <div style={styles.item}>
-          <span style={styles.label}>app designed by BM</span>
-          <span style={styles.value}>V. 0.1.13</span>
+        <div ref={dropdownRef} style={styles.dropdownWrapper}>
+          <button
+            onClick={() => setDropdownOpen((v) => !v)}
+            style={styles.item}
+          >
+            <span style={styles.label}>app designed by BM</span>
+            <span style={styles.value}>V. 0.1.13</span>
+            <span
+              style={{
+                ...styles.chevron,
+                transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+              }}
+            >
+              ▾
+            </span>
+          </button>
+
+          {dropdownOpen && (
+            <div style={styles.dropdownPanel}>
+              <div style={styles.dropdownRow}>
+                <span style={styles.dropdownLabel}>Repository</span>
+                {/* Pune aici numele autorului */}
+                <span style={styles.dropdownValue}>https://github.com/Bm8725/arhi-design </span>
+              </div>
+
+              <div style={styles.dropdownDivider} />
+
+              <div style={styles.dropdownRow}>
+                <span style={styles.dropdownLabel}>Contact</span>
+                {/* Pune aici numărul / ID-ul contractului */}
+                <span style={styles.dropdownValue}>+40729411747</span>
+              </div>
+              
+                 <div style={styles.dropdownRow}>
+                <span style={styles.dropdownLabel}>e-mail</span>
+                {/* Pune aici numărul / ID-ul contractului */}
+                <span style={styles.dropdownValue}>marius_service@yahoo.com</span>
+              </div>
+              <div style={styles.dropdownDivider} />
+                                <div style={styles.dropdownRow}>
+                <span style={styles.dropdownLabel}>about app</span>
+                {/* Pune aici numărul / ID-ul contractului */}
+                <span style={styles.dropdownValue}>This app is designed for managing architectural designs and documentation into the modern world. Used the latest technology and frameworks to ensure a smooth and efficient workflow for architects, designers and customers. full stack: NEXT.JS, postgre DB, vercel, cloud infrastructure </span>
+           
+              </div>
+
+            </div>
+          )}
         </div>
       </div>
 
@@ -111,17 +167,66 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: 'center',
     gap: '24px',
   },
+  dropdownWrapper: {
+    position: 'relative',
+  },
   item: {
     fontSize: '12px',
     fontWeight: 600,
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
+    background: 'transparent',
+    border: 'none',
+    padding: 0,
+    cursor: 'pointer',
+    fontFamily: "'DM Mono', 'Monaco', monospace",
   },
   label: {
     color: '#555555',
   },
   value: {
     color: '#ffffff',
+  },
+  chevron: {
+    color: '#e2b36e',
+    fontSize: '10px',
+    marginLeft: '2px',
+    transition: 'transform 0.2s ease',
+    display: 'inline-block',
+  },
+  dropdownPanel: {
+    position: 'absolute',
+    top: 'calc(100% + 12px)',
+    right: 0,
+    minWidth: '220px',
+    background: '#302d2d',
+    border: '1px solid #1f1f1f',
+    boxShadow: '0 16px 40px rgba(0,0,0,0.55)',
+    padding: '14px 16px',
+    zIndex: 101,
+    fontFamily: "'DM Mono', 'Monaco', monospace",
+  },
+  dropdownRow: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '4px',
+  },
+  dropdownLabel: {
+    fontSize: '10px',
+    fontWeight: 700,
+    color: '#555555',
+    textTransform: 'uppercase',
+    letterSpacing: '0.1em',
+  },
+  dropdownValue: {
+    fontSize: '13px',
+    fontWeight: 600,
+    color: '#ffffff',
+  },
+  dropdownDivider: {
+    height: '1px',
+    background: '#1f1f1f',
+    margin: '10px 0',
   },
 };

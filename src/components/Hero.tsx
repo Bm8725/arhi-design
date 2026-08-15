@@ -38,7 +38,7 @@ export default function Hero() {
           transform: `scale(1.02) rotateX(${rotate.x}deg) rotateY(${rotate.y}deg)`,
           transformStyle: 'preserve-3d'
         }}
-      >
+      > 
         <video
           ref={videoRef}
           autoPlay

@@ -50,6 +50,7 @@ export default function Hero() {
         />
       </div>
 
+
       {/* GRILA TEHNICĂ ULTRA-DISCRETĂ PENTRU ASPECT DE SCHIȚĂ */}
       <div className="absolute inset-0 grid grid-cols-4 pointer-events-none z-10 opacity-10">
         <div className="border-r border-white/[0.1] h-full" />

@@ -20,41 +20,12 @@ export default function Hero() {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Efect pentru autoplay fiabil pe iOS + viteză redusă
+  // Efect pentru încetinirea vitezei video-ului
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    // iOS/Safari cere ca `muted` să fie setat ca atribut real pe elementul
-    // DOM, nu doar ca prop React — altfel blochează autoplay-ul silențios.
-    video.muted = true;
-    video.defaultMuted = true;
-    video.playbackRate = 0.25;
-
-    // Forțăm play() programatic; unele versiuni de iOS ignoră autoPlay
-    // dacă playback-ul nu e inițiat explicit după ce metadata s-a încărcat.
-    const tryPlay = () => {
-      video.play().catch(() => {
-        // Autoplay tot blocat (ex: economisire baterie) — pornește la primul touch.
-        const resumeOnInteraction = () => {
-          video.play().catch(() => {});
-          window.removeEventListener('touchstart', resumeOnInteraction);
-          window.removeEventListener('click', resumeOnInteraction);
-        };
-        window.addEventListener('touchstart', resumeOnInteraction, { once: true });
-        window.addEventListener('click', resumeOnInteraction, { once: true });
-      });
-    };
-
-    if (video.readyState >= 2) {
-      tryPlay();
-    } else {
-      video.addEventListener('loadedmetadata', tryPlay, { once: true });
+    if (videoRef.current) {
+      // 1.0 = viteză normală | 0.75 = mai încet | 0.5 = jumătate din viteză
+      videoRef.current.playbackRate = 0.25; 
     }
-
-    return () => {
-      video.removeEventListener('loadedmetadata', tryPlay);
-    };
   }, []);
 
   return (
@@ -67,21 +38,18 @@ export default function Hero() {
           transform: `scale(1.02) rotateX(${rotate.x}deg) rotateY(${rotate.y}deg)`,
           transformStyle: 'preserve-3d'
         }}
-      >
+      > 
         <video
           ref={videoRef}
           autoPlay
           muted
           loop
           playsInline
-          // @ts-ignore — atribut legacy necesar pe iOS mai vechi (Safari < 10 / WKWebView)
-          webkit-playsinline="true"
-          preload="auto"
-          disablePictureInPicture
           src="/arhidesign.mp4"
           className="absolute inset-0 w-full h-full object-cover"
         />
       </div>
+
 
       {/* GRILA TEHNICĂ ULTRA-DISCRETĂ PENTRU ASPECT DE SCHIȚĂ */}
       <div className="absolute inset-0 grid grid-cols-4 pointer-events-none z-10 opacity-10">

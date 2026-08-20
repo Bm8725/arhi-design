@@ -108,7 +108,7 @@ const PROJECTS: Project[] = [
     description: ["Conversia unei hale existente într-un spațiu comercial de 1.432,75 mp construiți, cu o sală liberă de peste 1.250 mp pe deschidere de 18,70 m. Fațada este reconfigurată contemporan – fațadă ventilată din lambriuri metalice, benzi vitrate continue și copertine metalice care marchează accesele – într-o cromatică galben, gri antracit și accente roșii."],
   },
   {
-    id: "proj-05",
+    id: "proj-06",
     title: "Locuinta P+M",
     category: "PRIVAT / REZIDENȚIAL",
     year: "2026",

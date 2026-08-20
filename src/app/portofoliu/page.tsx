@@ -121,7 +121,7 @@ const PROJECTS: Project[] = [
               "/balcangiu2.jpeg",
             
     ],
-    description: [" Locuinta P+M aflata in curs de autorizare, aflata  in Cartier Priseaca, Mun. Târgoviște, Crangului nr.6 G, cu o suprafata construita de 160 m². Proiectearh 4D S.R.L., arh. Bogdan Șotîngeanu."],
+    description: [" Locuinta P+M aflata in curs de autorizare, aflata  in Cartier Priseaca, Mun. Târgoviște, Crangului nr.6 G, cu o suprafata construita de 160 m² beneficiar fam. Balcangiu . Proiectearh 4D S.R.L., arh. Bogdan Șotîngeanu."],
   },
 
 ];

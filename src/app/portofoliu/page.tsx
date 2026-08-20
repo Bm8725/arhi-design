@@ -126,10 +126,29 @@ const PROJECTS: Project[] = [
 
 ];
 
+function ShareIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      className="h-4 w-4"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M8.684 13.342a3 3 0 100-2.684m0 2.684a3 3 0 100-2.684m0 2.684 6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+      />
+    </svg>
+  );
+}
+
 export default function PortofoliuPage() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [imgIndex, setImgIndex] = useState(0);
   const [closing, setClosing] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const active = PROJECTS.find((p) => p.id === activeId) ?? null;
 
@@ -145,6 +164,56 @@ export default function PortofoliuPage() {
       setActiveId(null);
       setClosing(false);
     }, 260);
+  };
+
+  const shareProject = async (
+    p: Project,
+    e: React.MouseEvent<HTMLButtonElement>,
+    feedbackKey: string,
+  ) => {
+    e.stopPropagation();
+
+    const shareUrl =
+      typeof window !== "undefined"
+        ? `${window.location.origin}${window.location.pathname}#${p.id}`
+        : "";
+
+    try {
+      if (typeof navigator !== "undefined" && navigator.share) {
+        let filesToShare: File[] | undefined;
+
+        try {
+          const res = await fetch(p.cover);
+          const blob = await res.blob();
+          const file = new File(
+            [blob],
+            `${p.id}.${(blob.type.split("/")[1] || "jpg")}`,
+            { type: blob.type || "image/jpeg" },
+          );
+          if (
+            typeof navigator.canShare === "function" &&
+            navigator.canShare({ files: [file] })
+          ) {
+            filesToShare = [file];
+          }
+        } catch {
+          // thumbnail couldn't be fetched/shared as a file — fall back to link-only share
+        }
+
+        await navigator.share({
+          title: p.title,
+          text: `${p.title} — ${p.category}`,
+          url: shareUrl,
+          ...(filesToShare ? { files: filesToShare } : {}),
+        });
+      } else if (typeof navigator !== "undefined" && navigator.clipboard) {
+        await navigator.clipboard.writeText(shareUrl);
+        setCopiedId(feedbackKey);
+        window.setTimeout(() => setCopiedId(null), 1600);
+      }
+    } catch {
+      // user cancelled the share sheet or it failed silently — nothing to do
+    }
   };
 
   // ESC pentru închidere + lock scroll cât timp popup-ul e deschis
@@ -215,6 +284,19 @@ export default function PortofoliuPage() {
                 {String(i + 1).padStart(2, "0")}
               </span>
 
+              <button
+                onClick={(e) => shareProject(p, e, p.id)}
+                aria-label={`Distribuie ${p.title}`}
+                className="absolute top-4 right-4 z-20 h-9 w-9 flex items-center justify-center border border-white/20 text-white/70 bg-black/40 opacity-100 md:opacity-0 md:group-hover:opacity-100 hover:border-amber-500 hover:text-amber-500 transition-all duration-300"
+              >
+                <ShareIcon />
+              </button>
+              {copiedId === p.id && (
+                <span className="absolute top-4 right-14 z-20 text-[10px] tracking-widest uppercase bg-black/70 border border-amber-500/40 text-amber-500 px-2 py-1">
+                  Link copiat
+                </span>
+              )}
+
               <div className="absolute bottom-0 left-0 right-0 p-5 md:p-6 translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
                 <div className="h-[1px] w-8 bg-amber-500 mb-3 scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-500" />
                 <h3 className="text-lg md:text-xl font-light uppercase tracking-wide">
@@ -231,7 +313,7 @@ export default function PortofoliuPage() {
         {/* POPUP / MODAL — reveal premium */}
         {active && (
           <div
-            className={`fixed inset-0 z-50 flex items-center justify-center p-4 md:p-10 transition-opacity duration-300 ${
+            className={`fixed inset-0 z-50 flex items-center justify-center p-0 md:p-10 transition-opacity duration-300 ${
               closing ? "opacity-0" : "opacity-100"
             }`}
           >
@@ -243,7 +325,7 @@ export default function PortofoliuPage() {
 
             {/* panel */}
             <div
-              className={`relative z-10 w-full max-w-6xl max-h-[90vh] bg-[#161616] border border-white/10 overflow-hidden grid grid-cols-1 md:grid-cols-2 transition-all duration-300 ease-out ${
+              className={`relative z-10 w-full h-full md:h-auto max-w-6xl md:max-h-[90vh] bg-[#161616] border border-white/10 overflow-y-auto md:overflow-hidden grid grid-cols-1 md:grid-cols-2 transition-all duration-300 ease-out ${
                 closing
                   ? "opacity-0 scale-[0.98] translate-y-2"
                   : "opacity-100 scale-100 translate-y-0"
@@ -257,8 +339,21 @@ export default function PortofoliuPage() {
                 ✕
               </button>
 
+              <button
+                onClick={(e) => shareProject(active, e, "modal")}
+                aria-label={`Distribuie ${active.title}`}
+                className="absolute top-4 right-16 md:top-6 md:right-20 z-20 h-10 w-10 flex items-center justify-center border border-white/20 text-white/70 hover:border-amber-500 hover:text-amber-500 transition-all duration-300 bg-black/40"
+              >
+                <ShareIcon />
+              </button>
+              {copiedId === "modal" && (
+                <span className="absolute top-4 right-28 md:top-6 md:right-32 z-20 text-[10px] tracking-widest uppercase bg-black/70 border border-amber-500/40 text-amber-500 px-2 py-1">
+                  Link copiat
+                </span>
+              )}
+
               {/* Imagine principală + navigare */}
-              <div className="relative bg-black aspect-[4/5] md:aspect-auto md:h-full">
+              <div className="relative bg-black h-[42vh] sm:h-[48vh] md:h-full md:aspect-auto shrink-0">
                 <Image
                   key={imgIndex}
                   src={active.images[imgIndex]}
@@ -312,11 +407,11 @@ export default function PortofoliuPage() {
               </div>
 
               {/* Detalii proiect */}
-              <div className="relative p-8 md:p-12 overflow-y-auto flex flex-col">
+              <div className="relative p-6 sm:p-8 md:p-12 md:overflow-y-auto flex flex-col">
                 <span className="text-xs tracking-[0.3em] uppercase opacity-50">
                   {active.category}
                 </span>
-                <h3 className="text-3xl md:text-4xl font-light uppercase tracking-wide mt-3">
+                <h3 className="text-2xl sm:text-3xl md:text-4xl font-light uppercase tracking-wide mt-3">
                   {active.title}
                 </h3>
                 <div className="h-[1px] w-12 bg-amber-500 my-6" />

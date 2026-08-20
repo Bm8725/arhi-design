@@ -189,9 +189,9 @@ const markAllAsRead = async () => {
       href: '/servicii',
       icon: Briefcase,
       subOptions: [
-        { name: 'Design Interior', href: '/DesignInterior' },
-        { name: 'Proiectare & Arhitectură', href: '/noi' },
-        { name: 'Randări 3D ', href: '/noi' },
+     
+        { name: 'Proiectare & Arhitectură', href: '/proiectare-arhitectura' },
+        { name: 'Randări 3D ', href: '/randari-3d' },
 
       ]
     },

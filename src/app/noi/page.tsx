@@ -274,16 +274,16 @@ export default function AboutPage() {
 
         <div className={`a-wrap${mounted ? ' ready' : ''}`}>
           <div className="a-eyebrow">Manifestul Nostru</div>
-          <h1 className="a-title">Arhitectură cu <em>sens.</em></h1>
+          <h1 className="a-title">Birou de arhitectura  <em>arh. Bogdan Șotîngeanu</em></h1>
 
           <div className="a-content">
             <p>
-              Suntem un colectiv de arhitecți dedicați creării de spații care transcend tendințele trecătoare. 
-              Găsim echilibrul perfect între rigoarea tehnică, funcționalitatea absolută și estetica minimalistă.
+                 Suntem un birou de arhitectura condus de catre domnul Arhitect Bogdan Șotîngeanu, specializat în proiectarea de spații civile cat si industriale cu o viziune unica. 
             </p>
             <p>
-              Fiecare linie trasată în laboratorul nostru de proiectare are un scop definit. Nu construim doar 
+              Fiecare linie trasată în biroul nostru de proiectare are un scop definit. Nu construim doar 
               structuri, ci modelăm experiențe umane, lumină naturală și volume geometrice pure.
+              Biroul nostru se afla in mun. Targoviste, jud. Dambovita.
             </p>
           </div>
 
@@ -298,7 +298,11 @@ export default function AboutPage() {
             </div>
             <div className="a-spec-item">
               <div className="a-spec-label">Echipa</div>
-              <div className="a-spec-value">Arhitecți, designeri de interior și ingineri uniți de aceeași viziune riguroasă.</div>
+              <div className="a-spec-value">Specialisti, designeri de interior și ingineri uniți de aceeași viziune riguroasă.</div>
+            </div>
+                        <div className="a-spec-item">
+              <div className="a-spec-label">Contact</div>
+              <div className="a-spec-value">+40 743 193 627 </div>
             </div>
           </div>
 

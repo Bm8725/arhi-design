@@ -8,6 +8,7 @@ import Link from 'next/link';
    accente amber-500, uppercase/tracking-wide/font-light.
    ───────────────────────────────────────────────────────────── */
 
+   
 const FAZE = [
   {
     n: "01",

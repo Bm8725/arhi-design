@@ -8,7 +8,7 @@ import WhatsAppWidget from '@/components/WhatsAppWidget'
 
 const SITE_URL = 'https://arhi-design.vercel.app'
 const SITE_TITLE = 'proarh4d.ro | Birou de proiectare arhitecturala Dambovita.'
-const SITE_TEXT = 'Proiectare arhitecturala. Dambovita. Romania'
+const SITE_TEXT = 'Proiectare arhitecturala. Arh. Bogdan Sotingeanu. Targoviste, Dambovita. Romania'
 
 export default function AboutPage() {
   const [mounted, setMounted] = useState(false)

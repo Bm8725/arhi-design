@@ -62,19 +62,31 @@ export default function Hero() {
       {/* 2. CONȚINUTUL PLUTITOR - DROP-SHADOW INTENS PENTRU LIZIBILITATE PE ALB/CULORI */}
       <div className="absolute inset-0 z-20 flex flex-col justify-between p-6 sm:p-12 lg:p-20 drop-shadow-[0_4px_12px_rgba(0,0,0,0.95)]">
         
-        {/* TOP ROW: LOGO ȘI CĂUTARE */}
-        <div className="w-full flex justify-between items-start">
-          <div className="space-y-1">
-            <span className="text-[10px] font-mono tracking-[0.4em] text-white/70 uppercase block">
-              / STUDIO ARHITECTURĂ
-            </span>
-            <div className="text-xs font-mono tracking-widest text-white font-bold">
-              ARHI.<span className="italic text-neutral-200">DESIGN</span>
-            </div>
-          </div>
-          
+{/* TOP ROW: LOGO ȘI CĂUTARE */}
+<div className="w-full flex justify-between items-start pt-10 pb-6 border-b border-white/5">
+  <div className="space-y-2 group cursor-default">
+    {/* Numele arhitectului cu un indicator minimalist */}
+    <div className="flex items-center gap-2">
 
-        </div>
+      <span className="text-[10px] font-mono tracking-[0.4em] text-white/60 uppercase block transition-colors duration-300 group-hover:text-white">
+        ARH. BOGDAN SOTANGEANU
+      </span>
+    </div>
+
+    {/* Brand-ul principal structurat curat */}
+    <div className="space-y-1">
+      <div className="text-sm font-mono tracking-[0.25em] text-white font-black uppercase">
+        PROARH<span className="text-yellow-400">.4D</span>
+      </div>
+      <div className="text-[10px] font-mono tracking-wider text-neutral-400 italic font-medium max-w-xs sm:max-w-none leading-relaxed">
+        birou de proiectare și consultanță arhitecturală
+      </div>
+    </div>
+  </div>
+  
+  {/* Aici poți plasa componenta de căutare sau meniul în dreapta */}
+</div>
+
 
         {/* CENTER/MAIN ROW: TITLURI PESTE VIDEO */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-end w-full my-auto">
@@ -88,35 +100,51 @@ export default function Hero() {
             </h1>
           </div>
 
-          {/* CASĂ TEXT DREAPTA FIXĂ PENTRU REZIDENȚIAL / PREMIUM */}
-          <div className="lg:col-span-6 space-y-4 lg:max-w-md lg:justify-self-end border-l-2 border-white pl-6 lg:pl-8 py-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)]">
-            <span className="text-[10px] font-mono tracking-widest text-white/90 uppercase block font-bold">
-              CONCEPT / AUTORIZARE / EXECUȚIE
-            </span>
-            <h2 className="text-xl sm:text-3xl font-bold tracking-tight text-white uppercase">
-              Arhitectură Rezidențială & proiectare.
-            </h2>
-            <p className="text-white font-medium text-xs sm:text-sm leading-relaxed tracking-wide opacity-95">
-              Case si Vile unicat, ansambluri premium și spații interioare
-               arhitecturale configurate prin detalii riguroase și materiale moderne.
-            </p>
-          </div>
+{/* CASĂ TEXT DREAPTA FIXĂ PENTRU REZIDENȚIAL / PREMIUM */}
+<div className="group lg:col-span-6 space-y-5 lg:max-w-md lg:justify-self-end relative px-6 lg:px-8 py-6 rounded-2xl border border-white/10 bg-black/40 backdrop-blur-md shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] transition-all duration-500 hover:border-yellow-400/40 hover:shadow-[0_0_30px_rgba(234,179,8,0.15)] overflow-hidden">
+  
+  {/* Linie decorativă stânga cu gradient animat */}
+  <div className="absolute left-0 top-0 bottom-0 w-[3px] bg-gradient-to-b from-white via-white/50 to-transparent group-hover:from-yellow-400 group-hover:via-amber-500 group-hover:to-transparent transition-all duration-500" />
+
+  {/* Efect discret de lumină ambientală (Glow) în fundal la hover */}
+  <div className="absolute -inset-px bg-gradient-to-r from-yellow-500/0 to-yellow-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-xl -z-10" />
+
+  <div className="space-y-2">
+    <span className="text-[10px] font-mono tracking-[0.25em] text-yellow-400 uppercase block font-bold transition-colors duration-300">
+      CONCEPT / CONSULTANȚĂ / AUTORIZARE / EXECUȚIE
+    </span>
+    
+    <h2 className="text-xl sm:text-3xl font-bold tracking-tight text-white uppercase leading-tight transition-transform duration-500 group-hover:translate-x-1">
+      Arhitectură Rezidențială <span className="text-yellow-400">.</span>
+    </h2>
+  </div>
+
+  <p className="text-white/90 font-normal text-xs sm:text-sm leading-relaxed tracking-wide transition-all duration-500 group-hover:text-white">
+    Case și vile unicat, ansambluri premium și spații interioare arhitecturale configurate prin detalii riguroase și materiale moderne.
+  </p>
+</div>
+
 
         </div>
 
         {/* BOTTOM ROW: CONTROALE ȘI PORTOFOLIU */}
         <div className="w-full flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-6 pt-4 border-t border-white/30 font-mono text-[11px] font-bold">
           
-          {/* LINK PORTOFOLIU */}
-          <div>
-            <Link 
-              href="/portofoliu" 
-              className="group inline-flex items-center gap-4 text-[10px] font-mono tracking-[0.3em] uppercase text-white hover:scale-105 transition-transform"
-            >
-              EXPLOREAZĂ PORTOFOLIU
-              <span className="transition-transform duration-300 group-hover:translate-x-2 text-white">→</span>
-            </Link>
-          </div>
+        <div>
+          <Link 
+            href="/portofoliu" 
+            className="group relative inline-flex items-center gap-4 px-6 py-3 rounded-lg bg-yellow-400 text-[14px] font-mono font-bold tracking-[0.3em] uppercase text-black transition-all duration-300 hover:scale-105 hover:bg-yellow-300"
+          >
+            {/* Efectul de blur din spate (Glow animat) */}
+            <span className="absolute inset-0 -z-10 rounded-lg bg-yellow-400/60 blur-md opacity-75 animate-pulse group-hover:blur-xl group-hover:bg-yellow-400 transition-all duration-300"></span>
+            
+            EXPLOREAZĂ PORTOFOLIU 
+            <span className="inline-block transition-transform duration-300 group-hover:translate-x-2">
+              →
+            </span>
+          </Link>
+        </div>
+
 
           {/* INDICAȚIE MEDIA ÎN LOC DE CONTROALE DE SLIDER */}
           <div className="flex items-center justify-between sm:justify-end gap-8 sm:min-w-[300px]">

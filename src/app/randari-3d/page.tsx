@@ -93,7 +93,7 @@ export default function ServiciiPage() {
         </div>
       </section>
 
-      <WhatsAppWidget />
+
       <Footer />
     </main>
   );

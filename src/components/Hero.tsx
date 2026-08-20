@@ -69,7 +69,7 @@ export default function Hero() {
     <div className="flex items-center gap-2">
 
       <span className="text-[10px] font-mono tracking-[0.4em] text-white/60 uppercase block transition-colors duration-300 group-hover:text-white">
-        ARH. BOGDAN SOTANGEANU
+        ARH. Bogdan Șotîngeanu
       </span>
     </div>
 

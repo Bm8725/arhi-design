@@ -91,6 +91,38 @@ const PROJECTS: Project[] = [
     description: ["Biserică ortodoxă nouă cu plan treflat și turlă octogonală pe naos (H max = 16,50 m), în tradiția arhitecturii muntenești: pridvor pe coloane, fațade albe cu arcaturi decorative, soclu din piatră. Amplasată în sat Tețcoiu, com. Mătăsaru, în zona de protecție a unui monument istoric din 1678, pe un teren amenajat cu alei, parcare și spațiu verde generos. Proiectearh 4D S.R.L., arh. Bogdan Șotîngeanu."],
   },
 
+  {
+    id: "proj-05",
+    title: "Amenajare spații comerciale ",
+    category: "comercial/futurist",
+    year: "-",
+    location: "corp C5, B-dul Unirii nr. 6-8, Târgoviște",
+    area: "1.432,75m²",
+    status: "realizat",
+    cover: "/futurist.png",
+    images: ["/futurist.png",
+              "/futurist1.png",
+              "/futurist2.png",
+              "/futurist3.png",
+    ],
+    description: ["Conversia unei hale existente într-un spațiu comercial de 1.432,75 mp construiți, cu o sală liberă de peste 1.250 mp pe deschidere de 18,70 m. Fațada este reconfigurată contemporan – fațadă ventilată din lambriuri metalice, benzi vitrate continue și copertine metalice care marchează accesele – într-o cromatică galben, gri antracit și accente roșii."],
+  },
+  {
+    id: "proj-05",
+    title: "Locuinta P+M",
+    category: "PRIVAT / REZIDENȚIAL",
+    year: "2026",
+    location: "Cartier Priseaca, Mun. Târgoviște, Crangului nr.6 G",
+    area: "160 m²",
+    status: "in curs de autorizare",
+    cover: "/balcangiu.jpeg",
+    images: ["/balcangiu.jpeg",
+              "/balcangiu1.jpeg",
+              "/balcangiu2.jpeg",
+            
+    ],
+    description: [" Locuinta P+M aflata in curs de autorizare, aflata  in Cartier Priseaca, Mun. Târgoviște, Crangului nr.6 G, cu o suprafata construita de 160 m². Proiectearh 4D S.R.L., arh. Bogdan Șotîngeanu."],
+  },
 
 ];
 

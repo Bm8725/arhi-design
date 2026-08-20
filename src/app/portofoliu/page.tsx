@@ -166,6 +166,7 @@ export default function PortofoliuPage() {
     }, 260);
   };
 
+  //////// share handler //////
   const shareProject = async (
     p: Project,
     e: React.MouseEvent<HTMLButtonElement>,
@@ -202,7 +203,7 @@ export default function PortofoliuPage() {
 
         await navigator.share({
           title: p.title,
-          text: `${p.title} — ${p.category}`,
+          text: `${p.title} — ${p.category}\nBirou de arhitectură arh. Bogdan Șotîngeanu — Proiectearh 4D`,
           url: shareUrl,
           ...(filesToShare ? { files: filesToShare } : {}),
         });
@@ -215,7 +216,7 @@ export default function PortofoliuPage() {
       // user cancelled the share sheet or it failed silently — nothing to do
     }
   };
-
+  
   // ESC pentru închidere + lock scroll cât timp popup-ul e deschis
   useEffect(() => {
     if (!active) return;

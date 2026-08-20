@@ -1,39 +1,196 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import WhatsAppWidget from '@/components/WhatsAppWidget'
 
+const SITE_URL = 'https://arhi-design.vercel.app'
+const SITE_TITLE = 'proarh4d.ro | Birou de proiectare arhitecturala Dambovita.'
+const SITE_TEXT = 'Proiectare arhitecturala. Dambovita. Romania'
+
 export default function AboutPage() {
   const [mounted, setMounted] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
+  const [cardDataUrl, setCardDataUrl] = useState<string | null>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
 
-  useEffect(() => { 
+  useEffect(() => {
     setTimeout(() => setMounted(true), 50)
   }, [])
 
-  // Datele fixe pentru ca funcția de share să trimită link-ul curat pe rețelele sociale
-  async function handleShare() {
-    const shareData = {
-      title: 'proarh4d.ro | Birou de proiectare arhitecturala Dambovita.',
-      text: 'Proiectare arhitecturala. Dambovita. Romania',
-      url: 'https://arhi-design.vercel.app'
+  // ── generează cardul de share pe <canvas>, o singură dată ──
+  const drawCard = useCallback(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return null
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return null
+
+    const W = canvas.width
+    const H = canvas.height
+
+    // fundal
+    ctx.fillStyle = '#0c0c0c'
+    ctx.fillRect(0, 0, W, H)
+    const grad = ctx.createRadialGradient(W * 0.18, H * 0.22, 0, W * 0.18, H * 0.22, W * 0.85)
+    grad.addColorStop(0, 'rgba(226,179,110,0.12)')
+    grad.addColorStop(1, 'rgba(12,12,12,0)')
+    ctx.fillStyle = grad
+    ctx.fillRect(0, 0, W, H)
+
+    // grilă subtilă, ca pe pagină
+    ctx.strokeStyle = 'rgba(255,255,255,0.045)'
+    ctx.lineWidth = 1
+    for (let x = 0; x <= W; x += 60) {
+      ctx.beginPath()
+      ctx.moveTo(x, 0)
+      ctx.lineTo(x, H)
+      ctx.stroke()
+    }
+    for (let y = 0; y <= H; y += 60) {
+      ctx.beginPath()
+      ctx.moveTo(0, y)
+      ctx.lineTo(W, y)
+      ctx.stroke()
     }
 
-    try {
-      if (navigator.share) {
-        await navigator.share(shareData)
+    // motiv arhitectural abstract, colț dreapta-jos
+    ctx.strokeStyle = 'rgba(226,179,110,0.4)'
+    ctx.lineWidth = 1.5
+    ctx.beginPath()
+    ctx.moveTo(W - 280, H - 70)
+    ctx.lineTo(W - 170, H - 230)
+    ctx.lineTo(W - 60, H - 70)
+    ctx.stroke()
+    ctx.beginPath()
+    ctx.moveTo(W - 230, H - 70)
+    ctx.lineTo(W - 230, H - 150)
+    ctx.moveTo(W - 100, H - 70)
+    ctx.lineTo(W - 100, H - 150)
+    ctx.stroke()
+
+    // ramă fină exterioară
+    ctx.strokeStyle = 'rgba(226,179,110,0.25)'
+    ctx.lineWidth = 1
+    ctx.strokeRect(20, 20, W - 40, H - 40)
+
+    const marginX = 72
+
+    // eyebrow
+    ctx.fillStyle = '#e2b36e'
+    ctx.font = '600 19px "DM Mono", monospace'
+    ctx.textBaseline = 'alphabetic'
+    ctx.fillText('M A N I F E S T U L   N O S T R U', marginX, 118)
+
+    // titlu
+    ctx.fillStyle = '#ffffff'
+    ctx.font = '400 74px "Playfair Display", Georgia, serif'
+    ctx.fillText('Arhitectură cu', marginX, 226)
+    ctx.fillStyle = '#e2b36e'
+    ctx.font = 'italic 400 74px "Playfair Display", Georgia, serif'
+    ctx.fillText('sens.', marginX, 310)
+
+    // citat
+    ctx.fillStyle = 'rgba(225,225,225,0.85)'
+    ctx.font = '400 21px "DM Mono", monospace'
+    const words =
+      'Modelăm experiențe umane, lumină naturală și volume geometrice pure.'.split(' ')
+    let line = ''
+    let curY = 390
+    const lineHeight = 32
+    const maxWidth = 680
+    for (let n = 0; n < words.length; n++) {
+      const testLine = line + words[n] + ' '
+      if (ctx.measureText(testLine).width > maxWidth && n > 0) {
+        ctx.fillText(line, marginX, curY)
+        line = words[n] + ' '
+        curY += lineHeight
       } else {
-        await navigator.clipboard.writeText(shareData.url)
-        setCopied(true)
-        setTimeout(() => setCopied(false), 2000)
+        line = testLine
       }
-    } catch (err) {
-      console.log('Eroare la share:', err)
+    }
+    ctx.fillText(line, marginX, curY)
+
+    // footer
+    ctx.fillStyle = '#e2b36e'
+    ctx.font = '600 19px "DM Mono", monospace'
+    ctx.fillText('PROARH.4D', marginX, H - 56)
+    ctx.fillStyle = 'rgba(255,255,255,0.5)'
+    ctx.font = '400 17px "DM Mono", monospace'
+    ctx.fillText('proarh4d.ro', marginX, H - 30)
+
+    return canvas.toDataURL('image/png')
+  }, [])
+
+  useEffect(() => {
+    const url = drawCard()
+    if (url) setCardDataUrl(url)
+  }, [drawCard])
+
+  // ESC pentru închiderea panoului de share
+  useEffect(() => {
+    if (!shareOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShareOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [shareOpen])
+
+  async function handleNativeShare() {
+    try {
+      let filesToShare: File[] | undefined
+
+      if (cardDataUrl) {
+        try {
+          const res = await fetch(cardDataUrl)
+          const blob = await res.blob()
+          const file = new File([blob], 'proarh4d-arhitectura-cu-sens.png', {
+            type: 'image/png',
+          })
+          if (typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
+            filesToShare = [file]
+          }
+        } catch {
+          // dacă imaginea nu poate fi atașată, continuăm doar cu linkul
+        }
+      }
+
+      if (navigator.share) {
+        await navigator.share({
+          title: SITE_TITLE,
+          text: SITE_TEXT,
+          url: SITE_URL,
+          ...(filesToShare ? { files: filesToShare } : {}),
+        })
+      } else {
+        await handleCopyLink()
+      }
+    } catch {
+      // share anulat de utilizator — nu facem nimic
     }
   }
+
+  async function handleCopyLink() {
+    await navigator.clipboard.writeText(SITE_URL)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  function handleDownload() {
+    if (!cardDataUrl) return
+    const a = document.createElement('a')
+    a.href = cardDataUrl
+    a.download = 'proarh4d-arhitectura-cu-sens.png'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+  }
+
+  const shareText = encodeURIComponent(`${SITE_TITLE} — ${SITE_TEXT}`)
+  const shareUrlEnc = encodeURIComponent(SITE_URL)
 
   return (
     <>
@@ -89,12 +246,31 @@ export default function AboutPage() {
         .a-links{display:flex;justify-content:space-between;margin-top:48px;padding-top:22px;border-top:1px solid rgba(255,255,255,0.15)}
         .a-link{font-size:9.5px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.5);text-decoration:none;transition:color 0.2s}
         .a-link:hover{color:#ffffff}
+
+        /* ── panou de share cu card generat ── */
+        .a-share-backdrop{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,0.78);backdrop-filter:blur(8px);opacity:0;pointer-events:none;transition:opacity .3s ease}
+        .a-share-backdrop.open{opacity:1;pointer-events:auto}
+        .a-share-panel{position:relative;width:100%;max-width:460px;background:#101010;border:1px solid rgba(226,179,110,0.25);padding:24px;transform:scale(.95) translateY(14px);opacity:0;transition:transform .4s cubic-bezier(.16,1,.3,1),opacity .4s ease}
+        .a-share-backdrop.open .a-share-panel{transform:scale(1) translateY(0);opacity:1}
+        .a-share-close{position:absolute;top:14px;right:14px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;background:none;border:1px solid rgba(255,255,255,.15);color:rgba(255,255,255,.6);cursor:pointer;font-size:12px;transition:.2s}
+        .a-share-close:hover{color:#fff;border-color:rgba(255,255,255,.4);transform:rotate(90deg)}
+        .a-share-eyebrow{font-size:9.5px;letter-spacing:.28em;text-transform:uppercase;color:#e2b36e;margin-bottom:14px}
+        .a-card-preview{width:100%;aspect-ratio:1200/630;border:1px solid rgba(255,255,255,.08);overflow:hidden;margin-bottom:18px;background:#000}
+        .a-card-preview img{width:100%;height:100%;object-fit:cover;display:block}
+        .a-share-row{display:flex;gap:10px;margin-bottom:16px}
+        .a-share-row .a-btn-submit,.a-share-row .a-btn-share{flex:1;justify-content:center;padding:13px 16px}
+        .a-social-row{display:flex;gap:10px}
+        .a-social-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:8px;height:38px;border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.6);text-decoration:none;font-size:9px;letter-spacing:.18em;text-transform:uppercase;transition:.2s}
+        .a-social-btn:hover{border-color:#e2b36e;color:#e2b36e}
       `}</style>
 
       <div className="a-root">
         <div className="a-ambient" />
         <div className="a-grid" />
         <Navbar />
+
+        {/* canvas ascuns, folosit pentru generarea cardului de share */}
+        <canvas ref={canvasRef} width={1200} height={630} style={{ display: 'none' }} />
 
         <div className={`a-wrap${mounted ? ' ready' : ''}`}>
           <div className="a-eyebrow">Manifestul Nostru</div>
@@ -134,17 +310,80 @@ export default function AboutPage() {
               </button>
             </Link>
 
-            <button type="button" className="a-btn-share" onClick={handleShare}>
+            <button type="button" className="a-btn-share" onClick={() => setShareOpen(true)}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginRight: '8px' }}>
                 <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/>
               </svg>
-              <span>{copied ? 'Link copiat!' : 'Distribuie'}</span>
+              <span>Distribuie</span>
             </button>
           </div>
 
           <div className="a-links">
            
             <Link href="/" className="a-link">← Acasă</Link>
+          </div>
+        </div>
+
+        {/* ── panoul de share cu cardul generat ── */}
+        <div
+          className={`a-share-backdrop${shareOpen ? ' open' : ''}`}
+          onClick={() => setShareOpen(false)}
+        >
+          <div className="a-share-panel" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="a-share-close"
+              aria-label="Închide"
+              onClick={() => setShareOpen(false)}
+            >
+              ✕
+            </button>
+
+            <div className="a-share-eyebrow">Cardul tău de distribuire</div>
+
+            <div className="a-card-preview">
+              {cardDataUrl && <img src={cardDataUrl} alt="Card proarh4d — Arhitectură cu sens" />}
+            </div>
+
+            <div className="a-share-row">
+              <button type="button" className="a-btn-submit" onClick={handleNativeShare}>
+                <span>Distribuie</span>
+                <div className="a-btn-arrow" />
+              </button>
+              <button type="button" className="a-btn-share" onClick={handleDownload}>
+                <span>Descarcă</span>
+              </button>
+            </div>
+
+            <div className="a-social-row">
+              <a
+                className="a-social-btn"
+                href={`https://wa.me/?text=${shareText}%20${shareUrlEnc}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                WhatsApp
+              </a>
+              <a
+                className="a-social-btn"
+                href={`https://www.linkedin.com/sharing/share-offsite/?url=${shareUrlEnc}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                LinkedIn
+              </a>
+              <a
+                className="a-social-btn"
+                href={`https://twitter.com/intent/tweet?text=${shareText}&url=${shareUrlEnc}`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                X
+              </a>
+              <button type="button" className="a-social-btn" onClick={handleCopyLink}>
+                {copied ? 'Copiat!' : 'Copiază link'}
+              </button>
+            </div>
           </div>
         </div>
 

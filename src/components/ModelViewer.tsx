@@ -37,8 +37,8 @@ export default function ModelViewer() {
 
   async function handleNativeShare() {
     const pageUrl = typeof window !== 'undefined' ? window.location.href : '';
-    const title = 'Randare 3D interactivă — Proarh.4D';
-    const text = 'Uite randarea 3D a proiectului, direct din browser.';
+    const title = 'Interactive 3D Render — Proarh.4D';
+    const text = 'This is the 3D render of the project 3dPool (3D Engine powered by BM). proarh.4d-arh. Bogdan Sotîngeanu. Birou de arhitectura +40 743 193 627. Targoviste, Dambovita.';
 
     try {
       let filesToShare: File[] | undefined;

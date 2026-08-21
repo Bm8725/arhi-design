@@ -62,7 +62,6 @@ export default function LoginPage() {
   }
 
   // FUNCTIA PENTRU LOGARE RAPIDĂ CU FACE ID / PASSKEY
-
 async function handlePasskeyLogin() {
   setError('')
   setLoading(true)

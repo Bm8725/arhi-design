@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -150,6 +150,10 @@ export default function PortofoliuPage() {
   const [closing, setClosing] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  // swipe (mobil)
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+
   const active = PROJECTS.find((p) => p.id === activeId) ?? null;
 
   const openProject = (id: string) => {
@@ -164,6 +168,31 @@ export default function PortofoliuPage() {
       setActiveId(null);
       setClosing(false);
     }, 260);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (!active || active.images.length <= 1) return;
+    const delta = touchStartX.current - touchEndX.current;
+    const threshold = 40; // px minim ca să conteze drept swipe
+
+    if (delta > threshold) {
+      // swipe la stânga -> imaginea următoare
+      setImgIndex((i) => (i + 1) % active.images.length);
+    } else if (delta < -threshold) {
+      // swipe la dreapta -> imaginea anterioară
+      setImgIndex(
+        (i) => (i - 1 + active.images.length) % active.images.length,
+      );
+    }
   };
 
   //////// share handler //////
@@ -314,7 +343,7 @@ export default function PortofoliuPage() {
         {/* POPUP / MODAL — reveal premium */}
         {active && (
           <div
-            className={`fixed inset-0 z-50 flex items-center justify-center p-0 md:p-10 transition-opacity duration-300 ${
+            className={`fixed inset-0 z-50 flex items-center justify-center p-0 md:p-6 lg:p-10 transition-opacity duration-500 ${
               closing ? "opacity-0" : "opacity-100"
             }`}
           >
@@ -326,9 +355,9 @@ export default function PortofoliuPage() {
 
             {/* panel */}
             <div
-              className={`relative z-10 w-full h-full md:h-auto max-w-6xl md:max-h-[90vh] bg-[#161616] border border-white/10 overflow-y-auto md:overflow-hidden grid grid-cols-1 md:grid-cols-2 transition-all duration-300 ease-out ${
+              className={`relative z-10 w-full h-full md:w-[92vw] md:h-[90vh] lg:w-[88vw] lg:h-[88vh] max-w-[1600px] bg-[#161616] border border-white/10 overflow-y-auto md:overflow-hidden grid grid-cols-1 md:grid-cols-2 transition-all duration-500 ease-out ${
                 closing
-                  ? "opacity-0 scale-[0.98] translate-y-2"
+                  ? "opacity-0 scale-95 translate-y-4"
                   : "opacity-100 scale-100 translate-y-0"
               }`}
             >
@@ -354,7 +383,12 @@ export default function PortofoliuPage() {
               )}
 
               {/* Imagine principală + navigare */}
-              <div className="relative bg-black h-[42vh] sm:h-[48vh] md:h-full md:aspect-auto shrink-0">
+              <div
+                className="relative bg-black h-[42vh] sm:h-[48vh] md:h-full md:aspect-auto shrink-0"
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+              >
                 <Image
                   key={imgIndex}
                   src={active.images[imgIndex]}
@@ -408,11 +442,11 @@ export default function PortofoliuPage() {
               </div>
 
               {/* Detalii proiect */}
-              <div className="relative p-6 sm:p-8 md:p-12 md:overflow-y-auto flex flex-col">
+              <div className="relative p-6 sm:p-8 md:p-12 lg:p-16 md:overflow-y-auto flex flex-col">
                 <span className="text-xs tracking-[0.3em] uppercase opacity-50">
                   {active.category}
                 </span>
-                <h3 className="text-2xl sm:text-3xl md:text-4xl font-light uppercase tracking-wide mt-3">
+                <h3 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-light uppercase tracking-wide mt-3">
                   {active.title}
                 </h3>
                 <div className="h-[1px] w-12 bg-amber-500 my-6" />

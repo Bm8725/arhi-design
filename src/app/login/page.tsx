@@ -67,14 +67,17 @@ async function handlePasskeyLogin() {
   setLoading(true)
   
   try {
-    // Adăugat @ts-ignore în caz că tipul passkey nu este actualizat local în SDK-ul Supabase
-    // @ts-ignore
-    const { data, error } = await supabase.auth.signInWithPasskey({
+
+    const passkeyOptions: any = {
       expectedSignIn: email ? { email } : undefined
-    })
+    }
+
+
+    const { data, error } = await supabase.auth.signInWithPasskey(passkeyOptions)
 
     if (error) throw error
 
+    // DE AICI ÎN JOS ESTE CODUL TĂU CARE ERA DEJA BUN:
     const { data: userResponse } = await supabase.auth.getUser()
     if (userResponse?.user) {
       const { data: profile } = await supabase
@@ -91,8 +94,6 @@ async function handlePasskeyLogin() {
       router.refresh()
     }
   } catch (err: unknown) {
-    // Reparat: în TypeScript strict nu ai voie să folosești ': any' la catch. 
-    // Am schimbat în ': unknown' pentru a trece de verificarea Next.js / TypeScript.
     setError('Autentificarea biometrică a eșuat sau a fost anulată.')
     setLoading(false)
   }

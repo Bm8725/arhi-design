@@ -162,6 +162,20 @@ async function handlePasskeyLogin() {
         .a-links{display:flex;justify-content:space-between;margin-top:36px;padding-top:22px;border-top:1px solid rgba(255,255,255,0.15)}
         .a-link{font-size:9.5px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.5);text-decoration:none;transition:color 0.2s}
         .a-link:hover{color:#ffffff}
+
+        .a-btn-google:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.a-btn-google-spinner {
+  animation: a-spin 0.8s linear infinite;
+}
+
+@keyframes a-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
       `}</style>
 
 

@@ -207,14 +207,14 @@ async function handlePasskeyLogin() {
             <span>Connect with Google</span>
           </button>
 
-                      {/* BUTON SCHIMBAT PENTRU INTRARE CU BIOMETRIE */}
+                      {/* BUTON SCHIMBAT PENTRU INTRARE CU BIOMETRIE 
             <button type="button" onClick={handlePasskeyLogin} className="a-btn-google" style={{ marginTop: '12px' }}>
               <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 7V5a2 2 0 012-2h2m10 0h2a2 2 0 012 2v2m0 10v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2M9 9h.01M15 9h.01M9 15c.5 1.5 2 2.5 3 2.5s2.5-1 3-2.5" />
               </svg>
               <span>Enter with face ID</span>
             </button>
-
+                       */}
 
           <div className="a-links">
             <Link href="/forgot-password" className="a-link">Ai uitat parola?</Link>

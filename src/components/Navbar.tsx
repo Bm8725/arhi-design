@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
@@ -41,10 +41,16 @@ export default function Navbar() {
 
   // Notifications
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
   const desktopNotifRef = useRef<HTMLDivElement>(null);
   const mobileNotifRef = useRef<HTMLDivElement>(null);
+
+  // unreadCount se calculează mereu din notifications, nu se ține separat în state.
+  // Așa nu se poate desincroniza niciodată de realitate.
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => !n.citit).length,
+    [notifications]
+  );
 
   const supabase = createClient();
 
@@ -61,11 +67,12 @@ export default function Navbar() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
-        const { data: profile } = await supabase
+        const { data: profile, error } = await supabase
           .from('profiles')
           .select('full_name, rol')
           .eq('id', user.id)
           .single();
+        if (error) console.error('Eroare la fetch profil:', error);
         setUserName(profile?.full_name ?? user.email?.split('@')[0] ?? null);
         setUserRole(profile?.rol ?? null);
       }
@@ -80,7 +87,8 @@ export default function Navbar() {
           .select('full_name, rol')
           .eq('id', session.user.id)
           .single()
-          .then(({ data }) => {
+          .then(({ data, error }) => {
+            if (error) console.error('Eroare la fetch profil:', error);
             setUserName(data?.full_name ?? session.user!.email?.split('@')[0] ?? null);
             setUserRole(data?.rol ?? null);
           });
@@ -89,7 +97,6 @@ export default function Navbar() {
         setUserName(null);
         setUserRole(null);
         setNotifications([]);
-        setUnreadCount(0);
       }
     });
 
@@ -105,15 +112,17 @@ export default function Navbar() {
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
-      .then(({ data }) => {
-        if (data) {
-          setNotifications(data);
-          setUnreadCount(data.filter((n) => !n.citit).length);
+      .limit(30)
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('Eroare la fetch notificări:', error);
+          return;
         }
+        if (data) setNotifications(data);
       });
 
     const channel = supabase
-      .channel('navbar-notif')
+      .channel(`navbar-notif-${userId}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -122,7 +131,26 @@ export default function Navbar() {
       }, (payload) => {
         const n = payload.new as Notification;
         setNotifications((prev) => [n, ...prev]);
-        setUnreadCount((prev) => prev + 1);
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${userId}`,
+      }, (payload) => {
+        const updated = payload.new as Notification;
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === updated.id ? updated : n))
+        );
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'notifications',
+        filter: `user_id=eq.${userId}`,
+      }, (payload) => {
+        const removedId = (payload.old as Partial<Notification>).id;
+        setNotifications((prev) => prev.filter((n) => n.id !== removedId));
       })
       .subscribe();
 
@@ -143,21 +171,35 @@ export default function Navbar() {
   }, []);
 
   const markAsRead = async (id: string) => {
-    await supabase.from('notifications').update({ citit: true }).eq('id', id);
+    // Update optimist în UI, apoi trimitem cererea. Dacă eșuează, revenim.
+    const prevState = notifications;
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, citit: true } : n)));
-    setUnreadCount((prev) => Math.max(0, prev - 1));
+
+    const { error } = await supabase.from('notifications').update({ citit: true }).eq('id', id);
+    if (error) {
+      console.error('Eroare la marcare notificare ca citită:', error);
+      setNotifications(prevState); // revert
+    }
   };
-//**unred/read mark message */
-const markAllAsRead = async () => {
-  if (!userId || unreadCount === 0) return
-  await supabase
-    .from('notifications')
-    .update({ citit: true })
-    .eq('user_id', userId)
-    .eq('citit', false)
-  setNotifications((prev) => prev.map((n) => ({ ...n, citit: true })))
-  setUnreadCount(0)
-}
+
+  const markAllAsRead = async () => {
+    if (!userId || unreadCount === 0) return;
+
+    const prevState = notifications;
+    setNotifications((prev) => prev.map((n) => ({ ...n, citit: true })));
+
+    const { error } = await supabase
+      .from('notifications')
+      .update({ citit: true })
+      .eq('user_id', userId)
+      .eq('citit', false);
+
+    if (error) {
+      console.error('Eroare la marcare toate ca citite:', error);
+      setNotifications(prevState); // revert
+    }
+  };
+
   // ── Scroll ────────────────────────────────────────────────────────────────
   useEffect(() => {
     const controlNavbar = () => {
@@ -229,7 +271,7 @@ const markAllAsRead = async () => {
           notifications.map((notif) => (
             <div
               key={notif.id}
-              onClick={() => markAsRead(notif.id)}
+              onClick={() => !notif.citit && markAsRead(notif.id)}
               className={`px-4 py-3 cursor-pointer transition-colors hover:bg-white/5 ${
                 notif.citit ? 'opacity-50' : 'border-l-2 border-amber-500'
               }`}
@@ -282,80 +324,79 @@ const markAllAsRead = async () => {
             </Link>
 
             {/* NAV LINKS */}
-          {/* NAV LINKS */}
-<div className="flex items-center gap-10 text-xs font-bold tracking-[0.15em] uppercase">
-  {navigation.map((item) => (
-    <div
-      key={item.name}
-      className="relative list-none"
-      onMouseEnter={() => item.subOptions && setActiveDropdown(item.name)}
-      onMouseLeave={() => setActiveDropdown(null)}
-    >
-      {item.subOptions ? (
-        <button className="flex items-center gap-1 py-2 cursor-pointer focus:outline-none text-white [text-shadow:0_0_10px_rgba(0,0,0,1),0_2px_8px_rgba(0,0,0,1),-1px_-1px_0_#000,1px_-1px_0_#000,-1px_1px_0_#000,1px_1px_0_#000] hover:text-amber-400 transition-colors duration-300">
-          {item.name}
-          <ChevronDown size={14} className={`transition-transform duration-300 ${activeDropdown === item.name ? 'rotate-180 text-amber-500' : ''}`} />
-        </button>
-      ) : (
-        <Link
-          href={item.href}
-          className="relative py-2 text-white [text-shadow:0_0_10px_rgba(0,0,0,1),0_2px_8px_rgba(0,0,0,1),-1px_-1px_0_#000,1px_-1px_0_#000,-1px_1px_0_#000,1px_1px_0_#000] hover:text-amber-400 transition-colors duration-300 after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-amber-500 hover:after:w-full after:transition-all after:duration-300"
-        >
-          {item.name}
-        </Link>
-      )}
+            <div className="flex items-center gap-10 text-xs font-bold tracking-[0.15em] uppercase">
+              {navigation.map((item) => (
+                <div
+                  key={item.name}
+                  className="relative list-none"
+                  onMouseEnter={() => item.subOptions && setActiveDropdown(item.name)}
+                  onMouseLeave={() => setActiveDropdown(null)}
+                >
+                  {item.subOptions ? (
+                    <button className="flex items-center gap-1 py-2 cursor-pointer focus:outline-none text-white [text-shadow:0_0_10px_rgba(0,0,0,1),0_2px_8px_rgba(0,0,0,1),-1px_-1px_0_#000,1px_-1px_0_#000,-1px_1px_0_#000,1px_1px_0_#000] hover:text-amber-400 transition-colors duration-300">
+                      {item.name}
+                      <ChevronDown size={14} className={`transition-transform duration-300 ${activeDropdown === item.name ? 'rotate-180 text-amber-500' : ''}`} />
+                    </button>
+                  ) : (
+                    <Link
+                      href={item.href}
+                      className="relative py-2 text-white [text-shadow:0_0_10px_rgba(0,0,0,1),0_2px_8px_rgba(0,0,0,1),-1px_-1px_0_#000,1px_-1px_0_#000,-1px_1px_0_#000,1px_1px_0_#000] hover:text-amber-400 transition-colors duration-300 after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-amber-500 hover:after:w-full after:transition-all after:duration-300"
+                    >
+                      {item.name}
+                    </Link>
+                  )}
 
-      {item.subOptions && (
-        <div className={`absolute left-0 top-full pt-4 w-64 transition-all duration-300 ${
-          activeDropdown === item.name ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-2 pointer-events-none'
-        }`}>
-          <div className="bg-black/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex flex-col gap-3 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
-            {item.subOptions.map((sub) => (
+                  {item.subOptions && (
+                    <div className={`absolute left-0 top-full pt-4 w-64 transition-all duration-300 ${
+                      activeDropdown === item.name ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-2 pointer-events-none'
+                    }`}>
+                      <div className="bg-black/90 backdrop-blur-xl border border-white/10 rounded-2xl p-4 flex flex-col gap-3 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                        {item.subOptions.map((sub) => (
+                          <Link
+                            key={sub.name}
+                            href={sub.href}
+                            className="text-[11px] tracking-wider text-neutral-400 hover:text-white transition-colors duration-200 py-1 border-b border-transparent hover:border-white/5"
+                          >
+                            {sub.name}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* RIGHT: Bell + Buton cont */}
+            <div className="hidden md:flex items-center gap-3">
+              {userId && (
+                <div ref={desktopNotifRef} className="relative">
+                  <button
+                    onClick={() => setShowNotifDropdown((v) => !v)}
+                    className="relative p-2 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-white transition-all"
+                  >
+                    <Bell size={16} />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                        {unreadCount > 9 ? '9+' : unreadCount}
+                      </span>
+                    )}
+                  </button>
+                  {showNotifDropdown && (
+                    <div className="absolute right-0 top-full mt-3 w-80 bg-black/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.6)] z-[100] overflow-hidden">
+                      <NotifList />
+                    </div>
+                  )}
+                </div>
+              )}
+
               <Link
-                key={sub.name}
-                href={sub.href}
-                className="text-[11px] tracking-wider text-neutral-400 hover:text-white transition-colors duration-200 py-1 border-b border-transparent hover:border-white/5"
+                href={dashboardHref}
+                className="relative inline-flex items-center justify-center bg-amber-500 text-black rounded-full px-6 py-3 text-[10px] font-bold tracking-[0.2em] uppercase transition-all duration-300 hover:bg-amber-400 active:scale-95 max-w-[160px] truncate"
               >
-                {sub.name}
+                {userName ?? 'Contul meu'}
               </Link>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  ))}
-</div>
-
-{/* RIGHT: Bell + Buton cont */}
-<div className="hidden md:flex items-center gap-3">
-  {userId && (
-    <div ref={desktopNotifRef} className="relative">
-      <button
-        onClick={() => setShowNotifDropdown((v) => !v)}
-        className="relative p-2 rounded-full border border-white/10 bg-white/5 hover:bg-white/10 text-white transition-all"
-      >
-        <Bell size={16} />
-        {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
-            {unreadCount > 9 ? '9+' : unreadCount}
-          </span>
-        )}
-      </button>
-      {showNotifDropdown && (
-        <div className="absolute right-0 top-full mt-3 w-80 bg-black/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-[0_20px_50px_rgba(0,0,0,0.6)] z-[100] overflow-hidden">
-          <NotifList />
-        </div>
-      )}
-    </div>
-  )}
-
-  <Link
-    href={dashboardHref}
-    className="relative inline-flex items-center justify-center bg-amber-500 text-black rounded-full px-6 py-3 text-[10px] font-bold tracking-[0.2em] uppercase transition-all duration-300 hover:bg-amber-400 active:scale-95 max-w-[160px] truncate"
-  >
-    {userName ?? 'Contul meu'}
-  </Link>
-</div>
+            </div>
 
           </div>
         </nav>

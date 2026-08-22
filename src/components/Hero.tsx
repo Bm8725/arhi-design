@@ -45,7 +45,7 @@ export default function Hero() {
           muted
           loop
           playsInline
-          src="/arhidesign.mp4"
+          src="/arhidesign.webm"
           className="absolute inset-0 w-full h-full object-cover"
         />
       </div>

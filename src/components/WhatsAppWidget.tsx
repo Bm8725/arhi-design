@@ -377,7 +377,7 @@ export default function WhatsAppWidget() {
                 <div className="self-start max-w-[85%] flex flex-col gap-2">
                   <div className="bg-white rounded-2xl rounded-tl-none px-3 py-2 shadow-sm">
                     <p className="text-[17px] text-neutral-700 leading-relaxed">
-                      Mulțumesc! 🙏 Pentru mai multe detalii ne puteti contacta pe wapp sau un apel telefonic! 👇
+                      Mulțumesc pentru mesaj ! 🙏 Am preluat mesajul dvs si daca doriti putem continua discutia pe whatsApp, sau ne putei apela telefonic! 👇
                     </p>
                     <div className="flex items-center justify-end gap-1 mt-1">
                       <span className="text-[9px] text-neutral-400">Acum</span>

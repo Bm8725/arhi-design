@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Send, CheckCheck, ChevronRight, ChevronLeft } from 'lucide-react';
+import { X, Send, CheckCheck, ChevronRight, ChevronLeft, Phone } from 'lucide-react';
 
 const WhatsAppIcon = ({ size = 24 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
@@ -33,7 +33,7 @@ const architects = [
     id: 1,
     name: 'Arh. Bogdan Șotîngeanu',
     role: 'suport clienti',
-    specialty: 'Arhitectura , Rezidențial',
+    specialty: 'Arhitectura  & Rezidențial',
     phone: '40743193627',
     avatar: 'BS',
     // Avatar ilustrat generat (nu e o persoană reală) — schimbă seed-ul pentru alt look,
@@ -245,9 +245,21 @@ export default function WhatsAppWidget() {
               </p>
             </div>
           </div>
-          <button onClick={handleClose} className="p-1.5 rounded-full hover:bg-white/15 text-white/80 hover:text-white transition-colors shrink-0">
-            <X size={16} />
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            {(step === 'chat' || step === 'redirect') && (
+              <a
+                href={`tel:+${selectedArchitect.phone}`}
+                className="p-1.5 rounded-full hover:bg-white/15 text-white/80 hover:text-white transition-colors"
+                aria-label="Sună acum"
+                title="Sună acum"
+              >
+                <Phone size={15} />
+              </a>
+            )}
+            <button onClick={handleClose} className="p-1.5 rounded-full hover:bg-white/15 text-white/80 hover:text-white transition-colors">
+              <X size={16} />
+            </button>
+          </div>
         </div>
 
         {/* STEP: LISTA ARHITECTI */}
@@ -360,6 +372,13 @@ export default function WhatsAppWidget() {
                     <WhatsAppIcon size={14} />
                     Deschide WhatsApp
                   </button>
+                  <a
+                    href={`tel:+${selectedArchitect.phone}`}
+                    className="flex items-center justify-center gap-2 bg-white hover:bg-neutral-50 border border-black/10 text-neutral-700 text-[11px] font-semibold py-2.5 px-4 rounded-xl transition-all active:scale-95 shadow-sm"
+                  >
+                    <Phone size={13} />
+                    Sună acum
+                  </a>
                 </div>
               )}
             </div>

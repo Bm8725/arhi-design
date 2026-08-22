@@ -376,7 +376,7 @@ export default function WhatsAppWidget() {
               {showReply && (
                 <div className="self-start max-w-[85%] flex flex-col gap-2">
                   <div className="bg-white rounded-2xl rounded-tl-none px-3 py-2 shadow-sm">
-                    <p className="text-[12px] text-neutral-700 leading-relaxed">
+                    <p className="text-[17px] text-neutral-700 leading-relaxed">
                       Mulțumesc! 🙏 Pentru mai multe detalii ne puteti contacta pe wapp sau un apel telefonic! 👇
                     </p>
                     <div className="flex items-center justify-end gap-1 mt-1">
@@ -386,14 +386,14 @@ export default function WhatsAppWidget() {
                   </div>
                   <button
                     onClick={handleOpenWhatsApp}
-                    className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold py-2.5 px-4 rounded-xl transition-all active:scale-95 shadow-[0_4px_15px_rgba(16,185,129,0.3)]"
+                    className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[17px] font-semibold py-2.5 px-4 rounded-xl transition-all active:scale-95 shadow-[0_4px_15px_rgba(16,185,129,0.3)]"
                   >
                     <WhatsAppIcon size={14} />
                     Deschide WhatsApp
                   </button>
                   <a
                     href={`tel:+${selectedArchitect.phone}`}
-                    className="flex items-center justify-center gap-2 bg-white hover:bg-neutral-50 border border-black/10 text-neutral-700 text-[11px] font-semibold py-2.5 px-4 rounded-xl transition-all active:scale-95 shadow-sm"
+                    className="flex items-center justify-center gap-2 bg-white hover:bg-neutral-50 border border-black/10 text-neutral-700 text-[17px] font-semibold py-2.5 px-4 rounded-xl transition-all active:scale-95 shadow-sm"
                   >
                     <Phone size={13} />
                     Sună acum

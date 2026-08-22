@@ -63,6 +63,7 @@ const architects = [
 // Linkuri rapide afișate sub mesajul de bun venit — ajustează path-urile la structura ta reală
 const quickLinks = [
     { label: 'Despre noi', href: '/noi' },
+     { label: 'Shop digital assets', href: '/shop' },
   { label: 'Portofoliu', href: '/portofoliu' },
   { label: 'Politica cookie', href: '/politica-cookie' },
   { label: 'Confidențialitate', href: '/politica-confidentialitate' },

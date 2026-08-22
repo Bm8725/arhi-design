@@ -45,6 +45,7 @@ export default function Hero() {
           muted
           loop
           playsInline
+          poster="/nimet.webp"
           src="/arhidesign.webm"
           className="absolute inset-0 w-full h-full object-cover"
         />

@@ -172,7 +172,8 @@ export default function WhatsAppWidget() {
   const isOpen = step !== 'idle';
 
   return (
-    <div className="fixed bottom-36 md:bottom-12 right-5 z-50 font-sans flex flex-col items-end gap-3">
+<div className="fixed inset-0 z-50 font-sans flex flex-col items-center justify-center bg-white">
+
 
       {/* animații fundal + puls, definite o singură dată */}
       <style jsx>{`
@@ -325,7 +326,7 @@ export default function WhatsAppWidget() {
               {/* Mesaj bun venit */}
               <div className="self-start max-w-[85%]">
                 <div className="bg-white rounded-2xl rounded-tl-none px-3 py-2 shadow-sm">
-                  <p className="text-[12px] text-neutral-700 leading-relaxed">
+                  <p className="text-[17px] text-neutral-700 leading-relaxed">
                     Bună! 👋 Sunt {selectedArchitect.name.replace('Arh. ', '')}. Cu ce va putem ajuta?
                   </p>
                   <div className="flex items-center justify-end gap-1 mt-1">
@@ -352,7 +353,7 @@ export default function WhatsAppWidget() {
               {sentMessage !== '' && (
                 <div className="self-end max-w-[85%]">
                   <div className="bg-[#dcf8c6] rounded-2xl rounded-tr-none px-3 py-2 shadow-sm">
-                    <p className="text-[12px] text-neutral-800 leading-relaxed">{sentMessage}</p>
+                    <p className="text-[17px] text-neutral-800 leading-relaxed">{sentMessage}</p>
                     <div className="flex items-center justify-end gap-1 mt-1">
                       <span className="text-[9px] text-neutral-500">Acum</span>
                       <CheckCheck size={10} className="text-emerald-600" />
@@ -411,7 +412,7 @@ export default function WhatsAppWidget() {
                   onChange={(e) => setUserMessage(e.target.value)}
                   placeholder="Scrie un mesaj..."
                   autoFocus
-                  className="flex-1 min-w-0 bg-white border border-black/10 rounded-full px-4 py-2 text-[12px] text-neutral-800 placeholder-neutral-400 focus:outline-none focus:border-emerald-500/50 transition-colors"
+                  className="flex-1 min-w-0 bg-white border border-black/10 rounded-full px-4 py-2 text-[17px] text-neutral-800 placeholder-neutral-400 focus:outline-none focus:border-emerald-500/50 transition-colors"
                 />
                 <button
                   type="submit"

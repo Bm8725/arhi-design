@@ -16,7 +16,7 @@ export default function Hero() {
         
         {/* Poster static stratificat dedesubt – se dizolvă lent (2.5 secunde) */}
         <div 
-          className={`absolute inset-0 bg-cover bg-center transition-all duration-[2500ms] ease-in-out z-10 ${
+          className={`absolute inset-0 bg-cover bg-center transition-all duration-[3500ms] ease-in-out z-10 ${
             isVideoLoaded ? 'opacity-0 scale-105 pointer-events-none' : 'opacity-100 scale-100'
           }`}
           style={{ backgroundImage: "url('/nimet.webp')" }}

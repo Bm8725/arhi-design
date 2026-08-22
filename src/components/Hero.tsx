@@ -1,39 +1,20 @@
 "use client";
 
-import { useEffect, useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 
 export default function Hero() {
-  const [rotate, setRotate] = useState({ x: 0, y: 0 });
-  // Stat pentru controlul precis al opacității
+  // Păstrăm doar statul pentru controlul tranziției video-ului
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
-
-  // Efect pentru mișcarea 3D pe mouse
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (window.innerWidth < 1024) return;
-      const { innerWidth, innerHeight } = window;
-      const x = (e.clientX - innerWidth / 2) / 90; 
-      const y = (e.clientY - innerHeight / 2) / 90; 
-      setRotate({ x: -y, y: x });
-    };
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
 
   return (
     <section className="relative w-full h-screen bg-black text-white overflow-hidden select-none group/hero">
       
-      {/* 1. BACKGROUND CU EFECT 3D TILT ȘI TRANZIȚIE CINEMATICĂ LENTĂ */}
-      <div 
-        className="absolute inset-0 w-full h-full transition-transform duration-1000 ease-out bg-black"
-        style={{
-          transform: `scale(1.02) rotateX(${rotate.x}deg) rotateY(${rotate.y}deg)`,
-          transformStyle: 'preserve-3d'
-        }}
-      > 
-        {/* Poster static stratificat dedesubt – se dizolvă extrem de lent (2.5 secunde) */}
+      {/* 1. BACKGROUND VIDEO STATIC (FĂRĂ TILT / ÎNCĂRCARE CPU) CU TRANZIȚIE LENTĂ */}
+      <div className="absolute inset-0 w-full h-full bg-black"> 
+        
+        {/* Poster static stratificat dedesubt – se dizolvă lent (2.5 secunde) */}
         <div 
           className={`absolute inset-0 bg-cover bg-center transition-all duration-[2500ms] ease-in-out z-10 ${
             isVideoLoaded ? 'opacity-0 scale-105 pointer-events-none' : 'opacity-100 scale-100'
@@ -41,7 +22,7 @@ export default function Hero() {
           style={{ backgroundImage: "url('/nimet.webp')" }}
         />
 
-        {/* Instanța video WebM – apare lin din fundalul negru/poster */}
+        {/* Instanța video WebM */}
         <video
           ref={videoRef}
           autoPlay
@@ -50,11 +31,11 @@ export default function Hero() {
           playsInline
           preload="auto"
           src="/arhidesign.webm"
-          // Setăm viteza redusă imediat ce video-ul este gata de redare, prevenind saltul brusc
+          // Setăm viteza redusă direct pe onCanPlay
           onCanPlay={() => {
             if (videoRef.current) videoRef.current.playbackRate = 0.25;
           }}
-          // Declanșăm fuziunea vizuală doar când video-ul rulează efectiv stabil
+          // Pornim cross-fade-ul fluid doar când video-ul rulează stabil
           onPlaying={() => setIsVideoLoaded(true)}
           className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-[2500ms] ease-in-out ${
             isVideoLoaded ? 'opacity-100' : 'opacity-0'
@@ -76,7 +57,7 @@ export default function Hero() {
       {/* 2. CONȚINUTUL PLUTITOR - DROP-SHADOW INTENS PENTRU LIZIBILITATE PE ALB/CULORI */}
       <div className="absolute inset-0 z-20 flex flex-col justify-between p-6 sm:p-12 lg:p-20 drop-shadow-[0_4px_12px_rgba(0,0,0,0.95)]">
         
-        {/* TOP ROW: LOGO ȘI CĂUTARE */}
+        {/* TOP ROW: LOGO ȘI DATE BRAND */}
         <div className="w-full flex justify-between items-start pt-10 pb-6 border-b border-white/5">
           <div className="space-y-2 group cursor-default">
             <div className="flex items-center gap-2">

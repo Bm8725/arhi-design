@@ -209,8 +209,8 @@ export default function WhatsAppWidget() {
           >
             <X size={10} />
           </button>
-         <p className="text-sm text-neutral-700 leading-relaxed">Salutare! 💬</p>
-<p className="text-xs text-neutral-500 mt-0.5">Răspundem rapid pe WhatsApp de luni până vineri, 09:00–21:00</p>
+         <p className="text-sm text-neutral-700 leading-relaxed">Salutare! 💬 👋 </p>
+<p className="text-xs text-neutral-500 mt-0.5">🫡 Răspundem rapid pe WhatsApp de luni până vineri, 09:00–21:00</p>
         </div>
       )}
 
@@ -377,7 +377,7 @@ export default function WhatsAppWidget() {
                 <div className="self-start max-w-[85%] flex flex-col gap-2">
                   <div className="bg-white rounded-2xl rounded-tl-none px-3 py-2 shadow-sm">
                     <p className="text-[12px] text-neutral-700 leading-relaxed">
-                      Mulțumesc! 🙏 Pentru mai multe detalii ne puteti contacta pe wapp sau un apel telefonic!
+                      Mulțumesc! 🙏 Pentru mai multe detalii ne puteti contacta pe wapp sau un apel telefonic! 👇
                     </p>
                     <div className="flex items-center justify-end gap-1 mt-1">
                       <span className="text-[9px] text-neutral-400">Acum</span>

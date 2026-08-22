@@ -33,11 +33,21 @@ const architects = [
     id: 1,
     name: 'Arh. Bogdan Șotîngeanu',
     role: 'suport clienti',
-    specialty: 'Design Interior & Rezidențial',
+    specialty: 'Arhitectura , Rezidențial',
     phone: '40743193627',
-    avatar: 'AP',
+    avatar: 'BS',
+    // Avatar ilustrat generat (nu e o persoană reală) — schimbă seed-ul pentru alt look,
+    // sau înlocuiește avatarUrl cu o poză reală urcată de tine dacă preferi.
+    avatarUrl: 'https://api.dicebear.com/9.x/personas/svg?seed=Bogdan&backgroundColor=065f46,047857,059669',
     schedule: 'Lun–Vin, 09:00–21:00',
   },
+];
+
+// Linkuri rapide afișate sub mesajul de bun venit — ajustează path-urile la structura ta reală
+const quickLinks = [
+  { label: 'Portofoliu', href: '/portofoliu' },
+  { label: 'Politica cookie', href: '/politica-cookie' },
+  { label: 'Confidențialitate', href: '/politica-confidentialitate' },
 ];
 
 type ChatStep = 'idle' | 'list' | 'chat' | 'redirect';
@@ -220,8 +230,11 @@ export default function WhatsAppWidget() {
                 <ChevronLeft size={18} />
               </button>
             )}
-            <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center text-white shrink-0">
-              <WhatsAppIcon size={16} />
+            <div className="w-8 h-8 rounded-full bg-white/15 overflow-hidden shrink-0 flex items-center justify-center text-white">
+              {step === 'list'
+                ? <WhatsAppIcon size={16} />
+                : <img src={selectedArchitect.avatarUrl} alt={selectedArchitect.name} className="w-full h-full object-cover" />
+              }
             </div>
             <div className="min-w-0">
               <p className="text-[11px] font-semibold text-white tracking-wide truncate">
@@ -248,8 +261,8 @@ export default function WhatsAppWidget() {
                 className="w-full flex items-center gap-3 bg-white hover:bg-neutral-50 border border-black/5 hover:border-emerald-500/30 rounded-xl px-3 py-3 transition-all group text-left shadow-sm"
               >
                 <div className="relative flex-shrink-0">
-                  <div className="w-10 h-10 rounded-full bg-emerald-50 border border-emerald-500/25 flex items-center justify-center text-emerald-600 text-sm font-bold">
-                    {arch.avatar}
+                  <div className="w-10 h-10 rounded-full bg-emerald-50 border border-emerald-500/25 overflow-hidden">
+                    <img src={arch.avatarUrl} alt={arch.name} className="w-full h-full object-cover" />
                   </div>
                   {available && (
                     <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white wa-pulse" />
@@ -289,6 +302,19 @@ export default function WhatsAppWidget() {
                     <CheckCheck size={10} className="text-emerald-500" />
                   </div>
                 </div>
+              </div>
+
+              {/* Linkuri rapide — portofoliu, cookie, confidențialitate */}
+              <div className="self-start max-w-[85%] flex flex-wrap gap-1.5">
+                {quickLinks.map((link) => (
+                  <a
+                    key={link.href}
+                    href={link.href}
+                    className="text-[10px] bg-white hover:bg-emerald-50 border border-black/10 hover:border-emerald-500/30 text-neutral-600 hover:text-emerald-700 rounded-full px-3 py-1.5 transition-colors shadow-sm"
+                  >
+                    {link.label}
+                  </a>
+                ))}
               </div>
 
               {/* Mesajul trimis — verde deschis WhatsApp clasic */}

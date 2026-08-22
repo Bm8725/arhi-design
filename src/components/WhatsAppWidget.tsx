@@ -1,3 +1,8 @@
+/**
+ * wapp widget /page.tsx
+ * author : BM
+ * date: 22-08-2026
+ */
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -33,7 +38,7 @@ const architects = [
     id: 1,
     name: 'Arh. Bogdan Șotîngeanu',
     role: 'suport clienti',
-    specialty: 'Arhitectura  & Rezidențial',
+    specialty: 'Arhitectura, Rezidențial, Consultanță',
     phone: '40743193627',
     avatar: 'BS',
     // Avatar ilustrat generat (nu e o persoană reală) — schimbă seed-ul pentru alt look,
@@ -41,10 +46,23 @@ const architects = [
     avatarUrl: 'https://api.dicebear.com/9.x/personas/svg?seed=Bogdan&backgroundColor=065f46,047857,059669',
     schedule: 'Lun–Vin, 09:00–21:00',
   },
+   /* {
+    id: 2,
+    name: 'assistant manager Sarah',
+    role: 'suport clienti',
+    specialty: 'Arhitectura  & Rezidențial',
+    phone: '40743193627',
+    avatar: 'AM',
+    // Avatar ilustrat generat (nu e o persoană reală) — schimbă seed-ul pentru alt look,
+    // sau înlocuiește avatarUrl cu o poză reală urcată de tine dacă preferi.
+    avatarUrl: 'https://api.dicebear.com/9.x/personas/svg?seed=sarah&backgroundColor=065f46,047857,059669',
+    schedule: 'Lun–Vin, 09:00–21:00',
+  }, */
 ];
 
 // Linkuri rapide afișate sub mesajul de bun venit — ajustează path-urile la structura ta reală
 const quickLinks = [
+    { label: 'Despre noi', href: '/noi' },
   { label: 'Portofoliu', href: '/portofoliu' },
   { label: 'Politica cookie', href: '/politica-cookie' },
   { label: 'Confidențialitate', href: '/politica-confidentialitate' },

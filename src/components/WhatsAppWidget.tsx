@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Send, CheckCheck, ChevronRight } from 'lucide-react';
+import { X, Send, CheckCheck, ChevronRight, ChevronLeft } from 'lucide-react';
 
 const WhatsAppIcon = ({ size = 24 }: { size?: number }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
@@ -14,12 +14,10 @@ function isAvailableNow(): boolean {
   const now = new Date();
   const utc = now.getTime() + now.getTimezoneOffset() * 60000;
 
-  // Detectează ora de vară: România e UTC+3 vara (ultimul duminică martie - ultimul duminică octombrie), UTC+2 iarna
   const jan = new Date(now.getFullYear(), 0, 1);
   const jul = new Date(now.getFullYear(), 6, 1);
   const stdOffset = Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset());
   const isDST = now.getTimezoneOffset() < stdOffset;
-  // România: UTC+2 iarna, UTC+3 vara
   const roOffset = isDST ? 3 : 2;
 
   const ro = new Date(utc + roOffset * 3600000);
@@ -44,6 +42,29 @@ const architects = [
 
 type ChatStep = 'idle' | 'list' | 'chat' | 'redirect';
 
+// Sunet scurt tip "pop", generat direct (fără fișier audio extern).
+// freq mai mare = mesaj trimis, mai joasă = reply primit.
+function playPop(freq: number) {
+  try {
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.06, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.15);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.15);
+    osc.onended = () => ctx.close();
+  } catch (_) {
+    // audio poate fi blocat de browser înainte de interacțiune — ignorăm silențios
+  }
+}
+
 export default function WhatsAppWidget() {
   const [step, setStep] = useState<ChatStep>('idle');
   const [showBubble, setShowBubble] = useState(false);
@@ -66,6 +87,17 @@ export default function WhatsAppWidget() {
     return () => clearTimeout(t);
   }, []);
 
+  // Blochează scroll-ul paginii când fereastra de chat e deschisă pe mobil (full-screen acolo)
+  useEffect(() => {
+    const isOpenNow = step !== 'idle';
+    if (isOpenNow && window.innerWidth < 640) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [step]);
+
   const handleSelectArchitect = (arch: typeof architects[0]) => {
     setSelectedArchitect(arch);
     setStep('chat');
@@ -78,10 +110,21 @@ export default function WhatsAppWidget() {
     setUserMessage('');
     setStep('redirect');
     setShowTyping(true);
+    playPop(700); // sunet trimitere — ton mai înalt
+
     setTimeout(() => {
       setShowTyping(false);
       setShowReply(true);
+      playPop(480); // sunet reply — ton mai jos
     }, 2800);
+  };
+
+  const handleBack = () => {
+    setStep('list');
+    setShowTyping(false);
+    setShowReply(false);
+    setSentMessage('');
+    setUserMessage('');
   };
 
   const handleOpenWhatsApp = () => {
@@ -102,74 +145,127 @@ export default function WhatsAppWidget() {
   return (
     <div className="fixed bottom-36 md:bottom-12 right-5 z-50 font-sans flex flex-col items-end gap-3">
 
+      {/* animații fundal + puls, definite o singură dată */}
+      <style jsx>{`
+        @keyframes wa-bg-drift {
+          0%, 100% { background-position: 0% 0%; }
+          50% { background-position: 100% 100%; }
+        }
+        @keyframes wa-pulse-ring {
+          0% { box-shadow: 0 0 0 0 rgba(16,185,129,0.45); }
+          70% { box-shadow: 0 0 0 12px rgba(16,185,129,0); }
+          100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+        }
+        .wa-animated-bg {
+          background-color: #efe7db;
+          background-image:
+            radial-gradient(circle at 20% 20%, rgba(37,211,102,0.10) 0%, transparent 40%),
+            radial-gradient(circle at 80% 30%, rgba(226,179,110,0.10) 0%, transparent 40%),
+            radial-gradient(circle at 40% 80%, rgba(37,211,102,0.08) 0%, transparent 45%),
+            radial-gradient(circle at 85% 85%, rgba(226,179,110,0.08) 0%, transparent 40%);
+          background-size: 200% 200%;
+          animation: wa-bg-drift 18s ease-in-out infinite;
+        }
+        .wa-pulse {
+          animation: wa-pulse-ring 2.4s ease-out infinite;
+        }
+      `}</style>
+
       {/* BUBBLE */}
       {showBubble && !isOpen && (
-        <div className="relative bg-[#0d0d0d]/95 backdrop-blur-xl border border-white/10 rounded-2xl rounded-br-none px-4 py-3 max-w-[200px] shadow-[0_10px_30px_rgba(0,0,0,0.5)]">
+        <div className="relative bg-white/95 backdrop-blur-xl border border-black/10 rounded-2xl rounded-br-none px-4 py-3 max-w-[200px] shadow-[0_10px_30px_rgba(0,0,0,0.18)]">
           <button
             onClick={() => setShowBubble(false)}
-            className="absolute -top-2 -right-2 w-5 h-5 bg-neutral-800 border border-white/10 rounded-full flex items-center justify-center text-neutral-400 hover:text-white transition-colors"
+            className="absolute -top-2 -right-2 w-5 h-5 bg-neutral-100 border border-black/10 rounded-full flex items-center justify-center text-neutral-500 hover:text-neutral-800 transition-colors"
           >
             <X size={10} />
           </button>
-         <p className="text-sm text-neutral-300 leading-relaxed">Salutare! 💬</p>
+         <p className="text-sm text-neutral-700 leading-relaxed">Salutare! 💬</p>
 <p className="text-xs text-neutral-500 mt-0.5">Răspundem rapid pe WhatsApp de luni până vineri, 09:00–21:00</p>
         </div>
       )}
 
-      {/* FEREASTRA CHAT */}
-      <div className={`absolute bottom-16 right-0 w-[340px] sm:w-[380px] bg-[#111] border border-white/10 rounded-2xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.8)] transition-all duration-400 ease-out origin-bottom-right ${
-        isOpen ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto' : 'opacity-0 translate-y-6 scale-95 pointer-events-none'
-      }`}>
+      {/* Overlay întunecat în spatele ferestrei, doar pe mobil (unde fereastra e full-screen) */}
+      <div
+        onClick={handleClose}
+        className={`sm:hidden fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity duration-300 ${
+          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+      />
 
-        {/* HEADER */}
-        <div className="bg-[#075E54] px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white">
+      {/* FEREASTRA CHAT — temă deschisă crem/alb, stil WhatsApp */}
+      <div className={`
+        fixed inset-x-3 top-3 bottom-3
+        sm:absolute sm:inset-auto sm:bottom-16 sm:right-0 sm:top-auto
+        sm:w-[380px]
+        w-auto
+        max-h-none sm:max-h-[560px]
+        bg-white border border-black/10 rounded-2xl overflow-hidden
+        shadow-[0_20px_60px_rgba(0,0,0,0.25)]
+        transition-all duration-300 ease-out origin-bottom-right
+        flex flex-col
+        z-50
+        ${isOpen ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto' : 'opacity-0 translate-y-6 scale-95 pointer-events-none'}
+      `}>
+
+        {/* HEADER — rămâne verde WhatsApp, contrastează cu restul crem/alb */}
+        <div className="bg-[#075E54] px-4 py-3 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {(step === 'chat' || step === 'redirect') && (
+              <button
+                onClick={handleBack}
+                className="p-1 -ml-1 rounded-full hover:bg-white/15 text-white/80 hover:text-white transition-colors shrink-0"
+                aria-label="Înapoi"
+              >
+                <ChevronLeft size={18} />
+              </button>
+            )}
+            <div className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center text-white shrink-0">
               <WhatsAppIcon size={16} />
             </div>
-            <div>
-              <p className="text-[11px] font-semibold text-white tracking-wide">
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold text-white tracking-wide truncate">
                 {step === 'list' ? 'Alege un consultant' : selectedArchitect.name}
               </p>
-              <p className="text-[9px] text-emerald-200/70 mt-0.5">
+              <p className="text-[9px] text-emerald-100/80 mt-0.5 truncate">
                 {step === 'list' ? 'Proarh.4d Studio' : selectedArchitect.specialty}
               </p>
             </div>
           </div>
-          <button onClick={handleClose} className="p-1.5 rounded-full hover:bg-white/10 text-white/60 hover:text-white transition-colors">
+          <button onClick={handleClose} className="p-1.5 rounded-full hover:bg-white/15 text-white/80 hover:text-white transition-colors shrink-0">
             <X size={16} />
           </button>
         </div>
 
         {/* STEP: LISTA ARHITECTI */}
         {step === 'list' && (
-          <div className="p-3 flex flex-col gap-2 bg-[#0d0d0d]">
+          <div className="wa-animated-bg p-3 flex flex-col gap-2 overflow-y-auto flex-1">
             <p className="text-[10px] text-neutral-500 px-1 pb-1 uppercase tracking-widest">Echipa noastră</p>
             {architects.map((arch) => (
               <button
                 key={arch.id}
                 onClick={() => handleSelectArchitect(arch)}
-                className="w-full flex items-center gap-3 bg-[#1a1a1a] hover:bg-[#222] border border-white/5 hover:border-emerald-500/20 rounded-xl px-3 py-3 transition-all group text-left"
+                className="w-full flex items-center gap-3 bg-white hover:bg-neutral-50 border border-black/5 hover:border-emerald-500/30 rounded-xl px-3 py-3 transition-all group text-left shadow-sm"
               >
                 <div className="relative flex-shrink-0">
-                  <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-sm font-bold">
+                  <div className="w-10 h-10 rounded-full bg-emerald-50 border border-emerald-500/25 flex items-center justify-center text-emerald-600 text-sm font-bold">
                     {arch.avatar}
                   </div>
                   {available && (
-                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[#1a1a1a]" />
+                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-white wa-pulse" />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[12px] font-semibold text-white truncate">{arch.name}</p>
-                  <p className="text-[10px] text-neutral-400 truncate">{arch.role}</p>
+                  <p className="text-[12px] font-semibold text-neutral-800 truncate">{arch.name}</p>
+                  <p className="text-[10px] text-neutral-500 truncate">{arch.role}</p>
                   <p className="text-[9px] mt-0.5">
                     {available
-                      ? <span className="text-emerald-400/80">● Disponibil acum</span>
-                      : <span className="text-neutral-500">● {arch.schedule}</span>
+                      ? <span className="text-emerald-600 font-medium">● Disponibil acum</span>
+                      : <span className="text-neutral-400">● {arch.schedule}</span>
                     }
                   </p>
                 </div>
-                <ChevronRight size={14} className="text-neutral-600 group-hover:text-emerald-400 transition-colors flex-shrink-0" />
+                <ChevronRight size={14} className="text-neutral-400 group-hover:text-emerald-600 group-hover:translate-x-0.5 transition-all flex-shrink-0" />
               </button>
             ))}
           </div>
@@ -179,30 +275,30 @@ export default function WhatsAppWidget() {
         {(step === 'chat' || step === 'redirect') && (
           <>
             <div
-              className="px-4 py-3 flex flex-col gap-3 overflow-y-auto"
-              style={{ minHeight: '180px', maxHeight: '220px', background: '#0d0d0d' }}
+              className="wa-animated-bg px-4 py-3 flex flex-col gap-3 overflow-y-auto flex-1"
+              style={{ minHeight: '180px' }}
             >
               {/* Mesaj bun venit */}
               <div className="self-start max-w-[85%]">
-                <div className="bg-[#1f2c34] rounded-2xl rounded-tl-none px-3 py-2">
-                  <p className="text-[12px] text-neutral-200 leading-relaxed">
+                <div className="bg-white rounded-2xl rounded-tl-none px-3 py-2 shadow-sm">
+                  <p className="text-[12px] text-neutral-700 leading-relaxed">
                     Bună! 👋 Sunt {selectedArchitect.name.replace('Arh. ', '')}. Cu ce te pot ajuta?
                   </p>
                   <div className="flex items-center justify-end gap-1 mt-1">
-                    <span className="text-[9px] text-neutral-500">Acum</span>
-                    <CheckCheck size={10} className="text-emerald-400" />
+                    <span className="text-[9px] text-neutral-400">Acum</span>
+                    <CheckCheck size={10} className="text-emerald-500" />
                   </div>
                 </div>
               </div>
 
-              {/* Mesajul trimis */}
+              {/* Mesajul trimis — verde deschis WhatsApp clasic */}
               {sentMessage !== '' && (
                 <div className="self-end max-w-[85%]">
-                  <div className="bg-[#005c4b] rounded-2xl rounded-tr-none px-3 py-2">
-                    <p className="text-[12px] text-neutral-100 leading-relaxed">{sentMessage}</p>
+                  <div className="bg-[#dcf8c6] rounded-2xl rounded-tr-none px-3 py-2 shadow-sm">
+                    <p className="text-[12px] text-neutral-800 leading-relaxed">{sentMessage}</p>
                     <div className="flex items-center justify-end gap-1 mt-1">
-                      <span className="text-[9px] text-neutral-400">Acum</span>
-                      <CheckCheck size={10} className="text-emerald-400" />
+                      <span className="text-[9px] text-neutral-500">Acum</span>
+                      <CheckCheck size={10} className="text-emerald-600" />
                     </div>
                   </div>
                 </div>
@@ -211,7 +307,7 @@ export default function WhatsAppWidget() {
               {/* Typing */}
               {showTyping && (
                 <div className="self-start">
-                  <div className="bg-[#1f2c34] rounded-2xl rounded-tl-none px-4 py-3 flex items-center gap-1.5">
+                  <div className="bg-white rounded-2xl rounded-tl-none px-4 py-3 flex items-center gap-1.5 shadow-sm">
                     <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '0ms' }} />
                     <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '150ms' }} />
                     <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '300ms' }} />
@@ -222,18 +318,18 @@ export default function WhatsAppWidget() {
               {/* Reply + buton */}
               {showReply && (
                 <div className="self-start max-w-[85%] flex flex-col gap-2">
-                  <div className="bg-[#1f2c34] rounded-2xl rounded-tl-none px-3 py-2">
-                    <p className="text-[12px] text-neutral-200 leading-relaxed">
+                  <div className="bg-white rounded-2xl rounded-tl-none px-3 py-2 shadow-sm">
+                    <p className="text-[12px] text-neutral-700 leading-relaxed">
                       Mulțumesc! 🙏 Continuăm pe WhatsApp.
                     </p>
                     <div className="flex items-center justify-end gap-1 mt-1">
-                      <span className="text-[9px] text-neutral-500">Acum</span>
-                      <CheckCheck size={10} className="text-emerald-400" />
+                      <span className="text-[9px] text-neutral-400">Acum</span>
+                      <CheckCheck size={10} className="text-emerald-500" />
                     </div>
                   </div>
                   <button
                     onClick={handleOpenWhatsApp}
-                    className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold py-2.5 px-4 rounded-xl transition-all active:scale-95 shadow-[0_4px_15px_rgba(16,185,129,0.25)]"
+                    className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-semibold py-2.5 px-4 rounded-xl transition-all active:scale-95 shadow-[0_4px_15px_rgba(16,185,129,0.3)]"
                   >
                     <WhatsAppIcon size={14} />
                     Deschide WhatsApp
@@ -244,14 +340,14 @@ export default function WhatsAppWidget() {
 
             {/* INPUT */}
             {step === 'chat' && (
-              <form onSubmit={handleSendMessage} className="px-3 py-2.5 bg-[#1a1a1a] border-t border-white/5 flex items-center gap-2">
+              <form onSubmit={handleSendMessage} className="px-3 py-2.5 bg-neutral-50 border-t border-black/5 flex items-center gap-2 shrink-0">
                 <input
                   type="text"
                   value={userMessage}
                   onChange={(e) => setUserMessage(e.target.value)}
                   placeholder="Scrie un mesaj..."
                   autoFocus
-                  className="flex-1 bg-[#2a2a2a] border border-white/10 rounded-full px-4 py-2 text-[12px] text-white placeholder-neutral-500 focus:outline-none focus:border-emerald-500/40 transition-colors"
+                  className="flex-1 min-w-0 bg-white border border-black/10 rounded-full px-4 py-2 text-[12px] text-neutral-800 placeholder-neutral-400 focus:outline-none focus:border-emerald-500/50 transition-colors"
                 />
                 <button
                   type="submit"
@@ -263,8 +359,8 @@ export default function WhatsAppWidget() {
             )}
 
             {step === 'redirect' && (
-              <div className="px-3 py-2.5 bg-[#1a1a1a] border-t border-white/5 flex items-center justify-center">
-                <p className="text-[10px] text-neutral-600 flex items-center gap-1.5">
+              <div className="px-3 py-2.5 bg-neutral-50 border-t border-black/5 flex items-center justify-center shrink-0">
+                <p className="text-[10px] text-neutral-500 flex items-center gap-1.5">
                   <WhatsAppIcon size={10} /> Continuați conversația pe WhatsApp
                 </p>
               </div>
@@ -280,10 +376,10 @@ export default function WhatsAppWidget() {
           if (!isOpen) { setStep('list'); setShowBubble(false); }
           else handleClose();
         }}
-        className={`w-11 h-11 rounded-xl flex items-center justify-center relative transition-all duration-300 active:scale-90 shadow-xl border ${
+        className={`w-11 h-11 rounded-xl flex items-center justify-center relative transition-all duration-300 active:scale-90 shadow-xl border shrink-0 z-50 ${
           isOpen
-            ? 'bg-neutral-900 border-white/10 text-amber-500'
-            : 'bg-gradient-to-tr from-emerald-600 to-green-500 border-emerald-400/20 text-white hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] hover:scale-105'
+            ? 'bg-white border-black/10 text-emerald-600'
+            : 'bg-gradient-to-tr from-emerald-600 to-green-500 border-emerald-400/20 text-white hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] hover:scale-105 wa-pulse'
         }`}
       >
         {isOpen ? <X size={18} strokeWidth={1.5} /> : <WhatsAppIcon size={20} />}

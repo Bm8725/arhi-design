@@ -307,7 +307,7 @@ export default function WhatsAppWidget() {
               <div className="self-start max-w-[85%]">
                 <div className="bg-white rounded-2xl rounded-tl-none px-3 py-2 shadow-sm">
                   <p className="text-[12px] text-neutral-700 leading-relaxed">
-                    Bună! 👋 Sunt Arhitect {selectedArchitect.name.replace('Arh. ', '')}. Cu ce va putem ajuta?
+                    Bună! 👋 Sunt {selectedArchitect.name.replace('Arh. ', '')}. Cu ce va putem ajuta?
                   </p>
                   <div className="flex items-center justify-end gap-1 mt-1">
                     <span className="text-[9px] text-neutral-400">Acum</span>

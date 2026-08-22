@@ -4,8 +4,8 @@ import { useState, useRef } from 'react';
 import type { MouseEvent as ReactMouseEvent, TouchEvent } from 'react';
 import { Eye, MoveHorizontal } from 'lucide-react';
 
-const IMG_AFTER  = '/design.png';
-const IMG_BEFORE = '/plan.png';
+const IMG_AFTER  = '/design.webp';
+const IMG_BEFORE = '/plan.webp';
 
 export default function Transformare3D() {
   const [pos, setPos]           = useState(50);

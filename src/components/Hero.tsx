@@ -33,7 +33,7 @@ export default function Hero() {
           src="/arhidesign.webm"
           // Setăm viteza redusă direct pe onCanPlay
           onCanPlay={() => {
-            if (videoRef.current) videoRef.current.playbackRate = 0.25;
+            if (videoRef.current) videoRef.current.playbackRate = 1;
           }}
           // Pornim cross-fade-ul fluid doar când video-ul rulează stabil
           onPlaying={() => setIsVideoLoaded(true)}

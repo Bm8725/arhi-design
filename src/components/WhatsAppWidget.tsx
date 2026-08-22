@@ -172,8 +172,7 @@ export default function WhatsAppWidget() {
   const isOpen = step !== 'idle';
 
   return (
-<div className="fixed inset-0 z-50 font-sans flex flex-col items-center justify-center bg-white">
-
+    <div className="fixed bottom-36 md:bottom-12 right-5 z-50 font-sans flex flex-col items-end gap-3">
 
       {/* animații fundal + puls, definite o singură dată */}
       <style jsx>{`

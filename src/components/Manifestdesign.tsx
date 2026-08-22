@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { ArrowUpRight, Maximize2 } from 'lucide-react';
-
+import Link from 'next/link';
 export default function ManifestDesign() {
   const [proiectActiv, setProiectActiv] = useState<number | null>(null);
 
@@ -104,10 +104,17 @@ export default function ManifestDesign() {
                   {proiect.locatie}
                 </div>
 
-                {/* SĂGEATĂ LUX */}
-                <div className="md:col-span-2 flex justify-end text-[#8c8275] group-hover:text-[#121212] transition-colors pt-2 md:pt-0">
-                  <ArrowUpRight size={18} className="group-hover:rotate-45 transition-transform duration-500" strokeWidth={1} />
-                </div>
+            {/* SĂGEATĂ LUX COMPONENTĂ DE TIP LINK */}
+            <div className="md:col-span-2 flex justify-end text-[#8c8275] group-hover:text-[#121212] transition-colors pt-2 md:pt-0">
+              <Link href="/portofoliu">
+                <ArrowUpRight 
+                  size={18} 
+                  className="group-hover:rotate-45 transition-transform duration-500 cursor-pointer" 
+                  strokeWidth={1} 
+                />
+              </Link>
+            </div>
+
 
                 {/* FLOATING HOVER CARD IMAGE (Apare optimizat doar pe Desktop >= md) */}
                 <div 

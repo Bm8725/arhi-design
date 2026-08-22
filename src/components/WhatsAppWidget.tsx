@@ -393,7 +393,7 @@ export default function WhatsAppWidget() {
                   </button>
                   <a
                     href={`tel:+${selectedArchitect.phone}`}
-                    className="flex items-center justify-center gap-2 bg-white hover:bg-neutral-50 border border-black/10 text-neutral-700 text-[17px] font-semibold py-2.5 px-4 rounded-xl transition-all active:scale-95 shadow-sm"
+                    className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 border border-black/10 text-white text-[17px] font-semibold py-2.5 px-4 rounded-xl transition-all active:scale-95 shadow-sm"
                   >
                     <Phone size={13} />
                     Sună acum
@@ -425,7 +425,7 @@ export default function WhatsAppWidget() {
             {step === 'redirect' && (
               <div className="px-3 py-2.5 bg-neutral-50 border-t border-black/5 flex items-center justify-center shrink-0">
                 <p className="text-[10px] text-neutral-500 flex items-center gap-1.5">
-                  <WhatsAppIcon size={10} /> Continuați conversația pe WhatsApp
+                  <WhatsAppIcon size={10} /> Contact support 
                 </p>
               </div>
             )}

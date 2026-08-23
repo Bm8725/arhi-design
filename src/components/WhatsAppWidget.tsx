@@ -174,7 +174,7 @@ export default function WhatsAppWidget() {
   return (
     <div className="fixed bottom-36 md:bottom-12 right-5 z-50 font-sans flex flex-col items-end gap-3">
 
-      {/* animații fundal + puls, definite o singură dată */}
+      {/* animații fundal + puls + apariție mesaje, definite o singură dată */}
       <style jsx>{`
         @keyframes wa-bg-drift {
           0%, 100% { background-position: 0% 0%; }
@@ -197,6 +197,15 @@ export default function WhatsAppWidget() {
         }
         .wa-pulse {
           animation: wa-pulse-ring 2.4s ease-out infinite;
+        }
+
+        /* apariție fluidă a mesajelor — fade + slide up, nu instant */
+        @keyframes wa-msg-in {
+          from { opacity: 0; transform: translateY(10px) scale(0.98); }
+          to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .wa-msg-anim {
+          animation: wa-msg-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
       `}</style>
 
@@ -323,7 +332,7 @@ export default function WhatsAppWidget() {
               style={{ minHeight: '180px' }}
             >
               {/* Mesaj bun venit */}
-              <div className="self-start max-w-[85%]">
+              <div className="wa-msg-anim self-start max-w-[85%]">
                 <div className="bg-white rounded-2xl rounded-tl-none px-3 py-2 shadow-sm">
                   <p className="text-[17px] text-neutral-700 leading-relaxed">
                     Bună! 👋 Sunt {selectedArchitect.name.replace('Arh. ', '')}. Cu ce va putem ajuta?
@@ -336,7 +345,10 @@ export default function WhatsAppWidget() {
               </div>
 
               {/* Linkuri rapide — portofoliu, cookie, confidențialitate */}
-              <div className="self-start max-w-[85%] flex flex-wrap gap-1.5">
+              <div
+                className="wa-msg-anim self-start max-w-[85%] flex flex-wrap gap-1.5"
+                style={{ animationDelay: '120ms' }}
+              >
                 {quickLinks.map((link) => (
                   <a
                     key={link.href}
@@ -350,7 +362,7 @@ export default function WhatsAppWidget() {
 
               {/* Mesajul trimis — verde deschis WhatsApp clasic */}
               {sentMessage !== '' && (
-                <div className="self-end max-w-[85%]">
+                <div className="wa-msg-anim self-end max-w-[85%]">
                   <div className="bg-[#dcf8c6] rounded-2xl rounded-tr-none px-3 py-2 shadow-sm">
                     <p className="text-[17px] text-neutral-800 leading-relaxed">{sentMessage}</p>
                     <div className="flex items-center justify-end gap-1 mt-1">
@@ -363,7 +375,7 @@ export default function WhatsAppWidget() {
 
               {/* Typing */}
               {showTyping && (
-                <div className="self-start">
+                <div className="wa-msg-anim self-start">
                   <div className="bg-white rounded-2xl rounded-tl-none px-4 py-3 flex items-center gap-1.5 shadow-sm">
                     <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '0ms' }} />
                     <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -374,7 +386,7 @@ export default function WhatsAppWidget() {
 
               {/* Reply + buton */}
               {showReply && (
-                <div className="self-start max-w-[85%] flex flex-col gap-2">
+                <div className="wa-msg-anim self-start max-w-[85%] flex flex-col gap-2">
                   <div className="bg-white rounded-2xl rounded-tl-none px-3 py-2 shadow-sm">
                     <p className="text-[17px] text-neutral-700 leading-relaxed">
                       Mulțumesc pentru mesaj ! 🙏 Am preluat mesajul dvs si daca doriti putem continua discutia pe whatsApp, sau ne putei apela telefonic! 👇👇👇
@@ -386,14 +398,16 @@ export default function WhatsAppWidget() {
                   </div>
                   <button
                     onClick={handleOpenWhatsApp}
-                    className="flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[17px] font-semibold py-2.5 px-4 rounded-xl transition-all active:scale-95 shadow-[0_4px_15px_rgba(16,185,129,0.3)]"
+                    className="wa-msg-anim flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white text-[17px] font-semibold py-2.5 px-4 rounded-xl transition-all active:scale-95 shadow-[0_4px_15px_rgba(16,185,129,0.3)]"
+                    style={{ animationDelay: '140ms' }}
                   >
                     <WhatsAppIcon size={14} />
                     Deschide WhatsApp
                   </button>
                   <a
                     href={`tel:+${selectedArchitect.phone}`}
-                    className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 border border-black/10 text-white text-[17px] font-semibold py-2.5 px-4 rounded-xl transition-all active:scale-95 shadow-sm"
+                    className="wa-msg-anim flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 border border-black/10 text-white text-[17px] font-semibold py-2.5 px-4 rounded-xl transition-all active:scale-95 shadow-sm"
+                    style={{ animationDelay: '220ms' }}
                   >
                     <Phone size={13} />
                     Sună acum

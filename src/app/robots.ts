@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 
 // Next.js generează automat /robots.txt din acest fișier când e pus în app/robots.ts
-// Ajustează domeniul din baseUrl mai jos dacă nu e proarh4d.ro
+
 
 const baseUrl = 'https://proarh4d.ro'
 

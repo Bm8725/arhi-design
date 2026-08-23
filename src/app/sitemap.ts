@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
 import { createClient } from '@/lib/supabase/client'
 
-// Next.js generează automat /sitemap.xml din acest fișier când e pus în app/sitemap.ts
+
 const baseUrl = 'https://proarh4d.ro'
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {

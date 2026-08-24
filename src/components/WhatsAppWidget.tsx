@@ -207,6 +207,28 @@ export default function WhatsAppWidget() {
         .wa-msg-anim {
           animation: wa-msg-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
+        /* morph animat între iconițele butonului plutitor (WhatsApp ↔ X) */
+        .wa-fab-icon-wrap {
+          position: relative;
+          width: 20px;
+          height: 20px;
+        }
+        .wa-fab-icon {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
+        }
+        .wa-fab-icon.hidden-icon {
+          opacity: 0;
+          transform: rotate(-90deg) scale(0.4);
+        }
+        .wa-fab-icon.visible-icon {
+          opacity: 1;
+          transform: rotate(0deg) scale(1);
+        }
       `}</style>
 
       {/* BUBBLE */}
@@ -231,19 +253,22 @@ export default function WhatsAppWidget() {
         }`}
       />
 
-      {/* FEREASTRA CHAT — temă deschisă crem/alb, stil WhatsApp */}
+      {/* FEREASTRA CHAT — temă deschisă crem/alb, stil WhatsApp
+          Mobil: chiar full-screen (fără gutter, fără colțuri rotunjite).
+          Desktop (sm+): fereastră flotantă clasică. */}
       <div className={`
-        fixed inset-x-3 top-3 bottom-3
+        fixed inset-0 rounded-none
         sm:absolute sm:inset-auto sm:bottom-16 sm:right-0 sm:top-auto
-        sm:w-[380px]
+        sm:w-[380px] sm:rounded-2xl
         w-auto
         max-h-none sm:max-h-[560px]
-        bg-white border border-black/10 rounded-2xl overflow-hidden
+        bg-white border-0 sm:border sm:border-black/10 overflow-hidden
         shadow-[0_20px_60px_rgba(0,0,0,0.25)]
-        transition-all duration-300 ease-out origin-bottom-right
+        transition-[opacity,transform] duration-[420ms] ease-[cubic-bezier(0.16,1,0.3,1)] origin-bottom-right
         flex flex-col
         z-50
-        ${isOpen ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto' : 'opacity-0 translate-y-6 scale-95 pointer-events-none'}
+        pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] sm:pt-0 sm:pb-0
+        ${isOpen ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto' : 'opacity-0 translate-y-4 scale-[0.97] pointer-events-none'}
       `}>
 
         {/* HEADER — rămâne verde WhatsApp, contrastează cu restul crem/alb */}
@@ -454,7 +479,7 @@ export default function WhatsAppWidget() {
           if (!isOpen) { setStep('list'); setShowBubble(false); }
           else handleClose();
         }}
-        className={`w-11 h-11 rounded-xl flex items-center justify-center relative transition-all duration-300 active:scale-90 shadow-xl border shrink-0 z-50 ${
+        className={`w-11 h-11 rounded-xl flex items-center justify-center relative transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-90 shadow-xl border shrink-0 z-50 ${
           isOpen
             ? 'bg-white border-black/10 text-emerald-600'
             : 'bg-gradient-to-tr from-emerald-600 to-green-500 border-emerald-400/20 text-white hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] hover:scale-105 wa-pulse'

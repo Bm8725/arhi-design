@@ -90,7 +90,7 @@ function playPop(freq: number) {
     osc.stop(ctx.currentTime + 0.15);
     osc.onended = () => ctx.close();
   } catch (_) {
-    // audio poate fi blocat de browser înainte de interacțiune — ignorăm silențios
+   
   }
 }
 

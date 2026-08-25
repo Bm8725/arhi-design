@@ -315,8 +315,8 @@ export default function Navbar() {
 
             {/* LOGO */}
             <Link href="/" className="flex items-center gap-3.5 group cursor-pointer focus:outline-none select-none">
-              <div className="relative w-9 h-9 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(245,158,11,0.3)]">
-                <Image src="/proarh4d.ro.png" alt="Proarh.4d Logo" fill className="object-contain" priority />
+              <div className="relative w-13 h-13 transition-transform duration-500 ease-out group-hover:scale-110 group-hover:drop-shadow-[0_0_8px_rgba(245,158,11,0.3)]">
+                <Image src="/arhi4d.png" alt="Proarh.4d Logo" fill className="object-contain" priority />
               </div>
               <span className="text-xl font-light tracking-[0.25em] text-white uppercase">
                 Pro<span className="font-semibold text-amber-500 group-hover:text-amber-400 transition-colors duration-300">arh.4d</span>
@@ -409,8 +409,8 @@ export default function Navbar() {
 
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="relative w-8 h-8">
-            <Image src="/proarh4d.ro.png" alt="Proarh.4d Logo" fill className="object-contain" priority />
+          <div className="relative w-10 h-10">
+            <Image src="/arhi4d.png" alt="Proarh.4d Logo" fill className="object-contain" priority />
           </div>
           <span className="text-lg font-light tracking-[0.15em] text-white uppercase">
             Pro<span className="font-semibold text-amber-500">arh.4d</span>

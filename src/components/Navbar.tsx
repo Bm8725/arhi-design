@@ -409,7 +409,7 @@ export default function Navbar() {
 
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="relative w-10 h-10">
+          <div className="relative w-13 h-13">
             <Image src="/arhi4d.png" alt="Proarh.4d Logo" fill className="object-contain" priority />
           </div>
           <span className="text-lg font-light tracking-[0.15em] text-white uppercase">

@@ -18,13 +18,19 @@ export default function Footer() {
           
           {/* BRANDING ȘI ABORDARE */}
           <div className="space-y-3">
-            <Link href="/" className="text-sm font-light tracking-[0.35em] text-white uppercase block">
-              PRO<span className="text-[#e2b36e] font-normal">ARH.4D</span>
+            <Link href="/" className="text-sm font-light tracking-[0.35em] text-white uppercase flex items-center gap-3">
+              <img 
+                src="/arhi4d.png" 
+                alt="Logo" 
+                className="h-6 w-auto object-contain grayscale" 
+              />
+              <span>PRO<span className="text-[#e2b36e] font-normal">ARH.4D</span></span>
             </Link>
             <p className="text-[10px] text-white/30 tracking-wider uppercase max-w-xs leading-relaxed font-light">
               Birou arhitectura. nZEB. Proiectare 3D. Consultanta. Complet digital.
             </p>
           </div>
+
 
           {/* LINK-URI RADICAL DE MINIMALISTE */}
 <div className="flex flex-wrap gap-x-8 gap-y-3 text-[10px] uppercase tracking-[0.2em] text-white/40">

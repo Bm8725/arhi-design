@@ -31,7 +31,7 @@ export default function ManifestDesign() {
       locatie: "sat Tețcoiu, com. Mătăsaru (Dambovita), RO– în curs de execuție",
       tip: "Lacas de Cult",
       imagine: "/biserica.png"
-    }
+    },
         {
       id: 4,
       numar: "04",
@@ -39,7 +39,7 @@ export default function ManifestDesign() {
       locatie: "Romania",
       tip: "Locuință unifamilială",
       imagine: "/barbu.png"
-    }
+    },
             {
       id: 5,
       numar: "05",

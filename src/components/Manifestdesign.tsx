@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { ArrowUpRight, Maximize2 } from 'lucide-react';
 import Link from 'next/link';
+
 export default function ManifestDesign() {
   const [proiectActiv, setProiectActiv] = useState<number | null>(null);
 
@@ -43,7 +44,7 @@ export default function ManifestDesign() {
             {
       id: 5,
       numar: "05",
-      titlu: " Spații comerciale – Micro ",
+      titlu: " Spații comerciale – Micro VI",
       locatie: "Targoviste, Romania",
       tip: "Spații comerciale",
       imagine: "/spa.png"
@@ -51,11 +52,11 @@ export default function ManifestDesign() {
   ];
 
   return (
-    <section className="bg-[#faf8f5] text-[#121212] py-20 md:py-32 px-4 sm:px-6 border-t border-[#e5e0d8] relative overflow-hidden transition-colors duration-500">
+    <section className="bg-[#faf8f5] text-[#121212] py-16 sm:py-20 md:py-32 px-4 sm:px-6 border-t border-[#e5e0d8] relative transition-colors duration-500">
       <div className="max-w-7xl mx-auto">
-        
+
         {/* MANIFESTUL VIZUAL / FILOZOFIA */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 mb-20 md:mb-32 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-16 mb-16 sm:mb-20 md:mb-32 items-start">
           <div className="lg:col-span-4 space-y-2 lg:space-y-4">
             <div className="flex items-center gap-3">
               <span className="h-[1px] w-8 bg-[#8c8275]"></span>
@@ -63,12 +64,12 @@ export default function ManifestDesign() {
             </div>
             <h3 className="text-sm font-mono tracking-widest uppercase font-bold text-[#121212]">MANIFEST VIZUAL</h3>
           </div>
-          
+
           <div className="lg:col-span-8">
-            <p className="text-2xl sm:text-3xl md:text-5xl font-extralight font-serif tracking-tight leading-tight text-[#121212] max-w-4xl">
+            <p className="text-xl sm:text-2xl md:text-3xl lg:text-5xl font-extralight font-serif tracking-tight leading-tight text-[#121212] max-w-4xl">
               „Designul nu este doar despre cum arată un spațiu, ci despre comment îți <span className="italic font-normal text-[#6b6255]">măsoară timpul</span> și îți dictează starea.”
             </p>
-            <div className="h-[1px] w-32 bg-[#121212] mt-6 md:mt-8 mb-4 md:mb-6" />
+            <div className="h-[1px] w-24 sm:w-32 bg-[#121212] mt-5 sm:mt-6 md:mt-8 mb-4 md:mb-6" />
             <p className="text-xs text-[#7c7265] max-w-md leading-relaxed font-light tracking-wide">
               Fiecare volum pe care îl trasăm elimină zgomotul vizual. Lăsăm lumina naturală, betonul brut, lemnul cald și proporțiile geometrice perfecte să definească valoarea reală a unei construcții premium.
             </p>
@@ -84,59 +85,89 @@ export default function ManifestDesign() {
 
           <div className="flex flex-col">
             {proiecte.map((proiect, index) => (
-              <div 
+              <Link
+                href="/portofoliu"
                 key={proiect.id}
                 onMouseEnter={() => setProiectActiv(index)}
                 onMouseLeave={() => setProiectActiv(null)}
-                className="border-b border-[#e5e0d8] py-6 md:py-8 grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-6 items-center group cursor-pointer relative transition-all duration-300 hover:bg-[#f5f1ea]/40 md:hover:px-4"
+                className={`border-b border-[#e5e0d8] group relative block transition-colors duration-300 hover:bg-[#f5f1ea]/40 active:bg-[#f5f1ea]/60 ${
+                  proiectActiv === index ? "z-40" : "z-0"
+                }`}
               >
-                {/* NUMĂR */}
-                <div className="md:col-span-1 text-xs font-mono text-[#8c8275]">
-                  {proiect.numar}
+                {/* ───────── MOBILE / TABLET CARD (< md) ───────── */}
+                <div className="md:hidden py-6 px-1">
+                  <div className="relative w-full aspect-[16/10] overflow-hidden rounded-xl border border-[#e5e0d8] shadow-sm">
+                    <Image
+                      src={proiect.imagine}
+                      alt={proiect.titlu}
+                      fill
+                      sizes="100vw"
+                      className="object-cover object-center transition-transform duration-700 ease-out group-active:scale-105"
+                    />
+                    <span className="absolute top-3 left-3 text-[10px] font-mono tracking-widest text-white bg-black/50 backdrop-blur-sm px-2 py-1">
+                      {proiect.numar}
+                    </span>
+                  </div>
+
+                  <div className="mt-4 space-y-1.5">
+                    <p className="text-[10px] font-mono text-[#8c8275] uppercase tracking-widest">
+                      {proiect.tip}
+                    </p>
+                    <h4 className="text-lg font-light font-serif tracking-tight text-[#121212] leading-snug">
+                      {proiect.titlu}
+                    </h4>
+                    <p className="text-xs text-[#554d42] font-light tracking-wide">
+                      {proiect.locatie}
+                    </p>
+                  </div>
+
+                  <div className="mt-4 flex items-center gap-1.5 text-[11px] font-mono uppercase tracking-widest text-[#121212]">
+                    <span>Vezi proiectul</span>
+                    <ArrowUpRight
+                      size={14}
+                      strokeWidth={1.5}
+                      className="transition-transform duration-300 group-active:translate-x-0.5 group-active:-translate-y-0.5"
+                    />
+                  </div>
                 </div>
 
-                {/* TITLU ȘI TIP */}
-                <div className="md:col-span-6 space-y-1">
-                  <h4 className="text-lg md:text-2xl font-light font-serif tracking-tight group-hover:translate-x-1 md:group-hover:translate-x-2 transition-transform duration-500 ease-out text-[#121212]">
-                    {proiect.titlu}
-                  </h4>
-                  <p className="text-[10px] font-mono text-[#8c8275] uppercase tracking-widest">
-                    {proiect.tip}
-                  </p>
+                {/* ───────── DESKTOP EDITORIAL ROW (md+) ───────── */}
+                <div className="hidden md:grid grid-cols-12 gap-6 items-center py-8 md:group-hover:px-4 transition-[padding] duration-300">
+                  {/* NUMĂR */}
+                  <div className="col-span-1 text-xs font-mono text-[#8c8275] tabular-nums">
+                    {proiect.numar}
+                  </div>
+
+                  {/* TITLU ȘI TIP */}
+                  <div className="col-span-5 lg:col-span-6 space-y-1 min-w-0">
+                    <h4 className="text-xl lg:text-2xl font-light font-serif tracking-tight text-[#121212] truncate group-hover:translate-x-2 transition-transform duration-500 ease-out">
+                      {proiect.titlu}
+                    </h4>
+                    <p className="text-[10px] font-mono text-[#8c8275] uppercase tracking-widest">
+                      {proiect.tip}
+                    </p>
+                  </div>
+
+                  {/* LOCAȚIE */}
+                  <div className="col-span-4 lg:col-span-3 text-xs text-[#554d42] font-light tracking-wide leading-relaxed">
+                    {proiect.locatie}
+                  </div>
+
+                  {/* SĂGEATĂ */}
+                  <div className="col-span-2 flex justify-end text-[#8c8275] group-hover:text-[#121212] transition-colors">
+                    <ArrowUpRight
+                      size={18}
+                      strokeWidth={1}
+                      className="group-hover:rotate-45 transition-transform duration-500"
+                    />
+                  </div>
                 </div>
 
-                {/* IMAGINE PENTRU MOBIL (Apare nativ doar pe ecrane < md) */}
-                <div className="block md:hidden my-2 overflow-hidden border border-[#e5e0d8] rounded shadow-sm aspect-[16/10] relative w-full">
-                  <Image 
-                    src={proiect.imagine} 
-                    alt={proiect.titlu} 
-                    fill 
-                    className="object-cover object-center" 
-                  />
-                </div>
-
-                {/* LOCAȚIE */}
-                <div className="md:col-span-3 text-xs text-[#554d42] font-light tracking-wide md:max-w-xs break-words">
-                  {proiect.locatie}
-                </div>
-
-            {/* SĂGEATĂ LUX COMPONENTĂ DE TIP LINK */}
-            <div className="md:col-span-2 flex justify-end text-[#8c8275] group-hover:text-[#121212] transition-colors pt-2 md:pt-0">
-              <Link href="/portofoliu">
-                <ArrowUpRight 
-                  size={18} 
-                  className="group-hover:rotate-45 transition-transform duration-500 cursor-pointer" 
-                  strokeWidth={1} 
-                />
-              </Link>
-            </div>
-
-
-                {/* FLOATING HOVER CARD IMAGE (Apare optimizat doar pe Desktop >= md) */}
-                <div 
-                  className={`hidden md:block absolute right-[10%] xl:right-[15%] top-1/2 -translate-y-1/2 w-[280px] lg:w-[320px] aspect-[4/5] z-30 pointer-events-none overflow-hidden border border-[#e5e0d8] shadow-[0_30px_70px_rgba(0,0,0,0.12)] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-                    proiectActiv === index 
-                      ? 'opacity-100 scale-100 translate-x-0' 
+                {/* FLOATING HOVER CARD IMAGE (desktop only) */}
+                <div
+                  className={`hidden md:block absolute right-[4%] lg:right-[8%] xl:right-[12%] top-1/2 -translate-y-1/2 w-[220px] lg:w-[280px] xl:w-[320px] aspect-[4/5] z-30 pointer-events-none overflow-hidden border border-[#e5e0d8] shadow-[0_30px_70px_rgba(0,0,0,0.12)] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                    proiectActiv === index
+                      ? 'opacity-100 scale-100 translate-x-0'
                       : 'opacity-0 scale-95 translate-x-4'
                   }`}
                 >
@@ -145,7 +176,7 @@ export default function ManifestDesign() {
                       src={proiect.imagine}
                       alt={proiect.titlu}
                       fill
-                      sizes="320px"
+                      sizes="(min-width: 1280px) 320px, (min-width: 1024px) 280px, 220px"
                       className="object-cover object-center"
                     />
                   </div>
@@ -154,8 +185,7 @@ export default function ManifestDesign() {
                     <Maximize2 size={8} /> Detalii Concept
                   </div>
                 </div>
-
-              </div>
+              </Link>
             ))}
           </div>
         </div>

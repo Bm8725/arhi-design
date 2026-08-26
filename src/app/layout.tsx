@@ -28,29 +28,31 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// Configurare completă SEO, Favicon și Share (Open Graph)
 export const metadata: Metadata = {
   title: "Proarh.4d | Birou de Proiectare Arhitecturală & Design Interior",
-  description: "Servicii premium de arhitectură, proiectare rezidențială și comercială, randări 3D și urbanism. Dambovita. Romnania. Targoviste.",
+  description: "Servicii premium de arhitectură, proiectare rezidențială și comercială, randări 3D și urbanism. Arh. Sotingeanu Bogdan",
   
-  // 1. Configurarea pentru Favicon
+  // 1. Configurarea modernă pentru Favicon
   icons: {
-    icon: "/proarh4d.ro.png",
-    shortcut: "/proarh4d.ro.png",
-    apple: "/proarh4d.ro.png", // Pentru utilizatorii care salvează site-ul pe ecranul la iPhone
+    icon: [
+      { url: "/favicon.ico", sizes: "any" }, // Fallback pentru browsere vechi
+      { url: "/favicon.svg", type: "image/svg+xml" } // Formatul principal vectorial recomandat
+    ],
+    shortcut: "/favicon.ico",
+    apple: "/arhi4d.png", // Pictograma dedicată pentru ecranele iOS (recomandat PNG de 180x180)
   },
 
   // 2. Configurarea pentru Share pe Social Media (Facebook, WhatsApp, LinkedIn etc.)
   openGraph: {
     title: "Proarh.4d | Birou de Proiectare Arhitecturală. Arh. Sotangeanu Bogdan",
     description: "Servicii premium de arhitectură, proiectare rezidențială și comercială, randări 3D/4D și urbanism.",
-    url: "https://proarh4d.ro", // Pune aici domeniul tău final când va fi live
+    url: "https://proarh4d.ro",
     siteName: "Proarh.4d",
     images: [
       {
-        url: "/proarh4d.ro.png", // Imaginea care va apărea la share
-        width: 800,
-        height: 800,
+        url: "/arhi4d.png", // Imagine dedicată pentru social share (recomandat format 1200x630px)
+        width: 1200,
+        height: 630,
         alt: "Proarh.4d Architecture Studio",
       },
     ],
@@ -63,9 +65,10 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Proarh.4d | Birou de Proiectare Arhitecturală",
     description: "Servicii premium de arhitectură, proiectare rezidențială și comercială. Dambovita. Targoviste.",
-    images: ["/proarh4d.ro.png"],
+    images: ["/arhi4d.png"],
   },
 };
+
 
 export const viewport: import("next").Viewport = {
   themeColor: '#000000',

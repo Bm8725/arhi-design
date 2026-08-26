@@ -30,19 +30,22 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Proarh.4d | Birou de Proiectare Arhitecturală & Design Interior",
-  description: "Servicii premium de arhitectură, proiectare rezidențială și comercială, randări 3D și urbanism. Arh. Sotingeanu Bogdan",
+  description: "Servicii premium de arhitectură, proiectare rezidențială și comercială, randări 3D și urbanism. Arh. Sotangeanu Bogdan",
   
-  // 1. Configurarea modernă pentru Favicon
+  // REZOLVARE PWA: Această linie este obligatorie pentru ca browserul să citească iconițele de instalare
+  manifest: "/manifest.json",
+  
+  // 1. Configurarea pentru Favicon și Apple
   icons: {
     icon: [
-      { url: "/favicon.ico", sizes: "any" }, // Fallback pentru browsere vechi
-      { url: "/favicon.svg", type: "image/svg+xml" } // Formatul principal vectorial recomandat
+      { url: "/favicon.ico", sizes: "any" }, 
+      { url: "/favicon.svg", type: "image/svg+xml" } 
     ],
     shortcut: "/favicon.ico",
-    apple: "/arhi4d.png", // Pictograma dedicată pentru ecranele iOS (recomandat PNG de 180x180)
+    apple: "/arhi4d.png", 
   },
 
-  // 2. Configurarea pentru Share pe Social Media (Facebook, WhatsApp, LinkedIn etc.)
+  // 2. Configurarea pentru Share pe Social Media
   openGraph: {
     title: "Proarh.4d | Birou de Proiectare Arhitecturală. Arh. Sotangeanu Bogdan",
     description: "Servicii premium de arhitectură, proiectare rezidențială și comercială, randări 3D/4D și urbanism.",
@@ -50,7 +53,7 @@ export const metadata: Metadata = {
     siteName: "Proarh.4d",
     images: [
       {
-        url: "/arhi4d.png", // Imagine dedicată pentru social share (recomandat format 1200x630px)
+        url: "/arhi4d.png", 
         width: 1200,
         height: 630,
         alt: "Proarh.4d Architecture Studio",
@@ -68,6 +71,7 @@ export const metadata: Metadata = {
     images: ["/arhi4d.png"],
   },
 };
+
 
 
 export const viewport: import("next").Viewport = {

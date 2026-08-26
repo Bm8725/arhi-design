@@ -32,6 +32,22 @@ export default function ManifestDesign() {
       tip: "Lacas de Cult",
       imagine: "/biserica.png"
     }
+        {
+      id: 4,
+      numar: "04",
+      titlu: " Locuință unifamilială contemporană P+1",
+      locatie: "Romania",
+      tip: "Locuință unifamilială",
+      imagine: "/barbu.png"
+    }
+            {
+      id: 5,
+      numar: "05",
+      titlu: " Spații comerciale – Micro ",
+      locatie: "Targoviste, Romania",
+      tip: "Spații comerciale",
+      imagine: "/spa.png"
+    }
   ];
 
   return (

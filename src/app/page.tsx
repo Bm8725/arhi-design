@@ -1,4 +1,4 @@
-/*
+/** 
 About: main page of arhitecture design web app. arhitectiural studio, digitalization and 3d transformation, portfolio, contact, about us, services, shop, etc.
 studio design: proarh4d.ro
 compiled for: Proarh.4d design 2026 | www.proarh4d.ro, cloud hosting: Vercel, domain: proarh4d.ro
@@ -25,7 +25,6 @@ export default function Home() {
       <Hero />
       <Transformare3D />
       <Manifestdesign />
-   
        <WhatsAppWidget />
        <CookieBanner />
       <Footer /> 

@@ -149,6 +149,8 @@ export default function PortofoliuPage() {
   const [imgIndex, setImgIndex] = useState(0);
   const [closing, setClosing] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [fsClosing, setFsClosing] = useState(false);
 
   // swipe (mobil)
   const touchStartX = useRef(0);
@@ -160,6 +162,7 @@ export default function PortofoliuPage() {
     setImgIndex(0);
     setActiveId(id);
     setClosing(false);
+    setFullscreen(false);
   };
 
   const closeProject = () => {
@@ -167,7 +170,21 @@ export default function PortofoliuPage() {
     window.setTimeout(() => {
       setActiveId(null);
       setClosing(false);
+      setFullscreen(false);
     }, 260);
+  };
+
+  const openFullscreen = () => {
+    setFsClosing(false);
+    setFullscreen(true);
+  };
+
+  const closeFullscreen = () => {
+    setFsClosing(true);
+    window.setTimeout(() => {
+      setFullscreen(false);
+      setFsClosing(false);
+    }, 220);
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -251,7 +268,10 @@ export default function PortofoliuPage() {
     if (!active) return;
     document.body.style.overflow = "hidden";
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeProject();
+      if (e.key === "Escape") {
+        if (fullscreen) closeFullscreen();
+        else closeProject();
+      }
       if (e.key === "ArrowRight")
         setImgIndex((i) => (i + 1) % active.images.length);
       if (e.key === "ArrowLeft")
@@ -264,7 +284,7 @@ export default function PortofoliuPage() {
       document.body.style.overflow = "";
       window.removeEventListener("keydown", onKey);
     };
-  }, [active]);
+  }, [active, fullscreen]);
 
   return (
     <main className="relative min-h-screen bg-[#121212] text-[#E5E5E5] font-sans overflow-hidden">
@@ -384,10 +404,11 @@ export default function PortofoliuPage() {
 
               {/* Imagine principală + navigare */}
               <div
-                className="relative bg-black h-[42vh] sm:h-[48vh] md:h-full md:aspect-auto shrink-0"
+                className="relative bg-black h-[42vh] sm:h-[48vh] md:h-full md:aspect-auto shrink-0 group/img cursor-zoom-in"
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}
+                onClick={openFullscreen}
               >
                 <Image
                   key={imgIndex}
@@ -395,29 +416,37 @@ export default function PortofoliuPage() {
                   alt={`${active.title} — imagine ${imgIndex + 1}`}
                   fill
                   sizes="(max-width: 768px) 100vw, 50vw"
-                  className="object-cover transition-opacity duration-500"
+                  className="object-contain transition-opacity duration-500"
                   priority
                 />
+
+                <span className="pointer-events-none absolute bottom-4 right-4 z-10 h-9 w-9 flex items-center justify-center border border-white/20 bg-black/50 text-white/80 opacity-0 group-hover/img:opacity-100 transition-opacity duration-300">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="h-4 w-4">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3" />
+                  </svg>
+                </span>
 
                 {active.images.length > 1 && (
                   <>
                     <button
-                      onClick={() =>
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setImgIndex(
                           (i) =>
                             (i - 1 + active.images.length) %
                             active.images.length,
-                        )
-                      }
+                        );
+                      }}
                       aria-label="Imaginea anterioară"
                       className="absolute left-3 top-1/2 -translate-y-1/2 h-9 w-9 flex items-center justify-center border border-white/20 text-white/70 hover:border-amber-500 hover:text-amber-500 transition-colors bg-black/40"
                     >
                       ‹
                     </button>
                     <button
-                      onClick={() =>
-                        setImgIndex((i) => (i + 1) % active.images.length)
-                      }
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setImgIndex((i) => (i + 1) % active.images.length);
+                      }}
                       aria-label="Imaginea următoare"
                       className="absolute right-3 top-1/2 -translate-y-1/2 h-9 w-9 flex items-center justify-center border border-white/20 text-white/70 hover:border-amber-500 hover:text-amber-500 transition-colors bg-black/40"
                     >
@@ -427,7 +456,10 @@ export default function PortofoliuPage() {
                       {active.images.map((_, idx) => (
                         <button
                           key={idx}
-                          onClick={() => setImgIndex(idx)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setImgIndex(idx);
+                          }}
                           aria-label={`Imaginea ${idx + 1}`}
                           className={`h-[3px] transition-all duration-300 ${
                             idx === imgIndex
@@ -498,6 +530,95 @@ export default function PortofoliuPage() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* FULLSCREEN VIEWER — click pe imagine, scroll smooth, desktop + mobile */}
+        {active && fullscreen && (
+          <div
+            className={`fixed inset-0 z-[70] bg-black transition-opacity duration-300 ${
+              fsClosing ? "opacity-0" : "opacity-100"
+            }`}
+            onClick={closeFullscreen}
+          >
+            <div
+              className="h-full w-full overflow-y-auto overscroll-contain [scroll-behavior:smooth]"
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              <div
+                className={`relative min-h-full w-full flex items-center justify-center p-0 sm:p-6 transition-all duration-300 ease-out ${
+                  fsClosing ? "opacity-0 scale-95" : "opacity-100 scale-100"
+                }`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="relative w-full h-[100dvh] sm:h-[92vh]">
+                  <Image
+                    key={imgIndex}
+                    src={active.images[imgIndex]}
+                    alt={`${active.title} — imagine ${imgIndex + 1}`}
+                    fill
+                    sizes="100vw"
+                    className="object-contain"
+                    priority
+                  />
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                closeFullscreen();
+              }}
+              aria-label="Închide imaginea"
+              className="fixed top-4 right-4 md:top-6 md:right-6 z-20 h-10 w-10 flex items-center justify-center border border-white/20 text-white/80 hover:border-white hover:text-white hover:rotate-90 transition-all duration-300 bg-black/50"
+            >
+              ✕
+            </button>
+
+            {active.images.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setImgIndex(
+                      (i) => (i - 1 + active.images.length) % active.images.length,
+                    );
+                  }}
+                  aria-label="Imaginea anterioară"
+                  className="fixed left-3 top-1/2 -translate-y-1/2 z-20 h-10 w-10 flex items-center justify-center border border-white/20 text-white/80 hover:border-amber-500 hover:text-amber-500 transition-colors bg-black/50"
+                >
+                  ‹
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setImgIndex((i) => (i + 1) % active.images.length);
+                  }}
+                  aria-label="Imaginea următoare"
+                  className="fixed right-3 top-1/2 -translate-y-1/2 z-20 h-10 w-10 flex items-center justify-center border border-white/20 text-white/80 hover:border-amber-500 hover:text-amber-500 transition-colors bg-black/50"
+                >
+                  ›
+                </button>
+                <div className="fixed bottom-5 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+                  {active.images.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setImgIndex(idx);
+                      }}
+                      aria-label={`Imaginea ${idx + 1}`}
+                      className={`h-[3px] transition-all duration-300 ${
+                        idx === imgIndex ? "w-6 bg-amber-500" : "w-3 bg-white/30 hover:bg-white/60"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         )}
       </section>

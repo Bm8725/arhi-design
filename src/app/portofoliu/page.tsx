@@ -144,6 +144,46 @@ const PROJECTS: Project[] = [
     description: [" Casăindividuală de dimensiunicompacte, organizată ca douăprismealbesuprapuse: un volum-parter generos, cu latura de circa 14,20 m, peste care se așază un etajretras pe toatelaturile, care eliberează o terasăamplă cu deck din lemn. Parterulconcentrează zona de zi, deschisăprinvitraje pe toatăînălțimeacătre o logieadâncă, protejată de consolaetajului — un spațiu exterior acoperit, utilizabilaproapetotanul. Etajul, mai intim, cuprinde dormitorul, baia și casa scării, iluminat printr-o bandă continuă de ferestre spre terasă.Expresia este deliberat redusă: tencuială albă, tâmplărie și atice în antracit, iar singurele accente calde sunt panourile din lamele de lemn care marchează intrarea și capetele logiei. Acoperișul terasă și golurile decupate net în volum susțin caracterul modernist al casei, în timp ce treptele largi din piatră și plantările dense o leagă firesc de grădină."],
   },
 
+      {
+    id: "proj-08",
+    title: "Spații comerciale – Micro VI, zona Pieței Mercur, Târgoviște",
+    category: "Comercial",
+    year: " ",
+    location: " Targoviste",
+    area: "- m²",
+    status: "realizat",
+    cover: "/spa.png",
+    images: ["/spa.png",
+              "/spa1.png",
+              "/spa2.png",
+              "/spa3.png",
+              "/spa4.png",
+              "/spa5.png",
+            
+    ],
+    description: [" Ansamblu de spații comerciale desfășurat pe orizontală, gândit ca o alternativă modernă la comerțul de cartier din zona Pieței Mercur. Unitățile sunt dispuse liniar, cu vitrine și accese proprii direct din parcarea de incintă, astfel încât fiecare chiriaș își păstrează identitatea și adresa, iar clienții ajung comod la orice spațiu fără circulații interioare comune.Fațadele sunt tratate unitar, într-un limbaj contemporan de tip retail-park: panouri prefabricate din beton în tonuri de gri deschis, cu textură orizontală fină, ritmate de accente verticale portocalii-cortenii și de volume albe care înrămează intrările vitrate. Alternanța dintre planuri pline și vitrine înalte dă scară umană unei fațade lungi, iar plantările din insulele parcării și fâșiile verzi perimetrale îmblânzesc suprafețele pavate. Amplasament: Târgoviște, cartier Micro VI, zona Pieței Mercur, jud. Dâmbovița • Funcțiune: spații comerciale de închiriat, cu accese individuale • Regim de înălțime: parter • Fațade: panouri prefabricate din beton texturat, accente din tablă perforată/corten, vitrine cu tâmplărie de aluminiu • Amenajări exterioare: parcare de incintă, alei pietonale, insule plantate și spații verzi perimetrale • Proiectearh 4D S.R.L., arh. Bogdan Șotîngeanu"],
+  },
+
+      {
+    id: "proj-09",
+    title: "Spații comerciale – Micro VI, zona Pieței Mercur, Târgoviște (variantă cromatică)",
+    category: "Comercial/conceptual",
+    year: "2026",
+    location: " Targoviste",
+    area: "- m²",
+    status: "-",
+    cover: "/spaa.png",
+    images: ["/spaa.png",
+              "/spaa1.png",
+              "/spaa2.png",
+              "/spaa3.png",
+              "/spaa4.png",
+              
+            
+    ],
+    description: ["A doua variantă de fațadă pentru ansamblul comercial din Micro VI: aceleași unități parter cu accese individuale, îmbrăcate într-o compoziție de benzi orizontale galben, roșu, magenta și mov, tăiată de volumele albe ale intrărilor. Amplasament: Târgoviște, cartier Micro VI, zona Pieței Mercur, jud. Dâmbovița • Funcțiune: spații comerciale de închiriat, cu accese individuale • Regim de înălțime: parter • Fațade: panouri metalice/compozite în benzi orizontale colorate, portaluri de intrare din panouri albe, vitrine cu tâmplărie de aluminiu • Amenajări exterioare: parcare de incintă, alei pietonale, insule plantate și spații verzi perimetrale • Proiectearh 4D S.R.L., arh. Bogdan Șotîngeanu. "],
+  },
+
 ];
 
 function ShareIcon() {

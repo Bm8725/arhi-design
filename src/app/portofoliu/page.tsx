@@ -124,6 +124,26 @@ const PROJECTS: Project[] = [
     description: [" Locuinta P+M aflata in curs de autorizare, aflata  in Cartier Priseaca, Mun. Târgoviște, Crangului nr.6 G, cu o suprafata construita de 160 m² beneficiar fam. Balcangiu . Proiectearh 4D S.R.L., arh. Bogdan Șotîngeanu."],
   },
 
+    {
+    id: "proj-07",
+    title: "Locuință unifamilială contemporană P+1 retras",
+    category: "PRIVAT / REZIDENȚIAL",
+    year: " ",
+    location: " privat",
+    area: "224 m²",
+    status: "realizat",
+    cover: "/barbu.png",
+    images: ["/barbu.png",
+              "/barbu1.png",
+              "/barbu2.png",
+              "/barbu3.png",
+              "/barbu4.png",
+              "/barbu5.png",
+            
+    ],
+    description: [" Casăindividuală de dimensiunicompacte, organizată ca douăprismealbesuprapuse: un volum-parter generos, cu latura de circa 14,20 m, peste care se așază un etajretras pe toatelaturile, care eliberează o terasăamplă cu deck din lemn. Parterulconcentrează zona de zi, deschisăprinvitraje pe toatăînălțimeacătre o logieadâncă, protejată de consolaetajului — un spațiu exterior acoperit, utilizabilaproapetotanul. Etajul, mai intim, cuprinde dormitorul, baia și casa scării, iluminat printr-o bandă continuă de ferestre spre terasă.Expresia este deliberat redusă: tencuială albă, tâmplărie și atice în antracit, iar singurele accente calde sunt panourile din lamele de lemn care marchează intrarea și capetele logiei. Acoperișul terasă și golurile decupate net în volum susțin caracterul modernist al casei, în timp ce treptele largi din piatră și plantările dense o leagă firesc de grădină."],
+  },
+
 ];
 
 function ShareIcon() {

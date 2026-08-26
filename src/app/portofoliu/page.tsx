@@ -187,6 +187,26 @@ const PROJECTS: Project[] = [
     description: ["A doua variantă de fațadă pentru ansamblul comercial din Micro VI: aceleași unități parter cu accese individuale, îmbrăcate într-o compoziție de benzi orizontale galben, roșu, magenta și mov, tăiată de volumele albe ale intrărilor. Amplasament: Târgoviște, cartier Micro VI, zona Pieței Mercur, jud. Dâmbovița • Funcțiune: spații comerciale de închiriat, cu accese individuale • Regim de înălțime: parter • Fațade: panouri metalice/compozite în benzi orizontale colorate, portaluri de intrare din panouri albe, vitrine cu tâmplărie de aluminiu • Amenajări exterioare: parcare de incintă, alei pietonale, insule plantate și spații verzi perimetrale • Proiectearh 4D S.R.L., arh. Bogdan Șotîngeanu. "],
   },
 
+      {
+    id: "proj-10",
+    title: "Ansamblu recreativ cu corp de cazare și cramă – Târgoviște",
+    category: "Comercial/recreativ",
+    year: "-",
+    location: " Targoviste",
+    area: "- m²",
+    status: "-",
+    cover: "/samy.png",
+    images: ["/samy1.png",
+              "/samy2.png",
+              "/samy3.png",
+              "/samy4.png",
+             
+              
+            
+    ],
+    description: ["Ansamblu recreativ la marginea apei, format din sala de sport cu ferme metalice aparente și luminatoare zenitale, o anexă de întreținere și un corp de cazare cu cramă la demisol, cu acoperiș înalt din șiță și curte engleză din piatră de râu. Amplasament: Târgoviște, jud. Dâmbovița • Componență: corp sală de sport/fitness, anexă întreținere, corp de cazare cu cramă la demisol • Sala de sport: structură metalică cu ferme aparente, zidărie aparentă și pereți cortină, luminatoare curbe pe acoperiș, pardoseală sportivă din lemn cu marcaje • Corp cazare/cramă: acoperiș în pante mari cu învelitoare din șiță, placaje și structură din lemn, curte engleză cu ziduri din piatră de râu • Amenajări exterioare: parcare, alei pietonale din dale, gazon și plantări perimetrale • Proiectearh 4D S.R.L., arh. Bogdan Șotîngeanu."],
+  },
+
 ];
 
 function ShareIcon() {

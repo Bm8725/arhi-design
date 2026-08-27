@@ -48,6 +48,15 @@ export default function ManifestDesign() {
       locatie: "Targoviste, Romania",
       tip: "Spații comerciale",
       imagine: "/spa.png"
+    },
+
+                {
+      id: 6,
+      numar: "06",
+      titlu: " Ansamblu recreativ cu corp de cazare și cramă – Târgoviște",
+      locatie: "Targoviste, Romania",
+      tip: "Servicii publice",
+      imagine: "/samy.png"
     }
   ];
 

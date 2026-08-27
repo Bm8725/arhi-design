@@ -29,10 +29,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Proarh.4d | Birou de Proiectare Arhitecturală & Design Interior",
-  description: "Servicii premium de arhitectură, proiectare rezidențială și comercială, randări 3D și urbanism. Arh. Sotangeanu Bogdan",
+  title: "Proarh.4d | Birou de Proiectare Arhitecturală- arh. Bogdan Sotingeanu",
+  description: "Servicii premium de arhitectură, proiectare rezidențială și comercială, randări 3D și urbanism. Arh. Sotingeanu Bogdan",
   
-  // REZOLVARE PWA: Această linie este obligatorie pentru ca browserul să citească iconițele de instalare
+
   manifest: "/manifest.json",
   
   // 1. Configurarea pentru Favicon și Apple
@@ -47,7 +47,7 @@ export const metadata: Metadata = {
 
   // 2. Configurarea pentru Share pe Social Media
   openGraph: {
-    title: "Proarh.4d | Birou de Proiectare Arhitecturală. Arh. Sotangeanu Bogdan",
+    title: "Proarh.4d | Birou de Proiectare Arhitecturală. Arh. Sotingeanu Bogdan",
     description: "Servicii premium de arhitectură, proiectare rezidențială și comercială, randări 3D/4D și urbanism.",
     url: "https://proarh4d.ro",
     siteName: "Proarh.4d",

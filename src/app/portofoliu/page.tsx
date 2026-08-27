@@ -208,6 +208,27 @@ const PROJECTS: Project[] = [
     description: ["Ansamblu recreativ la marginea apei, format din sala de sport cu ferme metalice aparente și luminatoare zenitale, o anexă de întreținere și un corp de cazare cu cramă la demisol, cu acoperiș înalt din șiță și curte engleză din piatră de râu. Amplasament: Târgoviște, jud. Dâmbovița • Componență: corp sală de sport/fitness, anexă întreținere, corp de cazare cu cramă la demisol • Sala de sport: structură metalică cu ferme aparente, zidărie aparentă și pereți cortină, luminatoare curbe pe acoperiș, pardoseală sportivă din lemn cu marcaje • Corp cazare/cramă: acoperiș în pante mari cu învelitoare din șiță, placaje și structură din lemn, curte engleză cu ziduri din piatră de râu • Amenajări exterioare: parcare, alei pietonale din dale, gazon și plantări perimetrale • Proiectearh 4D S.R.L., arh. Bogdan Șotîngeanu."],
   },
 
+        {
+    id: "proj-11",
+    title: "Locuință P+1 cu garaj – str. Înfrățirii, Târgoviște",
+    category: "privat/rezidențial",
+    year: "-",
+    location: " Targoviste",
+    area: "286,80  m²",
+    status: "-",
+    cover: "/dobra.png",
+    images: ["/dobra1.png",
+              "/dobra2.png",
+              "/dobra3.png",
+              "/dobra4.png",
+              "/dobra5.png",
+             
+              
+            
+    ],
+    description: ["Casă de familie cu 6 camere, organizată pe douăniveluriclardiferențiate: un parter amplu, desfășurat pe orizontală, peste care se așază un etajretras, mai compact, cu dormitoare. Parterulcuprinde zona de zi de 37 mpdeschisăcătre un bovindouoctogonal care găzduieștelocul de luat masa, bucătăria cu cămară, un dormitor cu baieproprieși o terasăacoperită de peste 25 mp. Etajulgrupeazădouădormitoaremari cu dressing și o baiecomună.Expresiaarhitecturalăcombinăcărămidaaparentă cu tencuialadecorativășimizează pe registrularcadelor: pridvorulșigolurileîn arc dauritmfațadei, iarstreașinilegeneroase, cu jgheaburiantracit, protejeazăzidăria. Învelitoarea din olaneceramice, îndouăregistresuprapuse, întăreștecitireaetajului ca volumașezatpestecorpul principal."],
+  },
+
 ];
 
 function ShareIcon() {

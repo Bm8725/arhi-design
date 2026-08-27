@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import Groq from "groq-sdk";
 
-// Baza de date locale pentru Urbanism Dâmbovița (adaugă aici detalii pe măsură ce le colectezi)
 const DAMBOVITA_URBANISM_DB = `
 REGLEMENTĂRI URBANISTICE VERIFICATE - JUDEȚUL DÂMBOVIȚA (2026):
 
@@ -35,18 +34,18 @@ export async function POST(req: Request) {
     const apiKey = process.env.GROQ_API_KEY;
 
     if (!apiKey) {
+      console.error("CRITICAL: GROQ_API_KEY nu este definit în mediu.");
       return NextResponse.json({ error: "Lipsește GROQ_API_KEY" }, { status: 500 });
     }
 
     const groq = new Groq({ apiKey });
 
-    // Curățăm mesajele pentru API
+    // Filtrare și mapare sigură a istoricului mesajelor
     const cleanMessages = messages.map((msg: any) => ({
       role: msg.role === 'user' ? 'user' : 'assistant',
-      content: msg.content,
+      content: msg.content || '',
     }));
 
-    // Construim Contextul de Sistem cu Baza de Date inclusă
     const systemPrompt = `Numele tău este Arhi. Ești un asistent virtual de încredere al biroului de arhitectură Bogdan Sotingeanu, specializat în urbanism și arhitectură în România.
     
     Răspunde prietenos, extrem de profesionist și precis în limba română.
@@ -55,7 +54,6 @@ export async function POST(req: Request) {
     BAZA DE DATE URBANISM DÂMBOVIȚA:
     ${DAMBOVITA_URBANISM_DB}`;
 
-    // Injectăm promptul direct în structura apelului
     const groqStream = await groq.chat.completions.create({
       model: "openai/gpt-oss-120b",
       messages: [
@@ -70,12 +68,14 @@ export async function POST(req: Request) {
       async start(controller) {
         try {
           for await (const chunk of groqStream) {
-            const content = chunk.choices?.[0]?.delta?.content || "";
+            // CORECTAT: Preluarea proprietății delta se face prin indexarea specifică matricilor JavaScript [0]
+            const content = chunk.choices[0]?.delta?.content || "";
             if (content) {
               controller.enqueue(encoder.encode(content));
             }
           }
         } catch (err) {
+          console.error("Eroare în timpul procesării fluxului Groq:", err);
           controller.error(err);
         } finally {
           controller.close();
@@ -93,7 +93,7 @@ export async function POST(req: Request) {
     });
 
   } catch (error: any) {
-    console.error("Groq Stream Error:", error);
+    console.error("Groq Global Route Error:", error);
     return NextResponse.json({ error: error?.message || "Internal server error" }, { status: 500 });
   }
 }

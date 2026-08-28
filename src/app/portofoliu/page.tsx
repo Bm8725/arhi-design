@@ -226,7 +226,7 @@ const PROJECTS: Project[] = [
               
             
     ],
-    description: ["Casă de familie cu 6 camere, organizată pe două niveluri clar diferențiate: un parter amplu, desfășurat pe orizontală, peste care se așază un etaj retras, mai compact, cu dormitoare. Parterul cuprinde zona de zi de 37 mp deschisăcătre un bovindouoctogonal care găzduiește locul de luat masa, bucătăria cu cămară, un dormitor cu baie proprieși o terasă acoperită de peste 25 mp. Etajul grupează două dormitoare mari cu dressing și o baiecomună.Expresia arhitecturală combină cărămida aparentă cu tencuiala decorativă și mizează pe registrul arcadelor: prin arc dau ritm fațadei, iar streașinile generoase, cu jgheaburi antracit, protejează zidăria. Învelitoarea din olane ceramice, în două registre suprapuse, întărește citirea etajului ca volum așezat peste corpul principal."],
+    description: ["Casă de familie cu 6 camere, organizată pe două niveluri clar diferențiate: un parter amplu, desfășurat pe orizontală, peste care se așază un etaj retras, mai compact, cu dormitoare. Parterul cuprinde zona de zi de 37 mp deschisăcătre un bovindouoctogonal care găzduiește locul de luat masa, bucătăria cu cămară, un dormitor cu baie proprie și o terasă acoperită de peste 25 mp. Etajul grupează două dormitoare mari cu dressing și o baiecomună. Expresia arhitecturală combină cărămida aparentă cu tencuiala decorativă și mizează pe registrul arcadelor: prin arc dau ritm fațadei, iar streașinile generoase, cu jgheaburi antracit, protejează zidăria. Învelitoarea din olane ceramice, în două registre suprapuse, întărește citirea etajului ca volum așezat peste corpul principal."],
   },
 
 ];

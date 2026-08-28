@@ -428,7 +428,7 @@ export default function Navbar() {
                 href={dashboardHref}
                 className="relative inline-flex items-center justify-center bg-amber-500 text-black rounded-full px-6 py-3 text-[10px] font-bold tracking-[0.2em] uppercase transition-all duration-300 hover:bg-amber-400 active:scale-95 max-w-[160px] truncate"
               >
-                {userName ?? 'Smart connect}
+                {userName ?? 'Smart connect'}
               </Link>
             </div>
 

@@ -45,14 +45,8 @@ export default function Navbar() {
   const desktopNotifRef = useRef<HTMLDivElement>(null);
   const mobileNotifRef = useRef<HTMLDivElement>(null);
 
-  // Coș (produse din comanda "pending" a userului)
-  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
+  // Coș — stocat local, în localStorage (cheia 'digital_cart'), la fel ca în ShopPage
   const [cartCount, setCartCount] = useState(0);
-  const pendingOrderIdRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    pendingOrderIdRef.current = pendingOrderId;
-  }, [pendingOrderId]);
 
   // unreadCount se calculează mereu din notifications, nu se ține separat în state.
   // Așa nu se poate desincroniza niciodată de realitate.
@@ -106,8 +100,6 @@ export default function Navbar() {
         setUserName(null);
         setUserRole(null);
         setNotifications([]);
-        setPendingOrderId(null);
-        setCartCount(0);
       }
     });
 
@@ -168,109 +160,31 @@ export default function Navbar() {
     return () => { supabase.removeChannel(channel); };
   }, [userId]);
 
-  // ── Coș: găsim comanda "pending" a userului ─────────────────────────────
+  // ── Coș: numărăm produsele din localStorage ('digital_cart') ───────────
   useEffect(() => {
-    if (!userId) {
-      setPendingOrderId(null);
-      setCartCount(0);
-      return;
-    }
-
-    const fetchPendingOrder = async () => {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (error) {
-        console.error('Eroare la fetch comandă în curs:', error);
-        return;
+    const updateCartCount = () => {
+      try {
+        const savedCart = JSON.parse(localStorage.getItem('digital_cart') || '[]');
+        setCartCount(Array.isArray(savedCart) ? savedCart.length : 0);
+      } catch {
+        setCartCount(0);
       }
-      setPendingOrderId(data?.id ?? null);
     };
-    fetchPendingOrder();
 
-    // Ne abonăm la schimbări pe orders, ca să prindem momentul în care
-    // se creează o comandă "pending" nouă (primul produs adăugat în coș)
-    // sau când comanda curentă își schimbă statusul (ex: a fost plătită).
-    const ordersChannel = supabase
-      .channel(`navbar-orders-${userId}`)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'orders',
-        filter: `user_id=eq.${userId}`,
-      }, (payload) => {
-        if (payload.eventType === 'DELETE') {
-          const removedId = (payload.old as { id?: string }).id;
-          if (removedId === pendingOrderIdRef.current) {
-            setPendingOrderId(null);
-            setCartCount(0);
-          }
-          return;
-        }
+    updateCartCount();
 
-        const row = payload.new as { id: string; status: string };
-        if (row.status === 'pending') {
-          setPendingOrderId(row.id);
-        } else if (row.id === pendingOrderIdRef.current) {
-          // comanda curentă a fost plătită/anulată -> coșul se golește
-          setPendingOrderId(null);
-          setCartCount(0);
-        }
-      })
-      .subscribe();
+    // 'storage' se declanșează doar în alte tab-uri/ferestre, nu în cel curent.
+    // 'cartUpdated' e un eveniment custom pe care trebuie să-l declanșăm noi,
+    // manual, oriunde modificăm 'digital_cart' (ex: la Adaugă/Șterge din coș),
+    // ca badge-ul să se actualizeze instant, în același tab.
+    window.addEventListener('storage', updateCartCount);
+    window.addEventListener('cartUpdated', updateCartCount);
 
-    return () => { supabase.removeChannel(ordersChannel); };
-  }, [userId]);
-
-  // ── Coș: numărăm produsele din comanda pending + realtime ──────────────
-  useEffect(() => {
-    if (!pendingOrderId) {
-      setCartCount(0);
-      return;
-    }
-
-    const fetchCartCount = async () => {
-      const { count, error } = await supabase
-        .from('order_items')
-        .select('id', { count: 'exact', head: true })
-        .eq('order_id', pendingOrderId);
-
-      if (error) {
-        console.error('Eroare la fetch produse din coș:', error);
-        return;
-      }
-      setCartCount(count ?? 0);
+    return () => {
+      window.removeEventListener('storage', updateCartCount);
+      window.removeEventListener('cartUpdated', updateCartCount);
     };
-    fetchCartCount();
-
-    const itemsChannel = supabase
-      .channel(`navbar-cart-items-${pendingOrderId}`)
-      .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'order_items',
-        filter: `order_id=eq.${pendingOrderId}`,
-      }, () => {
-        setCartCount((c) => c + 1);
-      })
-      .on('postgres_changes', {
-        event: 'DELETE',
-        schema: 'public',
-        table: 'order_items',
-        filter: `order_id=eq.${pendingOrderId}`,
-      }, () => {
-        setCartCount((c) => Math.max(0, c - 1));
-      })
-      .subscribe();
-
-    return () => { supabase.removeChannel(itemsChannel); };
-  }, [pendingOrderId]);
+  }, [pathname]); // re-sincronizăm și la schimbarea rutei, ca fallback
 
   // ── Click outside ─────────────────────────────────────────────────────────
   useEffect(() => {

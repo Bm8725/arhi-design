@@ -45,6 +45,15 @@ export default function Navbar() {
   const desktopNotifRef = useRef<HTMLDivElement>(null);
   const mobileNotifRef = useRef<HTMLDivElement>(null);
 
+  // Coș (produse din comanda "pending" a userului)
+  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
+  const [cartCount, setCartCount] = useState(0);
+  const pendingOrderIdRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    pendingOrderIdRef.current = pendingOrderId;
+  }, [pendingOrderId]);
+
   // unreadCount se calculează mereu din notifications, nu se ține separat în state.
   // Așa nu se poate desincroniza niciodată de realitate.
   const unreadCount = useMemo(
@@ -97,6 +106,8 @@ export default function Navbar() {
         setUserName(null);
         setUserRole(null);
         setNotifications([]);
+        setPendingOrderId(null);
+        setCartCount(0);
       }
     });
 
@@ -156,6 +167,110 @@ export default function Navbar() {
 
     return () => { supabase.removeChannel(channel); };
   }, [userId]);
+
+  // ── Coș: găsim comanda "pending" a userului ─────────────────────────────
+  useEffect(() => {
+    if (!userId) {
+      setPendingOrderId(null);
+      setCartCount(0);
+      return;
+    }
+
+    const fetchPendingOrder = async () => {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Eroare la fetch comandă în curs:', error);
+        return;
+      }
+      setPendingOrderId(data?.id ?? null);
+    };
+    fetchPendingOrder();
+
+    // Ne abonăm la schimbări pe orders, ca să prindem momentul în care
+    // se creează o comandă "pending" nouă (primul produs adăugat în coș)
+    // sau când comanda curentă își schimbă statusul (ex: a fost plătită).
+    const ordersChannel = supabase
+      .channel(`navbar-orders-${userId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'orders',
+        filter: `user_id=eq.${userId}`,
+      }, (payload) => {
+        if (payload.eventType === 'DELETE') {
+          const removedId = (payload.old as { id?: string }).id;
+          if (removedId === pendingOrderIdRef.current) {
+            setPendingOrderId(null);
+            setCartCount(0);
+          }
+          return;
+        }
+
+        const row = payload.new as { id: string; status: string };
+        if (row.status === 'pending') {
+          setPendingOrderId(row.id);
+        } else if (row.id === pendingOrderIdRef.current) {
+          // comanda curentă a fost plătită/anulată -> coșul se golește
+          setPendingOrderId(null);
+          setCartCount(0);
+        }
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(ordersChannel); };
+  }, [userId]);
+
+  // ── Coș: numărăm produsele din comanda pending + realtime ──────────────
+  useEffect(() => {
+    if (!pendingOrderId) {
+      setCartCount(0);
+      return;
+    }
+
+    const fetchCartCount = async () => {
+      const { count, error } = await supabase
+        .from('order_items')
+        .select('id', { count: 'exact', head: true })
+        .eq('order_id', pendingOrderId);
+
+      if (error) {
+        console.error('Eroare la fetch produse din coș:', error);
+        return;
+      }
+      setCartCount(count ?? 0);
+    };
+    fetchCartCount();
+
+    const itemsChannel = supabase
+      .channel(`navbar-cart-items-${pendingOrderId}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'order_items',
+        filter: `order_id=eq.${pendingOrderId}`,
+      }, () => {
+        setCartCount((c) => c + 1);
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'order_items',
+        filter: `order_id=eq.${pendingOrderId}`,
+      }, () => {
+        setCartCount((c) => Math.max(0, c - 1));
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(itemsChannel); };
+  }, [pendingOrderId]);
 
   // ── Click outside ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -340,9 +455,14 @@ export default function Navbar() {
                   ) : (
                     <Link
                       href={item.href}
-                      className="relative py-2 text-white [text-shadow:0_0_10px_rgba(0,0,0,1),0_2px_8px_rgba(0,0,0,1),-1px_-1px_0_#000,1px_-1px_0_#000,-1px_1px_0_#000,1px_1px_0_#000] hover:text-amber-400 transition-colors duration-300 after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-amber-500 hover:after:w-full after:transition-all after:duration-300"
+                      className="relative flex items-center gap-1.5 py-2 text-white [text-shadow:0_0_10px_rgba(0,0,0,1),0_2px_8px_rgba(0,0,0,1),-1px_-1px_0_#000,1px_-1px_0_#000,-1px_1px_0_#000,1px_1px_0_#000] hover:text-amber-400 transition-colors duration-300 after:absolute after:bottom-0 after:left-0 after:w-0 after:h-[1px] after:bg-amber-500 hover:after:w-full after:transition-all after:duration-300"
                     >
                       {item.name}
+                      {item.name === 'cart' && cartCount > 0 && (
+                        <span className="flex items-center justify-center min-w-[16px] h-4 px-1 rounded-full bg-amber-500 text-black text-[9px] font-bold leading-none">
+                          {cartCount > 9 ? '9+' : cartCount}
+                        </span>
+                      )}
                     </Link>
                   )}
 
@@ -467,6 +587,7 @@ export default function Navbar() {
           {navigation.map((item) => {
             const IconComponent = item.icon;
             const isTabActive = pathname === item.href || (item.subOptions?.some(sub => pathname === sub.href));
+            const isCartTab = item.name === 'cart';
 
             return (
               <div key={item.name} className="flex-1 h-full flex items-center justify-center relative">
@@ -513,11 +634,18 @@ export default function Navbar() {
                   <Link
                     href={item.href}
                     onClick={() => setActiveMobileMenu(null)}
-                    className="flex flex-col items-center justify-center w-full h-full"
+                    className="relative flex flex-col items-center justify-center w-full h-full"
                   >
-                    <IconComponent size={20} strokeWidth={isTabActive ? 2.5 : 1.8}
-                      className={`transition-all duration-300 ${isTabActive ? 'text-amber-500 scale-110' : 'text-neutral-400'}`}
-                    />
+                    <span className="relative">
+                      <IconComponent size={20} strokeWidth={isTabActive ? 2.5 : 1.8}
+                        className={`transition-all duration-300 ${isTabActive ? 'text-amber-500 scale-110' : 'text-neutral-400'}`}
+                      />
+                      {isCartTab && cartCount > 0 && (
+                        <span className="absolute -top-1.5 -right-2 bg-amber-500 text-black text-[9px] font-bold min-w-[15px] h-[15px] px-[3px] rounded-full flex items-center justify-center leading-none">
+                          {cartCount > 9 ? '9+' : cartCount}
+                        </span>
+                      )}
+                    </span>
                     <span className={`text-[9px] font-medium tracking-wide uppercase mt-1 transition-colors duration-300 ${
                       isTabActive ? 'text-white font-semibold' : 'text-neutral-500'
                     }`}>

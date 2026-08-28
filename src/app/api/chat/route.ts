@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import Groq from "groq-sdk";
 
+
 const DAMBOVITA_URBANISM_DB = `
 REGLEMENTĂRI URBANISTICE VERIFICATE - JUDEȚUL DÂMBOVIȚA (2026):
 
@@ -26,6 +27,7 @@ DATE SPECIFICE PE UAT-URI (UNITĂȚI ADMINISTRATIV-TERITORIALE):
 4. UAT-URI PERIURBANE / COMUNE MARI (ex: Răzvad, Ulmi, Aninoasa, Doicești):
    - UAT Ulmi: Dezvoltare industrială masivă recentă (zona Arctic). PUZ-urile industriale de aici au POT până la 60%.
    - UAT Aninoasa / Răzvad: Zone de extindere rezidențială. Terenurile din extravilan necesită obligatoriu PUZ de introducere în intravilan. Retrageri standard: minim 3m față de limitele laterale, minim 5m față de axul drumurilor comunale dacă nu există aliniament stabilit.
+   - UAT doicesti / UAT Gura Ocniței: Zone cu restricții de protecție a mediului (pajiști, păduri). Necesită avize de la Agenția pentru Protecția Mediului Dâmbovița.
 `;
 
 export async function POST(req: Request) {
@@ -34,12 +36,14 @@ export async function POST(req: Request) {
     const apiKey = process.env.GROQ_API_KEY;
 
     if (!apiKey) {
-      console.error("CRITICAL: GROQ_API_KEY nu este definit în mediu.");
+      console.error("CRITICAL: GROQ_API_KEY nu este definit în mediu."); 
       return NextResponse.json({ error: "Lipsește GROQ_API_KEY" }, { status: 500 });
     }
 
-    const groq = new Groq({ apiKey });
+ 
 
+    const groq = new Groq({ apiKey });
+ 
     // Filtrare și mapare sigură a istoricului mesajelor
     const cleanMessages = messages.map((msg: any) => ({
       role: msg.role === 'user' ? 'user' : 'assistant',

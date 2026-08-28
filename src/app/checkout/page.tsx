@@ -53,10 +53,22 @@ export default function CheckoutPage() {
 
   const total = cart.reduce((sum, item) => sum + Number(item.pret), 0)
   const isFree = cart.length > 0 && total === 0
+  const paidItems = cart.filter(item => Number(item.pret) > 0)
+  const hasPaidItems = paidItems.length > 0
 
   const handleFinalPlata = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!userId || cart.length === 0) return
+
+    // Plata cu cardul nu e încă implementată — blocăm orice comandă
+    // care conține produse cu preț > 0, ca să nu acordăm acces gratuit
+    // la produse plătite. Verificare de siguranță, în plus față de
+    // butonul dezactivat din UI.
+    if (hasPaidItems) {
+      alert('Plata cu cardul nu este încă disponibilă. Elimină produsele plătite din coș pentru a continua.')
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -74,12 +86,10 @@ export default function CheckoutPage() {
 
       if (error) throw error
 
-      alert(isFree
-        ? 'Descărcare activată! Fișierele sunt disponibile în contul tău.'
-        : 'Achiziție finalizată! Fișierele sunt disponibile pentru descărcare.'
-      )
+      alert('Descărcare activată! Fișierele sunt disponibile în contul tău.')
       localStorage.removeItem('digital_cart')
       window.dispatchEvent(new Event('storage'))
+      window.dispatchEvent(new Event('cartUpdated'))
       router.push('/dashboard/client')
     } catch (err) {
       console.error(err)
@@ -241,7 +251,6 @@ export default function CheckoutPage() {
           font-family: 'Playfair Display', serif;
           color: #000000;
           font-weight: 700;
-          /* FIX: era border-b border-white/10, acum bordură vizibilă pe fundal deschis */
           border-bottom: 1px solid #e5e5e5;
           padding-bottom: 12px;
           margin-bottom: 16px;
@@ -322,6 +331,16 @@ export default function CheckoutPage() {
           margin-top: 12px;
           text-align: center;
         }
+
+        .a-paid-warning {
+          font-size: 12px;
+          color: #a32d2d;
+          background: #fdf0f0;
+          border: 1px solid #f2d5d5;
+          padding: 12px 16px;
+          margin-top: 12px;
+          line-height: 1.5;
+        }
       `}</style>
 
       <div className="a-root">
@@ -350,21 +369,28 @@ export default function CheckoutPage() {
                 {isFree ? 'Descărcare gratuită' : 'Metodă de plată'}
               </h3>
               <p className="a-hint" style={{ fontSize: '12px', marginBottom: '24px' }}>
-                {isFree
-                  ? 'Produsele din coș sunt gratuite — nu e nevoie de card.'
-                  : 'Plată securizată cu cardul (Simulare instantă).'}
+                {hasPaidItems
+                  ? 'Plata cu cardul nu este încă disponibilă pe site. Momentan poți finaliza doar comenzi cu produse gratuite.'
+                  : 'Produsele din coș sunt gratuite — nu e nevoie de card.'}
               </p>
 
-              <button type="submit" className="a-btn-submit" disabled={loading || cart.length === 0}>
+              <button type="submit" className="a-btn-submit" disabled={loading || cart.length === 0 || hasPaidItems}>
                 {loading
                   ? 'Se procesează...'
-                  : isFree
-                    ? 'Obține gratuit'
-                    : `Plătește ${total.toFixed(2)} RON`}
+                  : hasPaidItems
+                    ? 'Plată indisponibilă momentan'
+                    : 'Obține gratuit'}
               </button>
 
               {cart.length === 0 && (
                 <p className="a-empty-cart-msg">Coșul tău e gol — adaugă produse înainte de a plăti.</p>
+              )}
+
+              {hasPaidItems && (
+                <div className="a-paid-warning">
+                  Următoarele produse din coș sunt plătite și nu pot fi finalizate momentan:{' '}
+                  {paidItems.map(p => p.nume).join(', ')}. Elimină-le din coș pentru a continua cu restul comenzii.
+                </div>
               )}
             </form>
 

@@ -428,7 +428,7 @@ export default function Navbar() {
                 href={dashboardHref}
                 className="relative inline-flex items-center justify-center bg-amber-500 text-black rounded-full px-6 py-3 text-[10px] font-bold tracking-[0.2em] uppercase transition-all duration-300 hover:bg-amber-400 active:scale-95 max-w-[160px] truncate"
               >
-                {userName ?? 'Contul meu'}
+                {userName ?? 'Smart connect}
               </Link>
             </div>
 
@@ -486,7 +486,7 @@ export default function Navbar() {
                 ? 'bg-amber-500 text-black border-amber-500'
                 : 'text-white border-white/10 bg-white/5 hover:bg-white/10'
             }`}
-            aria-label="Contul meu"
+            aria-label="Smart connect"
           >
             <User size={18} />
           </Link>

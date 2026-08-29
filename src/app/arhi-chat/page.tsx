@@ -210,6 +210,7 @@ export default function ArhiChat() {
               ) : !userId ? (
                 // ── Poartă de autentificare — chat indisponibil fără cont ─
                 <div className="h-full flex flex-col items-center justify-center text-center px-8">
+                   <Wand2 size={18} className="text-amber-500 anim-pulse-slow" />
                   <div className="w-12 h-12 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center mb-5">
                     <Lock size={18} className="text-amber-500" />
                   </div>

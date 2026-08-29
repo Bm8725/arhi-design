@@ -157,25 +157,25 @@ export default function ArhiChat() {
 
       <div className="min-h-screen bg-[#faf8f4] arhi-mono relative overflow-hidden">
 
-        {/* Fundal real: imaginea, cu zoom lent + overlay pentru lizibilitate pe temă albă */}
+        {/* Fundal rafinat: gradient auriu discret + grain fin, fără poză */}
         <div className="fixed inset-0 z-0 pointer-events-none select-none overflow-hidden">
-          <img
-            src="/nimet.webp"
-            alt=""
-            className="anim-bg-breathe w-full h-full object-cover opacity-[0.35]"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#faf8f4]/90 via-[#faf8f4]/65 to-[#faf8f4]/95" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#faf8f4]/80 via-transparent to-[#faf8f4]/80" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#fdfcfa] via-[#faf8f4] to-[#f5f1e9]" />
+          <svg className="absolute inset-0 w-full h-full opacity-[0.035] mix-blend-multiply">
+            <filter id="arhiGrain">
+              <feTurbulence type="fractalNoise" baseFrequency="0.85" numOctaves="2" stitchTiles="stitch" />
+            </filter>
+            <rect width="100%" height="100%" filter="url(#arhiGrain)" />
+          </svg>
         </div>
 
         <div className="fixed inset-0 z-[1] pointer-events-none overflow-hidden">
           <div
             className="absolute top-[8%] left-[10%] w-[420px] h-[420px] rounded-full blur-[110px]"
-            style={{ background: 'radial-gradient(circle, rgba(191,160,84,0.2) 0%, transparent 70%)', animation: 'blobFloatA 14s ease-in-out infinite' }}
+            style={{ background: 'radial-gradient(circle, rgba(191,160,84,0.24) 0%, transparent 70%)', animation: 'blobFloatA 14s ease-in-out infinite' }}
           />
           <div
             className="absolute bottom-[10%] right-[8%] w-[380px] h-[380px] rounded-full blur-[110px]"
-            style={{ background: 'radial-gradient(circle, rgba(191,160,84,0.14) 0%, transparent 70%)', animation: 'blobFloatB 17s ease-in-out infinite' }}
+            style={{ background: 'radial-gradient(circle, rgba(191,160,84,0.17) 0%, transparent 70%)', animation: 'blobFloatB 17s ease-in-out infinite' }}
           />
         </div>
 
@@ -214,7 +214,7 @@ export default function ArhiChat() {
               ) : (
                 <>
                   {/* Header — o simplă linie subțire, nu o cutie */}
-                  <header className="shrink-0 flex items-center justify-between pb-4 mb-2 border-b border-black/[0.06]">
+                  <header className="shrink-0 flex items-center justify-between pb-4 mb-2 border-b border-black/10">
                     <div className="flex items-center gap-2.5">
                       <div className="relative w-8 h-8 rounded-full bg-[#bfa054]/10 border border-[#bfa054]/25 flex items-center justify-center">
                         <Wand2 size={15} className="text-[#bfa054] anim-pulse-slow" />
@@ -255,7 +255,7 @@ export default function ArhiChat() {
                               <button
                                 key={s.label}
                                 onClick={() => executeChat(s.prompt)}
-                                className="anim-fadeup group text-left p-4 rounded-xl border border-black/[0.06] hover:border-[#bfa054]/40 hover:bg-black/[0.02] hover:-translate-y-0.5 transition-all duration-300"
+                                className="anim-fadeup group text-left p-4 rounded-xl border border-black/10 bg-white/40 shadow-[0_1px_3px_rgba(26,26,26,0.04)] hover:border-[#bfa054]/50 hover:bg-white/70 hover:-translate-y-0.5 hover:shadow-[0_4px_14px_rgba(26,26,26,0.08)] transition-all duration-300"
                                 style={{ animationDelay: `${160 + i * 90}ms` }}
                               >
                                 <Icon size={15} className="text-[#bfa054] mb-2.5 transition-transform duration-300 group-hover:scale-110" />

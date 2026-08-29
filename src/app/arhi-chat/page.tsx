@@ -232,9 +232,9 @@ export default function ArhiChat() {
 <header className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-white/5 bg-neutral-900/50 backdrop-blur-md">
   {/* Zona de Brand / Identitate */}
   <div className="flex items-center gap-3">
-    {/* Avatar Icon cu efect de Glow discret */}
+    {/* Avatar Icon cu efect de Glow discret și Baghetă Magică */}
     <div className="relative w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.05)]">
-      <Compass size={18} className="text-amber-500 anim-spin-slow" />
+      <Wand2 size={18} className="text-amber-500 anim-pulse-slow" />
       {/* Indicator status activ în colțul avatarului */}
       <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
         <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500/80 animate-ping opacity-75" />

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { Compass, FileText, Building2, Ruler, SendHorizontal, RotateCcw, Lock } from 'lucide-react';
+import { Compass, FileText, Wand2, Building2, Ruler, SendHorizontal, RotateCcw, Lock } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import Groq from "groq-sdk";
 
-
 const DAMBOVITA_URBANISM_DB = `
 REGLEMENTĂRI URBANISTICE VERIFICATE - JUDEȚUL DÂMBOVIȚA (2026):
 
@@ -30,74 +29,139 @@ DATE SPECIFICE PE UAT-URI (UNITĂȚI ADMINISTRATIV-TERITORIALE):
    - UAT doicesti / UAT Gura Ocniței: Zone cu restricții de protecție a mediului (pajiști, păduri). Necesită avize de la Agenția pentru Protecția Mediului Dâmbovița.
 `;
 
+// Maparea paginilor reale ale site-ului. Arhi trebuie să trimită userul
+// spre link-ul potrivit ori de câte ori discuția atinge unul din aceste
+// subiecte, în loc să vorbească doar generic despre "site-ul nostru".
+const SITE_MAP = `
+PAGINI DISPONIBILE PE SITE (folosește-le ca linkuri relative, ex: /portofoliu):
+
+- /                        → Pagina principală / prezentare birou
+- /shop                    → Catalog produse digitale (planuri, ghiduri, șabloane)
+- /portofoliu              → Portofoliu de proiecte proarh.4d
+- /servicii                → Pagina principală de servicii
+- /proiectare-arhitectura  → Detalii despre serviciul de proiectare & arhitectură
+- /randari-3d              → Detalii despre serviciul de randări 3D
+- /shopping-cart           → Coșul de cumpărături
+- /dashboard/client        → Contul clientului (comenzi, descărcări)
+- /login                   → Autentificare / creare cont
+
+REGULI DE FOLOSIRE A LINKURILOR:
+- Menționează un link DOAR când e relevant pentru întrebare (nu înșira toate paginile).
+- Dacă utilizatorul întreabă despre servicii de proiectare → recomandă /proiectare-arhitectura.
+- Dacă întreabă despre randări/vizualizări 3D → recomandă /randari-3d.
+- Dacă vrea să vadă lucrări anterioare / exemple → recomandă /portofoliu.
+- Dacă vrea să cumpere un produs digital (planuri, șabloane) → recomandă /shop.
+- Dacă vrea să își descarce achizițiile sau să-și vadă comenzile → recomandă /dashboard/client (spune-i să se autentifice la /login dacă nu are cont).
+`;
+
+const SYSTEM_PROMPT = `Numele tău este Arhi. Ești un asistent virtual de încredere al biroului de arhitectură Bogdan Sotingeanu, specializat în urbanism și arhitectură în România.
+
+Răspunde prietenos, extrem de profesionist și precis în limba română.
+
+Când utilizatorul întreabă despre zone din Dâmbovița, folosește datele tehnice de mai jos pentru a oferi detalii despre UAT-uri, PUZ-uri, POT, CUT și avize necesare. Dacă o localitate specifică din Dâmbovița nu se află în baza de date, explică ce pași generali trebuie făcuți (solicitare Certificat de Urbanism la Primărie/Consiliul Județean, consultare PUG local).
+
+Când discuția atinge servicii, portofoliu, produse digitale sau contul utilizatorului, ghidează-l spre pagina corectă a site-ului, folosind maparea de mai jos.
+
+BAZA DE DATE URBANISM DÂMBOVIȚA:
+${DAMBOVITA_URBANISM_DB}
+
+${SITE_MAP}`;
+
+const FALLBACK_ERROR_MESSAGE =
+  "Ne pare rău, a apărut o problemă tehnică la generarea răspunsului. Te rugăm să încerci din nou în câteva momente.";
+
 export async function POST(req: Request) {
+  const apiKey = process.env.GROQ_API_KEY;
+
+  if (!apiKey) {
+    console.error("CRITICAL: GROQ_API_KEY nu este definit în mediu.");
+    return NextResponse.json({ error: "Lipsește GROQ_API_KEY" }, { status: 500 });
+  }
+
+  // ── Parsare & validare body ──────────────────────────────────────────────
+  let body: any;
   try {
-    const { messages } = await req.json();
-    const apiKey = process.env.GROQ_API_KEY;
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Corp de request invalid (JSON greșit)." }, { status: 400 });
+  }
 
-    if (!apiKey) {
-      console.error("CRITICAL: GROQ_API_KEY nu este definit în mediu."); 
-      return NextResponse.json({ error: "Lipsește GROQ_API_KEY" }, { status: 500 });
-    }
+  const rawMessages = body?.messages;
+  if (!Array.isArray(rawMessages) || rawMessages.length === 0) {
+    return NextResponse.json({ error: "Câmpul 'messages' lipsește sau e gol." }, { status: 400 });
+  }
 
- 
-
-    const groq = new Groq({ apiKey });
- 
-    // Filtrare și mapare sigură a istoricului mesajelor
-    const cleanMessages = messages.map((msg: any) => ({
-      role: msg.role === 'user' ? 'user' : 'assistant',
-      content: msg.content || '',
+  // Filtrare și mapare sigură a istoricului mesajelor
+  const cleanMessages = rawMessages
+    .filter((msg: any) => typeof msg?.content === "string" && msg.content.trim().length > 0)
+    .map((msg: any) => ({
+      role: msg.role === "user" ? "user" : "assistant",
+      content: msg.content,
     }));
 
-    const systemPrompt = `Numele tău este Arhi. Ești un asistent virtual de încredere al biroului de arhitectură Bogdan Sotingeanu, specializat în urbanism și arhitectură în România.
-    
-    Răspunde prietenos, extrem de profesionist și precis în limba română.
-    Când utilizatorul întreabă despre zone din Dâmbovița, folosește datele tehnice de mai jos pentru a oferi detalii despre UAT-uri, PUZ-uri, POT, CUT și avize necesare. Dacă o localitate specifică din Dâmbovița nu se află în baza de date, explică ce pași generali trebuie făcuți (solicitare Certificat de Urbanism la Primărie/Consiliul Județean, consultare PUG local).
+  if (cleanMessages.length === 0) {
+    return NextResponse.json({ error: "Niciun mesaj valid de trimis." }, { status: 400 });
+  }
 
-    BAZA DE DATE URBANISM DÂMBOVIȚA:
-    ${DAMBOVITA_URBANISM_DB}`;
+  const groq = new Groq({ apiKey });
 
-    const groqStream = await groq.chat.completions.create({
+  // ── Pornirea request-ului către Groq ────────────────────────────────────
+  // Separată de procesarea stream-ului, ca să putem întoarce coduri de
+  // eroare clare (401 / 429 / 500) dacă request-ul inițial eșuează,
+  // înainte să fi trimis vreun byte către client.
+  let groqStream;
+  try {
+    groqStream = await groq.chat.completions.create({
       model: "openai/gpt-oss-120b",
       messages: [
-        { role: "system", content: systemPrompt },
-        ...cleanMessages
+        { role: "system", content: SYSTEM_PROMPT },
+        ...cleanMessages,
       ],
       stream: true,
     });
+  } catch (err: any) {
+    console.error("Eroare la inițierea request-ului către Groq:", err);
 
-    const encoder = new TextEncoder();
-    const readableStream = new ReadableStream({
-      async start(controller) {
-        try {
-          for await (const chunk of groqStream) {
-            // CORECTAT: Preluarea proprietății delta se face prin indexarea specifică matricilor JavaScript [0]
-            const content = chunk.choices[0]?.delta?.content || "";
-            if (content) {
-              controller.enqueue(encoder.encode(content));
-            }
-          }
-        } catch (err) {
-          console.error("Eroare în timpul procesării fluxului Groq:", err);
-          controller.error(err);
-        } finally {
-          controller.close();
-        }
-      },
-    });
-
-    return new Response(readableStream, {
-      headers: {
-        "Content-Type": "text/event-stream; charset=utf-8",
-        "Cache-Control": "no-cache, no-transform",
-        "Connection": "keep-alive",
-        "X-Accel-Buffering": "no",
-      },
-    });
-
-  } catch (error: any) {
-    console.error("Groq Global Route Error:", error);
-    return NextResponse.json({ error: error?.message || "Internal server error" }, { status: 500 });
+    const status = err?.status ?? err?.response?.status;
+    if (status === 401) {
+      return NextResponse.json({ error: "Cheie API Groq invalidă." }, { status: 401 });
+    }
+    if (status === 429) {
+      return NextResponse.json({ error: "Prea multe cereri către Groq. Încearcă din nou în câteva secunde." }, { status: 429 });
+    }
+    return NextResponse.json({ error: "Nu s-a putut porni conversația cu asistentul." }, { status: 502 });
   }
+
+  // ── Streaming către client ───────────────────────────────────────────────
+  const encoder = new TextEncoder();
+  const readableStream = new ReadableStream({
+    async start(controller) {
+      try {
+        for await (const chunk of groqStream) {
+          const content = chunk.choices[0]?.delta?.content || "";
+          if (content) {
+            controller.enqueue(encoder.encode(content));
+          }
+        }
+      } catch (err) {
+        // Stream-ul a picat la mijloc. Nu mai putem întoarce un status HTTP
+        // (răspunsul a început deja), așa că trimitem un mesaj prietenos
+        // direct în conținutul stream-ului, ca userul să vadă ceva concret
+        // în loc ca bula de mesaj să rămână blocată în starea de "scrie...".
+        console.error("Eroare în timpul procesării fluxului Groq:", err);
+        controller.enqueue(encoder.encode(FALLBACK_ERROR_MESSAGE));
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(readableStream, {
+    headers: {
+      "Content-Type": "text/event-stream; charset=utf-8",
+      "Cache-Control": "no-cache, no-transform",
+      "Connection": "keep-alive",
+      "X-Accel-Buffering": "no",
+    },
+  });
 }

@@ -217,7 +217,7 @@ export default function ArhiChat() {
                     Autentificare <em className="text-amber-500 not-italic italic">necesară.</em>
                   </h2>
                   <p className="text-[12.5px] text-neutral-500 mb-7 max-w-xs leading-relaxed">
-                    Conversația cu Arhi este disponibilă doar pentru utilizatorii cu cont. Autentifică-te sau creează-ți un cont gratuit pentru a continua.
+                    Conversația cu Arhi AI este disponibilă doar pentru utilizatorii cu cont. Autentifică-te sau creează-ți un cont gratuit pentru a continua.
                   </p>
                   <Link
                     href="/login"
@@ -228,31 +228,41 @@ export default function ArhiChat() {
                 </div>
               ) : (
                 <>
-                  {/* Header intern al card-ului de chat */}
-                  <header className="shrink-0 flex items-center justify-between px-5 py-4 border-b border-white/10">
-                    <div className="flex items-center gap-2.5">
-                      <div className="relative w-8 h-8 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center">
-                        <Compass size={16} className="text-amber-500 anim-spin-slow" />
-                      </div>
-                      <div className="leading-tight">
-                        <span className="flex items-center gap-1.5 text-[13px] font-semibold text-white tracking-wide">
-                          Arhi
-                          <span className="relative flex h-1.5 w-1.5">
-                            <span className="absolute inline-flex h-full w-full rounded-full bg-amber-500 anim-status-dot" />
-                            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500" />
-                          </span>
-                        </span>
-                        <span className="block text-[10px] uppercase tracking-[0.15em] text-neutral-500">Asistent urbanism &amp; arhitectură</span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setMessages([])}
-                      className="group flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-neutral-400 hover:text-amber-400 transition-colors"
-                    >
-                      <RotateCcw size={12} className="transition-transform duration-500 group-hover:-rotate-180" />
-                      Conversație nouă
-                    </button>
-                  </header>
+      {/* Header intern al card-ului de chat */}
+<header className="shrink-0 flex items-center justify-between px-6 py-4 border-b border-white/5 bg-neutral-900/50 backdrop-blur-md">
+  {/* Zona de Brand / Identitate */}
+  <div className="flex items-center gap-3">
+    {/* Avatar Icon cu efect de Glow discret */}
+    <div className="relative w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.05)]">
+      <Compass size={18} className="text-amber-500 anim-spin-slow" />
+      {/* Indicator status activ în colțul avatarului */}
+      <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
+        <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-500/80 animate-ping opacity-75" />
+        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+      </span>
+    </div>
+
+    {/* Texte identificare */}
+    <div className="flex flex-col">
+      <span className="text-sm font-medium text-neutral-100 tracking-wide">
+        Arhi AI
+      </span>
+      <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-neutral-400/80">
+        Asistent urbanism &amp; arhitectură
+      </span>
+    </div>
+  </div>
+
+  {/* Buton acțiune Conversație Nouă */}
+  <button
+    onClick={() => setMessages([])}
+    className="group flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] font-medium uppercase tracking-wider text-neutral-400 hover:text-amber-500 hover:bg-amber-500/5 transition-all duration-300 focus:outline-none focus:ring-1 focus:ring-amber-500/30"
+  >
+    <RotateCcw size={13} className="transition-transform duration-500 ease-out group-hover:-rotate-180" />
+    Conversație nouă
+  </button>
+</header>
+
 
                   {/* Zona de mesaje */}
                   <div ref={scrollContainerRef} className="arhi-scroll flex-1 overflow-y-auto w-full">

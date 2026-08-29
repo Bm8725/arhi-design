@@ -92,11 +92,11 @@ export async function POST(req: Request) {
   }
 
   // Filtrare și mapare sigură a istoricului mesajelor
-  const cleanMessages = rawMessages
+  const cleanMessages: Groq.Chat.Completions.ChatCompletionMessageParam[] = rawMessages
     .filter((msg: any) => typeof msg?.content === "string" && msg.content.trim().length > 0)
     .map((msg: any) => ({
-      role: msg.role === "user" ? "user" : "assistant",
-      content: msg.content,
+      role: msg.role === "user" ? ("user" as const) : ("assistant" as const),
+      content: msg.content as string,
     }));
 
   if (cleanMessages.length === 0) {

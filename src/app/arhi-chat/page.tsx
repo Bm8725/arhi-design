@@ -300,7 +300,7 @@ export default function ArhiChat() {
                             <div className={`flex gap-3 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                               {m.role === 'assistant' && (
                                 <div className="anim-avatar-pop w-7 h-7 rounded-full bg-amber-500/15 border border-amber-500/30 flex items-center justify-center shrink-0 mt-0.5">
-                                  <Compass size={13} className="text-amber-500" />
+                                   <Wand2 size={18} className="text-amber-500 anim-pulse-slow" />
                                 </div>
                               )}
                               <div

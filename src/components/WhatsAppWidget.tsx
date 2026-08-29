@@ -67,6 +67,7 @@ const quickLinks = [
   { label: 'Portofoliu', href: '/portofoliu' },
   { label: 'Politica cookie', href: '/politica-cookie' },
   { label: 'Confidențialitate', href: '/politica-confidentialitate' },
+   { label: 'Arhi AI', href: '/arhi-chat' },
 ];
 
 type ChatStep = 'idle' | 'list' | 'chat' | 'redirect';

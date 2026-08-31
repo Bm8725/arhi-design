@@ -15,6 +15,7 @@ import Manifestdesign from "@/components/Manifestdesign";
 import CookieBanner from "@/components/Cookiebanner";
 import WhatsAppWidget from "@/components/WhatsAppWidget";
 import ChatWidget from "@/components/ChatSupport";
+import ShopShowcase from "@/components/shopmodel";
 
 
 export default function Home() {
@@ -25,6 +26,7 @@ export default function Home() {
       <Hero />
       <Transformare3D />
       <Manifestdesign />
+      <ShopShowcase /> 
        <WhatsAppWidget />
        <CookieBanner />
       <Footer /> 

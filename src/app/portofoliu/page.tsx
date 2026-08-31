@@ -215,7 +215,7 @@ const PROJECTS: Project[] = [
     year: "-",
     location: " Targoviste",
     area: "286,80  m²",
-    status: "-",
+    status: "realizat",
     cover: "/dobra.png",
     images: ["/dobra1.png",
               "/dobra2.png",

@@ -231,7 +231,7 @@ const PROJECTS: Project[] = [
 
           {
     id: "proj-12",
-    title: "Sediufirmă GEO-STING – str. Petru Cercel, Târgoviște",
+    title: "Sediu firmă GEO-STING – str. Petru Cercel, Târgoviște",
     category: "privat/rezidențial",
     year: " ",
     location: " str. Petru Cercel nr. 22A, Târgoviște, jud. Dâmbovița ",
@@ -241,9 +241,9 @@ const PROJECTS: Project[] = [
     images: ["/geo1.png",
               "/geo2.png",
               "/geo3.png",
-              "/geo4.png",
-              "/geo5.png",
-              "/geo6.png",
+              "/geo4.jpg",
+              "/geo5.jpg",
+              "/geo6.jpg",
              
               
             

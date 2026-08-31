@@ -57,6 +57,15 @@ export default function ManifestDesign() {
       locatie: "Targoviste, Romania",
       tip: "Servicii publice",
       imagine: "/samy.png"
+    },
+
+                    {
+      id: 7,
+      numar: "07",
+      titlu: " Sediu firmă GEO-STING ",
+      locatie: "str. Petru Cercel nr. 22A, Târgoviște, jud. Dâmbovița ",
+      tip: "Servicii publice",
+      imagine: "/geo.png"
     }
   ];
 

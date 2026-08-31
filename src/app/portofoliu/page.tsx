@@ -241,7 +241,7 @@ const PROJECTS: Project[] = [
     images: ["/geo1.png",
               "/geo2.png",
               "/geo3.png",
-              "/geo4.jpg",
+              "/geo41.jpg",
               "/geo5.jpg",
               "/geo6.jpg",
              

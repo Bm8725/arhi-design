@@ -229,6 +229,29 @@ const PROJECTS: Project[] = [
     description: ["Casă de familie cu 6 camere, organizată pe două niveluri clar diferențiate: un parter amplu, desfășurat pe orizontală, peste care se așază un etaj retras, mai compact, cu dormitoare. Parterul cuprinde zona de zi de 37 mp deschisăcătre un bovindouoctogonal care găzduiește locul de luat masa, bucătăria cu cămară, un dormitor cu baie proprie și o terasă acoperită de peste 25 mp. Etajul grupează două dormitoare mari cu dressing și o baiecomună. Expresia arhitecturală combină cărămida aparentă cu tencuiala decorativă și mizează pe registrul arcadelor: prin arc dau ritm fațadei, iar streașinile generoase, cu jgheaburi antracit, protejează zidăria. Învelitoarea din olane ceramice, în două registre suprapuse, întărește citirea etajului ca volum așezat peste corpul principal."],
   },
 
+          {
+    id: "proj-12",
+    title: "Sediufirmă GEO-STING – str. Petru Cercel, Târgoviște",
+    category: "privat/rezidențial",
+    year: " ",
+    location: " str. Petru Cercel nr. 22A, Târgoviște, jud. Dâmbovița ",
+    area: "  m²",
+    status: "-",
+    cover: "/geo.png",
+    images: ["/geo1.png",
+              "/geo2.png",
+              "/geo3.png",
+              "/geo4.png",
+              "/geo5.png",
+              "/geo6.png",
+             
+              
+            
+    ],
+    description: [" Modernizarea și supraetajarea unui magazin existent, transformat însediu de firmă P+2, cu birouri, sală de consiliu, sală de mese șisală de curs. Fațade din panouri compozite gri și roșu, ecranate cu jaluzele metalice, cu un trafor roșu în formă de grinzi cu zăbrele peste vitrajul ultimului nivel. Proiectrealizat. arh. Bogdan Șotîngeanu"],
+  },
+
+
 ];
 
 function ShareIcon() {

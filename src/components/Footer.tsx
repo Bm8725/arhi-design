@@ -24,7 +24,7 @@ export default function Footer() {
                 alt="Logo" 
                 className="h-6 w-auto object-contain grayscale" 
               />
-              <span>PRO<span className="text-[#e2b36e] font-normal">ARH.4D</span></span>
+              <span>PRO<span className="text-[#e2b36e] font-normal">ARH.4D</span>.ro</span>
             </Link>
             <p className="text-[10px] text-white/30 tracking-wider uppercase max-w-xs leading-relaxed font-light">
               Birou arhitectura. nZEB. Proiectare 3D. Consultanta. Complet digital.

@@ -70,6 +70,7 @@ export default function DashHeader() {
             </span>
           </button>
 
+
           {dropdownOpen && (
             <div style={styles.dropdownPanel}>
               <div style={styles.dropdownRow}>

@@ -69,7 +69,7 @@ export default function CookiePage() {
             <h2 className="c-section-title">01 / Concept</h2>
             <div className="c-text">
               <p>
-                Pentru a asigura funcționarea optimă a platformei digitale PROARH.4D, utilizăm tehnologii 
+                Pentru a asigura funcționarea optimă a platformei digitale www.PROARH4D.ro, utilizăm tehnologii 
                 standard de stocare temporară. Fișierele cookie sunt module de date pure salvate direct în 
                 browserul dumneavoastră, acționând ca elemente de memorie tehnică.
               </p>

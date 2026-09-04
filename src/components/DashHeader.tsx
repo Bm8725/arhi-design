@@ -37,7 +37,7 @@ export default function DashHeader() {
         <Link href="/" style={styles.logoContainer}>
           <div style={styles.logoImgWrapper}>
             <Image
-              src="/proarh4d.ro.png"
+              src="/arhi4d.png"
               alt="Proarh.4d Logo"
               fill
               style={{ objectFit: 'contain' }}

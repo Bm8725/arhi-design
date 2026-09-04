@@ -5,7 +5,7 @@ import Link from 'next/link';
 /* ─────────────────────────────────────────────────────────────
    PROIECTARE ARHITECTURALĂ — pagină de detaliu serviciu
    Temă deschisă: fundal crem/alb, accente amber-500,
-   uppercase/tracking-wide/font-light păstrate din designul original.
+   uppercase/tracking-wide/font-light , write by BM
    ───────────────────────────────────────────────────────────── */
 
 const FAZE = [
@@ -44,9 +44,9 @@ const INCLUDE = [
   "Asistență tehnică pe parcursul autorizării",
 ];
 
-// NOTĂ: imaginile de mai jos sunt poze de tip stock, puse ca referință vizuală.
-// Înlocuiește src-urile cu poze reale din proiectele voastre (upload în /public/images
-// sau în Supabase Storage) pentru autenticitate și identitate de brand mai puternică.
+
+
+
 const IMAGES = {
   blueprint: "/plan.webp",
   render3d: "/design.webp",

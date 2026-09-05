@@ -256,7 +256,7 @@ export default function AdaugaProiectNou() {
           )}
           {succes && (
             <p className="text-xs text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-4 py-3">
-              Proiect salvat cu succes.
+              Proiect publicat cu succes.
             </p>
           )}
 
@@ -265,7 +265,7 @@ export default function AdaugaProiectNou() {
             disabled={saving}
             className="w-full bg-white text-black py-3.5 text-xs font-mono uppercase tracking-widest hover:bg-[#bfa054] disabled:bg-white/20 disabled:text-white/40 disabled:cursor-not-allowed transition-colors"
           >
-            {saving ? 'Se salvează...' : 'Salvează proiectul'}
+            {saving ? 'Se publica pe platforma...' : 'Publica proiectul proiectul'}
           </button>
         </form>
       </div>

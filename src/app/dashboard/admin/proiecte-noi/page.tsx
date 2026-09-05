@@ -140,10 +140,10 @@ export default function AdaugaProiectNou() {
             <span className="text-[10px] font-mono tracking-[0.25em] text-neutral-500 uppercase font-bold block mb-2">
               Admin · Proiecte
             </span>
-            <link href="/dashboard/admin/proiecte" className="text-[10px] font-mono uppercase tracking-widest text-neutral-500 hover:text-white transition-colors border-b border-transparent hover:border-white pb-0.5">
-              Vezi toate proiectele
-            </link>
-          
+<link href="/dashboard/admin/proiecte" className="text-[10px] font-mono uppercase tracking-widest text-neutral-500 hover:text-white transition-colors border-b border-transparent hover:border-white pb-0.5">
+  Vezi toate proiectele
+</link>
+
             <h1 className="text-3xl font-serif font-extralight tracking-tight text-white">
               Publica  proiect <em className="italic text-[#bfa054]">nou.</em>
             </h1>

@@ -647,8 +647,8 @@ export default function AdminDashboardPage() {
           {activeTab === 'overview' && (
             <>
 <div className="stat-grid">
-  {/* Am transformat div-ul de mai jos într-un Link clickabil */}
-  <Link to="/admin/proiecte-noi" className="stat" style={{ textDecoration: 'none', color: 'inherit' }}>
+  {/* Am schimbat „to” în „href” pentru Next.js */}
+  <Link href="/admin/proiecte-noi" className="stat" style={{ textDecoration: 'none', color: 'inherit' }}>
     <div className="stat-val">{projects.length}</div>
     <div className="stat-lbl">PROIECTE</div>
   </Link>
@@ -659,6 +659,7 @@ export default function AdminDashboardPage() {
   <div className="stat"><div className="stat-val">{products.filter(p => p.activ).length}</div><div className="stat-lbl">PRODUSE ACTIVE</div></div>
   <div className="stat"><div className="stat-val">{clients.filter(c => c.rol === 'client').length}</div><div className="stat-lbl">CLIENȚI</div></div>
 </div>
+
 
               {/* Overview cards */}
               <div className="overview-grid">

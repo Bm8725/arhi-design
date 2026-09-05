@@ -634,6 +634,7 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Tabs */}
+    {/* Tabs */}
           <div className="tabs">
             {['overview', 'proiecte', 'comenzi', 'magazin', 'clienti'].map(t => (
               <button key={t} className={`tab ${activeTab === t ? 'on' : ''}`}
@@ -641,6 +642,9 @@ export default function AdminDashboardPage() {
                 {t.toUpperCase()}
               </button>
             ))}
+            <Link href="/dashboard/admin/proiecte-noi" className="tab">
+              PUBLICA PROIECTE NOI
+            </Link>
           </div>
 
           {/* ════════ OVERVIEW ════════ */}
@@ -657,9 +661,7 @@ export default function AdminDashboardPage() {
 
 </div>
 
-<div style={{ marginTop: 16 }}>
-  <Link href="/dashboard/admin/proiecte-noi" className="btn sm">+PUBLICA PROIECT NOU</Link>
-</div>
+
 
               {/* Overview cards */}
               <div className="overview-grid">

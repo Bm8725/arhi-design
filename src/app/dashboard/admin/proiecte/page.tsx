@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Pencil, Trash2, Eye, EyeOff, Plus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-
+import DashHeader from '@/components/DashHeader'
 interface ProiectRecent {
   id: string;
   titlu: string;
@@ -110,6 +110,7 @@ export default function AdminProiecteList() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white px-4 sm:px-6 py-16">
+      <DashHeader/>
       <div className="max-w-5xl mx-auto">
         <div className="mb-10 flex items-start justify-between gap-4 flex-wrap">
           <div>

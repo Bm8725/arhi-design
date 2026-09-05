@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import DashHeader from '@/components/DashHeader'
 
 export default function EditeazaProiect() {
   const supabase = createClient();
@@ -189,6 +190,7 @@ export default function EditeazaProiect() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white px-4 sm:px-6 py-16">
+      <DashHeader/>
       <div className="max-w-2xl mx-auto">
         <div className="mb-10 flex items-start justify-between gap-4">
           <div>

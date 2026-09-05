@@ -30,7 +30,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Proarh.4d | Birou de Proiectare Arhitecturală- arh. Bogdan Sotingeanu",
-  description: "Servicii premium de arhitectură, proiectare rezidențială și comercială, randări 3D și urbanism. Arh. Sotingeanu Bogdan",
+  description: "Servicii premium de arhitectură, proiectare rezidențială și comercială, randări 3D și urbanism Arh. Sotingeanu Bogdan. Targoviste, Pucioasa, Fieni, Moreni, Racari, Dambovita.",
   
 
   manifest: "/manifest.json",
@@ -47,8 +47,8 @@ export const metadata: Metadata = {
 
   // 2. Configurarea pentru Share pe Social Media
   openGraph: {
-    title: "Proarh.4d | Birou de Proiectare Arhitecturală. Arh. Sotingeanu Bogdan",
-    description: "Servicii premium de arhitectură, proiectare rezidențială și comercială, randări 3D/4D și urbanism.",
+    title: "Proarh4d.ro | Birou de Proiectare Arhitecturală. Arh. Sotingeanu Bogdan",
+    description: "Servicii premium de arhitectură, proiectare rezidențială și comercială, randări 3D/4D și urbanism. Targoviste, Pucioasa, Fieni, Moreni, Racari, Dambovita.",
     url: "https://proarh4d.ro",
     siteName: "Proarh.4d",
     images: [
@@ -66,7 +66,7 @@ export const metadata: Metadata = {
   // 3. Configurarea pentru Twitter / X Share
   twitter: {
     card: "summary_large_image",
-    title: "Proarh.4d | Birou de Proiectare Arhitecturală",
+    title: "Proarh4d.ro | Birou de Proiectare Arhitecturală",
     description: "Servicii premium de arhitectură, proiectare rezidențială și comercială. Dambovita. Targoviste.",
     images: ["/arhi4d.png"],
   },

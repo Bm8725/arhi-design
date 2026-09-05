@@ -252,7 +252,7 @@ export default function Navbar() {
       icon: FolderGit2,
       subOptions: [
         { name: 'Proiecte proarh.4d', href: '/portofoliu' },
-
+           { name: 'Cele mai noi proiecte', href: '/proiecte-recente' },
       ]
     },
     { 

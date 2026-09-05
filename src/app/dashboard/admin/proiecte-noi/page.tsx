@@ -135,26 +135,36 @@ export default function AdaugaProiectNou() {
     <div className="min-h-screen bg-[#0a0a0a] text-white px-4 sm:px-6 py-16">
       <DashHeader/>
       <div className="max-w-2xl mx-auto">
-        <div className="mb-10 flex items-start justify-between gap-4">
-          <div>
-            <span className="text-[10px] font-mono tracking-[0.25em] text-neutral-500 uppercase font-bold block mb-2">
-              Admin · Proiecte
-            </span>
-<link href="/dashboard/admin/proiecte" className="text-[10px] font-mono uppercase tracking-widest text-neutral-500 hover:text-white transition-colors border-b border-transparent hover:border-white pb-0.5">
-  Vezi toate proiectele
-</link>
+<div className="mb-10 flex items-start justify-between gap-4">
+  <div>
+    {/* AICI ESTE MODIFICAREA: Link-uri separate pentru Admin și Proiecte */}
+    <div className="flex items-center gap-1.5 text-[10px] font-mono tracking-[0.25em] text-neutral-500 uppercase font-bold mb-2">
+      <Link href="/dashboard/admin" className="hover:text-white transition-colors">
+        Admin
+      </Link>
+      <span>·</span>
+      <Link href="/dashboard/admin/proiecte" className="hover:text-white transition-colors">
+        Proiecte
+      </Link>
+    </div>
+    
+    {/* AICI A FOST CORECTAT din <link> în <Link> */}
+    <Link href="/dashboard/admin/proiecte" className="text-[10px] font-mono uppercase tracking-widest text-neutral-500 hover:text-white transition-colors border-b border-transparent hover:border-white pb-0.5">
+      Vezi toate proiectele
+    </Link>
+  
+    <h1 className="text-3xl font-serif font-extralight tracking-tight text-white mt-2">
+      Publica proiect <em className="italic text-[#bfa054]">nou.</em>
+    </h1>
+  </div>
+  <Link
+    href="/dashboard/admin/proiecte"
+    className="shrink-0 text-[10px] font-mono uppercase tracking-widest text-neutral-500 hover:text-white transition-colors border-b border-transparent hover:border-white pb-0.5"
+  >
+    Vezi toate proiectele
+  </Link>
+</div>
 
-            <h1 className="text-3xl font-serif font-extralight tracking-tight text-white">
-              Publica  proiect <em className="italic text-[#bfa054]">nou.</em>
-            </h1>
-          </div>
-          <Link
-            href="/dashboard/admin/proiecte"
-            className="shrink-0 text-[10px] font-mono uppercase tracking-widest text-neutral-500 hover:text-white transition-colors border-b border-transparent hover:border-white pb-0.5"
-          >
-            Vezi toate proiectele
-          </Link>
-        </div>
 
         <form onSubmit={onSubmit} className="space-y-6">
           <div>

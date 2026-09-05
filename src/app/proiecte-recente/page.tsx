@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ArrowUpRight, ChevronDown } from 'lucide-react';
+import { ArrowUpRight, ChevronDown, Share2, Check } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -24,6 +24,7 @@ export default function ProiecteRecentePage() {
   const [loading, setLoading] = useState(true);
   const [proiectHover, setProiectHover] = useState<number | null>(null);
   const [proiectExtins, setProiectExtins] = useState<string | null>(null);
+  const [copiat, setCopiat] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchProiecte() {
@@ -40,6 +41,20 @@ export default function ProiecteRecentePage() {
     }
     fetchProiecte();
   }, [supabase]);
+
+  function handleShare(e: React.MouseEvent, proiect: ProiectRecent) {
+    e.stopPropagation();
+    e.preventDefault();
+    const url = `${window.location.origin}${window.location.pathname}?proiect=${proiect.id}`;
+
+    if (navigator.share) {
+      navigator.share({ title: proiect.titlu, url }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(url);
+      setCopiat(proiect.id);
+      setTimeout(() => setCopiat(null), 1500);
+    }
+  }
 
   return (
     <>
@@ -131,6 +146,14 @@ export default function ProiecteRecentePage() {
                                 +{imagini.length - 1} poze
                               </span>
                             )}
+                            <button
+                              type="button"
+                              onClick={(e) => handleShare(e, proiect)}
+                              className="absolute bottom-3 right-3 w-8 h-8 flex items-center justify-center bg-black/60 backdrop-blur-sm border border-white/10 text-white active:bg-[#bfa054] active:text-black transition-colors duration-300"
+                              title="Distribuie proiectul"
+                            >
+                              {copiat === proiect.id ? <Check size={14} /> : <Share2 size={14} />}
+                            </button>
                           </div>
 
                           <div className="mt-4 space-y-1.5">
@@ -185,27 +208,41 @@ export default function ProiecteRecentePage() {
                       {/* FLOATING HOVER CARD IMAGE (desktop only) — doar cât nu e extins */}
                       {!extins && (
                         <div
-                          className={`hidden md:block absolute right-[4%] lg:right-[8%] xl:right-[12%] top-1/2 -translate-y-1/2 w-[220px] lg:w-[280px] xl:w-[320px] aspect-[4/5] z-30 pointer-events-none overflow-hidden border border-white/10 shadow-[0_30px_70px_rgba(0,0,0,0.5)] bg-white/[0.03] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
+                          className={`hidden md:block absolute right-[4%] lg:right-[8%] xl:right-[12%] top-1/2 -translate-y-1/2 w-[220px] lg:w-[280px] xl:w-[320px] aspect-[4/5] z-30 overflow-hidden border border-white/10 shadow-[0_30px_70px_rgba(0,0,0,0.5)] bg-white/[0.03] transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${
                             proiectHover === index
                               ? 'opacity-100 scale-100 translate-x-0'
-                              : 'opacity-0 scale-95 translate-x-4'
+                              : 'opacity-0 scale-95 translate-x-4 pointer-events-none'
                           }`}
                         >
-                          <div className="w-full h-full relative">
+                          <div className="w-full h-full relative group/preview">
                             {coperta ? (
-                              <img src={coperta} alt={proiect.titlu} className="w-full h-full object-cover object-center" />
+                              <img
+                                src={coperta}
+                                alt={proiect.titlu}
+                                className="w-full h-full object-cover object-center grayscale group-hover/preview:grayscale-0 transition-all duration-700 ease-out"
+                              />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-[10px] font-mono uppercase tracking-widest text-neutral-600">
                                 Fără previzualizare
                               </div>
                             )}
                           </div>
-                          <div className="absolute inset-0 bg-black/10" />
+                          <div className="absolute inset-0 bg-black/10 pointer-events-none" />
+
                           {imagini.length > 1 && (
                             <span className="absolute bottom-4 left-4 text-[9px] font-mono uppercase bg-[#bfa054]/95 text-black px-2 py-1 tracking-widest">
                               +{imagini.length - 1} poze — click pentru galerie
                             </span>
                           )}
+
+                          <button
+                            type="button"
+                            onClick={(e) => handleShare(e, proiect)}
+                            className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-black/60 backdrop-blur-sm border border-white/10 text-white hover:bg-[#bfa054] hover:text-black transition-colors duration-300"
+                            title="Distribuie proiectul"
+                          >
+                            {copiat === proiect.id ? <Check size={14} /> : <Share2 size={14} />}
+                          </button>
                         </div>
                       )}
 

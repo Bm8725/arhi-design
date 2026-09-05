@@ -141,7 +141,7 @@ export default function AdaugaProiectNou() {
               Admin · Proiecte
             </span>
             <h1 className="text-3xl font-serif font-extralight tracking-tight text-white">
-              Adaugă un proiect <em className="italic text-[#bfa054]">nou.</em>
+              Publica  proiect <em className="italic text-[#bfa054]">nou.</em>
             </h1>
           </div>
           <Link

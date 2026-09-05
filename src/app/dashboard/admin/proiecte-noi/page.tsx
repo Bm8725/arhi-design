@@ -137,9 +137,11 @@ export default function AdaugaProiectNou() {
       <div className="max-w-2xl mx-auto">
         <div className="mb-10 flex items-start justify-between gap-4">
           <div>
-            <span className="text-[10px] font-mono tracking-[0.25em] text-neutral-500 uppercase font-bold block mb-2">
-              Admin · Proiecte
-            </span>
+   
+            <link href="/dashboard/admin/" className="text-[10px] font-mono uppercase tracking-widest text-neutral-500 hover:text-white transition-colors border-b border-transparent hover:border-white pb-0.5">
+              inapoi la dashboard
+            </link>
+          
             <h1 className="text-3xl font-serif font-extralight tracking-tight text-white">
               Publica  proiect <em className="italic text-[#bfa054]">nou.</em>
             </h1>

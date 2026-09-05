@@ -140,12 +140,10 @@ export default function AdaugaProiectNou() {
     {/* AICI ESTE MODIFICAREA: Link-uri separate pentru Admin și Proiecte */}
     <div className="flex items-center gap-1.5 text-[10px] font-mono tracking-[0.25em] text-neutral-500 uppercase font-bold mb-2">
       <Link href="/dashboard/admin" className="hover:text-white transition-colors">
-        Admin
+        Inapoi in main
       </Link>
-      <span>·</span>
-      <Link href="/dashboard/admin/proiecte" className="hover:text-white transition-colors">
-        Proiecte
-      </Link>
+      
+
     </div>
     
     {/* AICI A FOST CORECTAT din <link> în <Link> */}
@@ -157,12 +155,7 @@ export default function AdaugaProiectNou() {
       Publica proiect <em className="italic text-[#bfa054]">nou.</em>
     </h1>
   </div>
-  <Link
-    href="/dashboard/admin/proiecte"
-    className="shrink-0 text-[10px] font-mono uppercase tracking-widest text-neutral-500 hover:text-white transition-colors border-b border-transparent hover:border-white pb-0.5"
-  >
-    Vezi toate proiectele
-  </Link>
+
 </div>
 
 

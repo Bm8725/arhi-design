@@ -646,19 +646,35 @@ export default function AdminDashboardPage() {
           {/* ════════ OVERVIEW ════════ */}
           {activeTab === 'overview' && (
             <>
-              <div className="stat-grid">
+{/* Grila ta originală rămâne exact așa cum era, neatinsă */}
+<div className="stat-grid">
+  <div className="stat"><div className="stat-val">{projects.length}</div><div className="stat-lbl">PROIECTE</div></div>
+  <div className="stat"><div className="stat-val">{projects.filter(p => p.status === 'in_progres').length}</div><div className="stat-lbl">ÎN PROGRES</div></div>
+  <div className="stat"><div className="stat-val">{orders.length}</div><div className="stat-lbl">COMENZI</div></div>
+  <div className="stat"><div className="stat-val">{revenue.toLocaleString('ro-RO')} lei</div><div className="stat-lbl">VENITURI</div></div>
+  <div className="stat"><div className="stat-val">{products.filter(p => p.activ).length}</div><div className="stat-lbl">PRODUSE ACTIVE</div></div>
+  <div className="stat"><div className="stat-val">{clients.filter(c => c.rol === 'client').length}</div><div className="stat-lbl">CLIENȚI</div></div>
+</div>
 
-                <div className="stat"><div className="stat-val">{projects.length}</div><div className="stat-lbl">PROIECTE</div></div>
-                <div className="stat"><div className="stat-val">{projects.filter(p => p.status === 'in_progres').length}</div><div className="stat-lbl">ÎN PROGRES</div></div>
-                <div className="stat"><div className="stat-val">{orders.length}</div><div className="stat-lbl">COMENZI</div></div>
-                <div className="stat"><div className="stat-val">{revenue.toLocaleString('ro-RO')} lei</div><div className="stat-lbl">VENITURI</div></div>
-                <div className="stat"><div className="stat-val">{products.filter(p => p.activ).length}</div><div className="stat-lbl">PRODUSE ACTIVE</div></div>
-                <div className="stat"><div className="stat-val">{clients.filter(c => c.rol === 'client').length}</div><div className="stat-lbl">CLIENȚI</div></div>
-                  <Link href="/dashboard/admin/proiecte-noi" className="stat" style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-    <div className="stat-lbl">+ Publica proiectele noi</div>
+{/* Butonul adăugat SEPARAT, dedesubt, ca să nu fie blocat de CSS-ul grilei */}
+<div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-start' }}>
+  <Link 
+    href="/dashboard/admin/proiecte-noi" 
+    style={{ 
+      backgroundColor: '#0070f3', 
+      color: '#fff', 
+      padding: '10px 20px', 
+      borderRadius: '6px', 
+      textDecoration: 'none', 
+      fontWeight: '600',
+      fontSize: '14px',
+      display: 'inline-block'
+    }}
+  >
+    + Adaugă proiecte noi
   </Link>
+</div>
 
-              </div>
 
               {/* Overview cards */}
               <div className="overview-grid">

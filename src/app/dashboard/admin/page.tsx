@@ -654,7 +654,9 @@ export default function AdminDashboardPage() {
                 <div className="stat"><div className="stat-val">{revenue.toLocaleString('ro-RO')} lei</div><div className="stat-lbl">VENITURI</div></div>
                 <div className="stat"><div className="stat-val">{products.filter(p => p.activ).length}</div><div className="stat-lbl">PRODUSE ACTIVE</div></div>
                 <div className="stat"><div className="stat-val">{clients.filter(c => c.rol === 'client').length}</div><div className="stat-lbl">CLIENȚI</div></div>
-                <Link href="/dashboard/admin/proiecte-noi">Adauga proiecte noi</Link>
+                  <Link href="/dashboard/admin/proiecte-noi" className="stat" style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
+    <div className="stat-lbl">+ Publica proiectele noi</div>
+  </Link>
 
               </div>
 

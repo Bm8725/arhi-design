@@ -1,9 +1,9 @@
 {
   "name": "arhi-design",
-  "version": "0.1.13",
+  "version": "1.1.13",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev ",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"

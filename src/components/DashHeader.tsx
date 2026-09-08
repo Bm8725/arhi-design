@@ -248,7 +248,7 @@ export default function DashHeader() {
                 <DropdownRow icon={<Info size={13} strokeWidth={1.75} />} label="Despre">
                   <p style={styles.aboutText}>
                     Aplicație pentru gestionarea proiectelor și documentației de arhitectură in format digital (digitalizare). CRM, real time messages add.
-                    Full stack: ▲ Next.js 16.2.6 (Turbopack), PostgreSQL, supabase,  Vercel, infrastructură cloud based on ARM Gravyton CPU.
+                    Full stack: ▲ Next.js 16.2.6 (Turbopack), PostgreSQL, supabase,  Vercel, infrastructură cloud based on ARM Graviton-based instances.
                   </p>
                 </DropdownRow>
               </div>

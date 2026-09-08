@@ -5,6 +5,7 @@ import Image from "next/image";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppWidget from '@/components/WhatsAppWidget'
+import { createClient } from "@/lib/supabase/client";
 /* ─────────────────────────────────────────────────────────────
 
    ───────────────────────────────────────────────────────────── */
@@ -19,7 +20,48 @@ type Project = {
   cover: string;
   images: string[];
   description: string[];
+  beneficiar?: string;
 };
+
+// Rândul brut din tabela Supabase `proiecte_recente`
+type ProiectRecentRow = {
+  id: string;
+  titlu: string;
+  beneficiar: string | null;
+  locatie: string | null;
+  tip: string | null;
+  descriere: string | null;
+  imagine_url: string | null;
+  imagini: string[] | null;
+  activ: boolean;
+  created_at: string;
+};
+
+// Transformă un rând din DB în formatul `Project` folosit deja de pagină.
+// Câmpurile care nu există în schema DB (an, suprafață, status) primesc
+// valori implicite rezonabile, fără să blocheze afișarea.
+function mapDbRowToProject(row: ProiectRecentRow): Project {
+  const imagini =
+    row.imagini && row.imagini.length > 0
+      ? row.imagini
+      : row.imagine_url
+      ? [row.imagine_url]
+      : ["/design.png"];
+
+  return {
+    id: row.id,
+    title: row.titlu,
+    category: row.tip || "Proiect",
+    year: row.created_at ? new Date(row.created_at).getFullYear().toString() : "-",
+    location: row.locatie || "-",
+    area: "-",
+    status: "Realizat",
+    cover: row.imagine_url || imagini[0],
+    images: imagini,
+    description: row.descriere ? [row.descriere] : [],
+    beneficiar: row.beneficiar || undefined,
+  };
+}
 
 const PROJECTS: Project[] = [
   {
@@ -280,11 +322,41 @@ export default function PortofoliuPage() {
   const [fullscreen, setFullscreen] = useState(false);
   const [fsClosing, setFsClosing] = useState(false);
 
+  // Proiecte încărcate manual din Supabase (tabela `proiecte_recente`),
+  // afișate în continuarea listei statice de mai sus.
+  const [dbProjects, setDbProjects] = useState<Project[]>([]);
+  const [loadingDb, setLoadingDb] = useState(true);
+
   // swipe (mobil)
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
 
-  const active = PROJECTS.find((p) => p.id === activeId) ?? null;
+  const allProjects = [...PROJECTS, ...dbProjects];
+  const active = allProjects.find((p) => p.id === activeId) ?? null;
+
+  // Fetch proiecte din Supabase, o singură dată la montare
+  useEffect(() => {
+    let isMounted = true;
+    async function fetchDbProjects() {
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("proiecte_recente")
+        .select("*")
+        .eq("activ", true)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Eroare la încărcarea proiectelor din Supabase:", error);
+      } else if (data && isMounted) {
+        setDbProjects((data as ProiectRecentRow[]).map(mapDbRowToProject));
+      }
+      if (isMounted) setLoadingDb(false);
+    }
+    fetchDbProjects();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const openProject = (id: string) => {
     setImgIndex(0);
@@ -437,13 +509,15 @@ export default function PortofoliuPage() {
             </h2>
           </div>
           <span className="hidden md:block text-xs opacity-40 tracking-widest">
-            [ {String(PROJECTS.length).padStart(2, "0")} lucrări ]
+            {loadingDb
+              ? "[ se încarcă... ]"
+              : `[ ${String(allProjects.length).padStart(2, "0")} lucrări ]`}
           </span>
         </header>
 
         {/* Grid de proiecte */}
         <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-white/10">
-          {PROJECTS.map((p, i) => (
+          {allProjects.map((p, i) => (
             <button
               key={p.id}
               onClick={() => openProject(p.id)}
@@ -644,6 +718,16 @@ export default function PortofoliuPage() {
                       {active.status}
                     </dd>
                   </div>
+                  {active.beneficiar && (
+                    <div>
+                      <dt className="opacity-40 tracking-widest uppercase mb-1">
+                        Beneficiar
+                      </dt>
+                      <dd className="text-neutral-200 font-light">
+                        {active.beneficiar}
+                      </dd>
+                    </div>
+                  )}
                 </dl>
 
                 <div className="space-y-4">

@@ -455,6 +455,7 @@ const styles: Record<string, React.CSSProperties> = {
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
+  
   aboutText: {
     fontSize: '11.5px',
     color: '#999999',

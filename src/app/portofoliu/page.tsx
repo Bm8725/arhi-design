@@ -37,16 +37,43 @@ type ProiectRecentRow = {
   created_at: string;
 };
 
+// Numele bucket-ului Supabase Storage unde sunt urcate pozele proiectelor
+const IMAGE_BUCKET = "proiecte";
+
+// Dacă valoarea e deja un URL complet (http/https), o lăsăm așa. Altfel o
+// tratăm ca path relativ în bucket-ul `proiecte` și construim URL-ul public.
+function resolveImageUrl(
+  path: string,
+  supabase: ReturnType<typeof createClient>,
+): string {
+  if (!path) return path;
+  if (/^https?:\/\//i.test(path)) return path;
+  const { data } = supabase.storage.from(IMAGE_BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
+
 // Transformă un rând din DB în formatul `Project` folosit deja de pagină.
 // Câmpurile care nu există în schema DB (an, suprafață, status) primesc
 // valori implicite rezonabile, fără să blocheze afișarea.
-function mapDbRowToProject(row: ProiectRecentRow): Project {
-  const imagini =
+function mapDbRowToProject(
+  row: ProiectRecentRow,
+  supabase: ReturnType<typeof createClient>,
+): Project {
+  const rawImages =
     row.imagini && row.imagini.length > 0
       ? row.imagini
       : row.imagine_url
       ? [row.imagine_url]
+      : [];
+
+  const imagini =
+    rawImages.length > 0
+      ? rawImages.map((p) => resolveImageUrl(p, supabase))
       : ["/design.png"];
+
+  const cover = row.imagine_url
+    ? resolveImageUrl(row.imagine_url, supabase)
+    : imagini[0];
 
   return {
     id: row.id,
@@ -56,7 +83,7 @@ function mapDbRowToProject(row: ProiectRecentRow): Project {
     location: row.locatie || "-",
     area: "-",
     status: "Realizat",
-    cover: row.imagine_url || imagini[0],
+    cover,
     images: imagini,
     description: row.descriere ? [row.descriere] : [],
     beneficiar: row.beneficiar || undefined,
@@ -348,7 +375,11 @@ export default function PortofoliuPage() {
       if (error) {
         console.error("Eroare la încărcarea proiectelor din Supabase:", error);
       } else if (data && isMounted) {
-        setDbProjects((data as ProiectRecentRow[]).map(mapDbRowToProject));
+        setDbProjects(
+          (data as ProiectRecentRow[]).map((row) =>
+            mapDbRowToProject(row, supabase),
+          ),
+        );
       }
       if (isMounted) setLoadingDb(false);
     }

@@ -3,14 +3,38 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { GitBranch, GitCommit, Clock, Phone, Mail, Info } from 'lucide-react';
 
 const GITHUB_REPO = 'Bm8725/arhi-design';
 
 interface RepoStats {
   commits: number | null;
   lastUpdate: string | null;
+  lastCommitMessage: string | null;
+  lastCommitSha: string | null;
   loading: boolean;
   eroare: boolean;
+}
+
+// Un rând de dropdown cu iconiță + label + conținut — reutilizat pentru toate rubricile
+function DropdownRow({
+  icon,
+  label,
+  children,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div style={styles.dropdownRowWrap}>
+      <div style={styles.dropdownIconWrap}>{icon}</div>
+      <div style={styles.dropdownRowContent}>
+        <span style={styles.dropdownLabel}>{label}</span>
+        {children}
+      </div>
+    </div>
+  );
 }
 
 export default function DashHeader() {
@@ -20,6 +44,8 @@ export default function DashHeader() {
   const [repoStats, setRepoStats] = useState<RepoStats>({
     commits: null,
     lastUpdate: null,
+    lastCommitMessage: null,
+    lastCommitSha: null,
     loading: true,
     eroare: false,
   });
@@ -45,9 +71,9 @@ export default function DashHeader() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch stats din GitHub — nr. de commit-uri + data ultimei actualizări.
-  // Se încarcă o singură dată, doar când dropdown-ul e deschis prima oară,
-  // ca să nu consumăm din rate-limit-ul GitHub degeaba la fiecare randare.
+  // Fetch stats din GitHub — nr. de commit-uri, data ultimei actualizări și
+  // mesajul ultimului commit. Se încarcă o singură dată, doar când dropdown-ul
+  // e deschis prima oară, ca să nu consumăm din rate-limit-ul GitHub degeaba.
   useEffect(() => {
     if (!dropdownOpen || repoStats.commits !== null || repoStats.eroare) return;
 
@@ -61,24 +87,36 @@ export default function DashHeader() {
 
         if (!repoRes.ok || !commitsRes.ok) throw new Error('GitHub API a răspuns cu eroare');
 
-        const repoData = await repoRes.json();
-
-        // Trick-ul standard GitHub pentru numărul total de commit-uri:
-        // header-ul "Link" din răspunsul paginat conține numărul ultimei pagini.
-        let commitCount: number | null = null;
+        // Trick-ul standard GitHub pentru numărul total de commit-uri: header-ul
+        // "Link" din răspunsul paginat conține numărul ultimei pagini.
         const linkHeader = commitsRes.headers.get('link');
+        let commitCount: number | null = null;
         if (linkHeader) {
           const match = linkHeader.match(/&page=(\d+)>;\s*rel="last"/);
           if (match) commitCount = parseInt(match[1], 10);
-        } else {
-          const commitsData = await commitsRes.json();
+        }
+
+        const [repoData, commitsData] = await Promise.all([repoRes.json(), commitsRes.json()]);
+
+        // Dacă nu există header de paginare, înseamnă că există o singură pagină de commit-uri
+        if (commitCount === null) {
           commitCount = Array.isArray(commitsData) ? commitsData.length : null;
         }
+
+        const ultimulCommit = Array.isArray(commitsData) ? commitsData[0] : null;
+        const mesajComplet: string | null = ultimulCommit?.commit?.message ?? null;
+        const primaLinie = mesajComplet ? mesajComplet.split('\n')[0] : null;
 
         if (isMounted) {
           setRepoStats({
             commits: commitCount,
             lastUpdate: repoData.pushed_at ?? repoData.updated_at ?? null,
+            lastCommitMessage: primaLinie
+              ? primaLinie.length > 54
+                ? primaLinie.slice(0, 54) + '…'
+                : primaLinie
+              : null,
+            lastCommitSha: ultimulCommit?.sha ? ultimulCommit.sha.slice(0, 7) : null,
             loading: false,
             eroare: false,
           });
@@ -150,56 +188,70 @@ export default function DashHeader() {
             </span>
           </button>
 
-
           {dropdownOpen && (
             <div style={styles.dropdownPanel}>
-              <div style={styles.dropdownRow}>
-                <span style={styles.dropdownLabel}>Repository</span>
-                {/* Pune aici numele autorului */}
-                <span style={styles.dropdownValue}>https://github.com/Bm8725/arhi-design </span>
+              <div style={styles.dropdownPanelHeader}>
+                <span style={styles.dropdownPanelTitle}>Despre aplicație</span>
+                <span style={styles.dropdownPanelVersion}>v0.1.13</span>
+              </div>
+
+              <div style={styles.dropdownSection}>
+                <DropdownRow icon={<GitBranch size={13} strokeWidth={1.75} />} label="Repository">
+                  <a
+                    href="https://github.com/Bm8725/arhi-design"
+                    target="_blank"
+                    rel="noreferrer"
+                    style={styles.dropdownLink}
+                  >
+                    github.com/Bm8725/arhi-design
+                  </a>
+                </DropdownRow>
+
+                <DropdownRow icon={<GitCommit size={13} strokeWidth={1.75} />} label="Commit-uri">
+                  <span style={styles.dropdownValue}>
+                    {repoStats.loading
+                      ? 'Se încarcă...'
+                      : repoStats.eroare
+                      ? '—'
+                      : (repoStats.commits ?? '—')}
+                  </span>
+                  {!repoStats.loading && !repoStats.eroare && repoStats.lastCommitMessage && (
+                    <span style={styles.commitLine}>
+                      <span style={styles.commitSha}>{repoStats.lastCommitSha}</span>
+                      <span style={styles.commitMessage}>{repoStats.lastCommitMessage}</span>
+                    </span>
+                  )}
+                </DropdownRow>
+
+                <DropdownRow icon={<Clock size={13} strokeWidth={1.75} />} label="Ultima actualizare">
+                  <span style={styles.dropdownValue}>
+                    {repoStats.loading ? 'Se încarcă...' : repoStats.eroare ? '—' : dataFormatata ?? '—'}
+                  </span>
+                </DropdownRow>
               </div>
 
               <div style={styles.dropdownDivider} />
 
-              <div style={styles.dropdownRow}>
-                <span style={styles.dropdownLabel}>Commits</span>
-                <span style={styles.dropdownValue}>
-                  {repoStats.loading
-                    ? 'Se încarcă...'
-                    : repoStats.eroare
-                    ? '—'
-                    : (repoStats.commits ?? '—')}
-                </span>
-              </div>
+              <div style={styles.dropdownSection}>
+                <DropdownRow icon={<Phone size={13} strokeWidth={1.75} />} label="Contact">
+                  <span style={styles.dropdownValue}>+40729411747</span>
+                </DropdownRow>
 
-              <div style={styles.dropdownRow}>
-                <span style={styles.dropdownLabel}>Ultima actualizare</span>
-                <span style={styles.dropdownValue}>
-                  {repoStats.loading ? 'Se încarcă...' : repoStats.eroare ? '—' : dataFormatata ?? '—'}
-                </span>
+                <DropdownRow icon={<Mail size={13} strokeWidth={1.75} />} label="E-mail">
+                  <span style={styles.dropdownValue}>marius_service@yahoo.com</span>
+                </DropdownRow>
               </div>
 
               <div style={styles.dropdownDivider} />
 
-              <div style={styles.dropdownRow}>
-                <span style={styles.dropdownLabel}>Contact</span>
-                {/* Pune aici numărul / ID-ul contractului */}
-                <span style={styles.dropdownValue}>+40729411747</span>
+              <div style={styles.dropdownSection}>
+                <DropdownRow icon={<Info size={13} strokeWidth={1.75} />} label="Despre">
+                  <p style={styles.aboutText}>
+                    Aplicație pentru gestionarea proiectelor și documentației de arhitectură.
+                    Full stack: Next.js, PostgreSQL, Vercel, infrastructură cloud.
+                  </p>
+                </DropdownRow>
               </div>
-              
-                 <div style={styles.dropdownRow}>
-                <span style={styles.dropdownLabel}>e-mail</span>
-                {/* Pune aici numărul / ID-ul contractului */}
-                <span style={styles.dropdownValue}>marius_service@yahoo.com</span>
-              </div>
-              <div style={styles.dropdownDivider} />
-                                <div style={styles.dropdownRow}>
-                <span style={styles.dropdownLabel}>about app</span>
-                {/* Pune aici numărul / ID-ul contractului */}
-                <span style={styles.dropdownValue}>This app is designed for managing architectural designs and documentation into the modern world. Used the latest technology and frameworks to ensure a smooth and efficient workflow for architects, designers and customers. full stack: NEXT.JS, postgre DB, vercel, cloud infrastructure </span>
-           
-              </div>
-
             </div>
           )}
         </div>
@@ -300,21 +352,70 @@ const styles: Record<string, React.CSSProperties> = {
     position: 'absolute',
     top: 'calc(100% + 12px)',
     right: 0,
-    minWidth: '220px',
-    background: '#302d2d',
-    border: '1px solid #1f1f1f',
-    boxShadow: '0 16px 40px rgba(0,0,0,0.55)',
-    padding: '14px 16px',
+    minWidth: '300px',
+    maxWidth: '340px',
+    background: '#181818',
+    border: '1px solid #262626',
+    borderTop: '2px solid #e2b36e',
+    borderRadius: '6px',
+    boxShadow: '0 20px 48px rgba(0,0,0,0.6)',
+    padding: '0',
     zIndex: 101,
     fontFamily: "'DM Mono', 'Monaco', monospace",
+    overflow: 'hidden',
   },
-  dropdownRow: {
+  dropdownPanelHeader: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: '12px 16px',
+    background: '#0f0f0f',
+    borderBottom: '1px solid #262626',
+  },
+  dropdownPanelTitle: {
+    fontSize: '10px',
+    fontWeight: 700,
+    color: '#e2b36e',
+    textTransform: 'uppercase',
+    letterSpacing: '0.12em',
+  },
+  dropdownPanelVersion: {
+    fontSize: '10px',
+    color: '#555555',
+  },
+  dropdownSection: {
+    padding: '10px 8px',
     display: 'flex',
     flexDirection: 'column',
-    gap: '4px',
+    gap: '2px',
+  },
+  dropdownRowWrap: {
+    display: 'flex',
+    alignItems: 'flex-start',
+    gap: '10px',
+    padding: '7px 8px',
+    borderRadius: '4px',
+  },
+  dropdownIconWrap: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '22px',
+    height: '22px',
+    flexShrink: 0,
+    marginTop: '1px',
+    color: '#e2b36e',
+    background: 'rgba(226,179,110,0.08)',
+    borderRadius: '4px',
+  },
+  dropdownRowContent: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '3px',
+    minWidth: 0,
   },
   dropdownLabel: {
-    fontSize: '10px',
+    fontSize: '9.5px',
     fontWeight: 700,
     color: '#555555',
     textTransform: 'uppercase',
@@ -325,9 +426,44 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
     color: '#ffffff',
   },
+  dropdownLink: {
+    fontSize: '12px',
+    fontWeight: 600,
+    color: '#ffffff',
+    textDecoration: 'none',
+    borderBottom: '1px solid rgba(255,255,255,0.2)',
+    width: 'fit-content',
+  },
+  commitLine: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    marginTop: '2px',
+  },
+  commitSha: {
+    fontSize: '10px',
+    color: '#e2b36e',
+    background: 'rgba(226,179,110,0.1)',
+    padding: '1px 5px',
+    borderRadius: '3px',
+    flexShrink: 0,
+  },
+  commitMessage: {
+    fontSize: '11px',
+    color: '#999999',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+  },
+  aboutText: {
+    fontSize: '11.5px',
+    color: '#999999',
+    lineHeight: 1.5,
+    margin: 0,
+  },
   dropdownDivider: {
     height: '1px',
-    background: '#1f1f1f',
-    margin: '10px 0',
+    background: '#262626',
+    margin: '0',
   },
 };

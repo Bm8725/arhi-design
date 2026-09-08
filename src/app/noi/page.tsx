@@ -1,3 +1,8 @@
+/**
+ * noi/page.tsx
+ * author: BM 2026
+ */
+
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
@@ -6,8 +11,8 @@ import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import WhatsAppWidget from '@/components/WhatsAppWidget'
 
-const SITE_URL = 'https://arhi-design.vercel.app'
-const SITE_TITLE = 'proarh4d.ro | Birou de proiectare arhitecturala Dambovita.'
+const SITE_URL = 'https://proarh4d.ro'
+const SITE_TITLE = 'proarh4d.ro | Birou de proiectare arhitecturala Dambovita. Arhitect Bogdan Sotingeanu.'
 const SITE_TEXT = 'Proiectare arhitecturala. Arh. Bogdan Sotingeanu. Targoviste, Dambovita. Romania'
 
 export default function AboutPage() {
@@ -200,10 +205,10 @@ export default function AboutPage() {
         
         {/* Open Graph / Facebook / WhatsApp - Link-uri text directe pe care WhatsApp le citește instant */}
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="https://arhi-design.vercel.app" />
-        <meta property="og:title" content="Despre Noi | proarh3d.ro" />
+        <meta property="og:url" content="https://proarh4d.ro" />
+        <meta property="og:title" content="Despre Noi | proarh4d.ro" />
         <meta property="og:description" content="Formă. Funcție. Spațiu atemporal. Vezi manifestul echipei noastre de arhitectură." />
-        <meta property="og:image" content="https://arhi-design.vercel.app" />
+        <meta property="og:image" content="https://proarh4d.ro" />
         <meta property="og:image:width" content="1200" />
         <meta property="og:image:height" content="630" />
 
@@ -211,7 +216,7 @@ export default function AboutPage() {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content="Despre Noi | proarh4d.ro" />
         <meta name="twitter:description" content="Formă. Funcție. Spațiu atemporal. Vezi manifestul echipei noastre de arhitectură." />
-        <meta name="twitter:image" content="https://arhi-design.vercel.app" />
+        <meta name="twitter:image" content="https://proarh4d.ro" />
       </head>
 
       <style>{`

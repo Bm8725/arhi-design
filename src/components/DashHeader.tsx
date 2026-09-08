@@ -177,7 +177,7 @@ export default function DashHeader() {
             style={styles.item}
           >
             <span style={styles.label}>app designed by BM</span>
-            <span style={styles.value}>V. 0.1.13</span>
+            <span style={styles.value}>V. 1.1.13</span>
             <span
               style={{
                 ...styles.chevron,
@@ -192,7 +192,7 @@ export default function DashHeader() {
             <div style={styles.dropdownPanel}>
               <div style={styles.dropdownPanelHeader}>
                 <span style={styles.dropdownPanelTitle}>Despre aplicație</span>
-                <span style={styles.dropdownPanelVersion}>v0.1.13</span>
+                <span style={styles.dropdownPanelVersion}>v1.1.13</span>
               </div>
 
               <div style={styles.dropdownSection}>

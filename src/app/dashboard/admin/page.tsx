@@ -16,6 +16,8 @@ type Profile = {
   rol: string
   activ: boolean
   created_at: string
+  provider?: string | null
+  email?: string | null
 }
 
 type Project = {
@@ -115,6 +117,21 @@ const STATUS_LABELS: Record<string, string> = {
   finalizat: 'Finalizat', anulat: 'Anulat',
 }
 
+const PROVIDER_LABELS: Record<string, string> = {
+  google: 'Google', email: 'Email', facebook: 'Facebook', github: 'GitHub', apple: 'Apple',
+}
+const PROVIDER_COLORS: Record<string, string> = {
+  google: '#e2b36e', email: '#a5b4fc', facebook: '#7dd3fc', github: '#ccc', apple: '#ccc',
+}
+function providerLabel(p?: string | null) {
+  if (!p) return 'Email'
+  return PROVIDER_LABELS[p] || p.charAt(0).toUpperCase() + p.slice(1)
+}
+function providerColor(p?: string | null) {
+  if (!p) return PROVIDER_COLORS.email
+  return PROVIDER_COLORS[p] || '#888'
+}
+
 // ── Mini Pie Chart ──────────────────────────────────────────────────────────
 function PieChart({ data }: { data: { label: string; value: number; color: string }[] }) {
   const total = data.reduce((s, d) => s + d.value, 0)
@@ -200,6 +217,7 @@ export default function AdminDashboardPage() {
   const [editProject, setEditProject] = useState<Partial<Project> | null>(null)
   const [editProduct, setEditProduct] = useState<Partial<Product> | null>(null)
   const [editPhase, setEditPhase] = useState<Partial<Phase> | null>(null)
+  const [editClient, setEditClient] = useState<Partial<Profile> | null>(null)
   const [showNewProject, setShowNewProject] = useState(false)
   const [showNewProduct, setShowNewProduct] = useState(false)
   const [showNewPhase, setShowNewPhase] = useState(false)
@@ -279,7 +297,15 @@ export default function AdminDashboardPage() {
     setProducts(data || [])
   }
   async function fetchClients() {
-    const { data } = await supabase.from('profiles').select('*').order('created_at', { ascending: false })
+    // Folosim funcția RPC (security definer) ca să obținem și provider-ul de login
+    // (google/email/etc), care vine din auth.users, nu din profiles.
+    const { data, error } = await supabase.rpc('get_all_profiles_with_provider')
+    if (error) {
+      // fallback dacă funcția RPC nu există încă în DB — fără provider
+      const { data: fallback } = await supabase.from('profiles').select('*').order('created_at', { ascending: false })
+      setClients(fallback || [])
+      return
+    }
     setClients(data || [])
   }
   async function fetchProjectDetails(projectId: string) {
@@ -424,6 +450,12 @@ export default function AdminDashboardPage() {
   }
   async function changeClientRole(id: string, rol: string) {
     await supabase.from('profiles').update({ rol }).eq('id', id); fetchClients()
+  }
+  async function updateClient() {
+    if (!editClient?.id) return
+    const { id, provider, email, created_at, rol, activ, ...rest } = editClient as any
+    await supabase.from('profiles').update(rest).eq('id', id)
+    setEditClient(null); fetchClients()
   }
 
   // ── Messages ──
@@ -1028,15 +1060,16 @@ export default function AdminDashboardPage() {
               <input className="search" placeholder="Caută după nume sau rol..." value={clientFilter} onChange={e => setClientFilter(e.target.value)} />
               <div className="scroll-x">
                 <table className="tbl">
-                  <thead><tr><th>NUME</th><th>COMPANIE</th><th>TELEFON</th><th>ROL</th><th>STATUS</th><th>DIN</th><th>ACȚIUNI</th></tr></thead>
+                  <thead><tr><th>NUME</th><th>COMPANIE</th><th>TELEFON</th><th>LOGARE</th><th>ROL</th><th>STATUS</th><th>DIN</th><th>ACȚIUNI</th></tr></thead>
                   <tbody>
                     {filteredClients.length === 0
-                      ? <tr><td colSpan={7} style={{ textAlign: 'center', color: '#2a2a2a', padding: 32 }}>Niciun utilizator.</td></tr>
+                      ? <tr><td colSpan={8} style={{ textAlign: 'center', color: '#2a2a2a', padding: 32 }}>Niciun utilizator.</td></tr>
                       : filteredClients.map(c => (
                         <tr key={c.id}>
                           <td style={{ color: '#e0e0e0' }}>{c.full_name || '—'}</td>
                           <td style={{ color: '#555' }}>{c.company || '—'}</td>
                           <td style={{ color: '#555' }}>{c.phone || '—'}</td>
+                          <td><span className="badge" style={{ color: providerColor(c.provider), borderColor: providerColor(c.provider) }}>{providerLabel(c.provider)}</span></td>
                           <td>
                             {isSuperAdmin
                               ? <select className="btn sm" style={{ background: 'transparent', border: 'none' }} value={c.rol} onChange={e => changeClientRole(c.id, e.target.value)}>
@@ -1049,6 +1082,7 @@ export default function AdminDashboardPage() {
                           <td style={{ color: '#444' }}>{fmt(c.created_at)}</td>
                           <td>
                             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                              {isSuperAdmin && <button className="btn sm" onClick={() => setEditClient({ ...c })}>EDITEAZĂ</button>}
                               <button className="btn sm" onClick={() => openNotify(c.id, c.full_name || c.id)}>NOTIFY</button>
                               {isSuperAdmin && (
                                 <button className="btn sm" style={{ color: c.activ ? '#f87171' : '#34d399', borderColor: c.activ ? '#f87171' : '#34d399' }}
@@ -1283,6 +1317,30 @@ export default function AdminDashboardPage() {
             <div className="btn-row">
               <button className="btn primary" onClick={updatePhase}>SALVEAZĂ</button>
               <button className="btn" onClick={() => setEditPhase(null)}>ANULEAZĂ</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ════════ MODAL Editare client (superadmin) ════════ */}
+      {editClient && (
+        <div className="overlay" onClick={e => e.target === e.currentTarget && setEditClient(null)}>
+          <div className="modal">
+            <div className="modal-title">EDITEAZĂ <span>{editClient.full_name || 'utilizator'}</span></div>
+            {editClient.provider && (
+              <div style={{ marginBottom: 14 }}>
+                <span className="badge" style={{ color: providerColor(editClient.provider), borderColor: providerColor(editClient.provider) }}>
+                  Logat prin {providerLabel(editClient.provider)}
+                </span>
+                {editClient.email && <span style={{ fontSize: 11, color: '#555', marginLeft: 10 }}>{editClient.email}</span>}
+              </div>
+            )}
+            <input className="inp" placeholder="Nume complet" value={editClient.full_name || ''} onChange={e => setEditClient({ ...editClient, full_name: e.target.value })} />
+            <input className="inp" placeholder="Telefon" value={editClient.phone || ''} onChange={e => setEditClient({ ...editClient, phone: e.target.value })} />
+            <input className="inp" placeholder="Companie" value={editClient.company || ''} onChange={e => setEditClient({ ...editClient, company: e.target.value })} />
+            <div className="btn-row">
+              <button className="btn primary" onClick={updateClient}>SALVEAZĂ</button>
+              <button className="btn" onClick={() => setEditClient(null)}>ANULEAZĂ</button>
             </div>
           </div>
         </div>

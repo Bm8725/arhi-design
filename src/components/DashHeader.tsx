@@ -247,8 +247,8 @@ export default function DashHeader() {
               <div style={styles.dropdownSection}>
                 <DropdownRow icon={<Info size={13} strokeWidth={1.75} />} label="Despre">
                   <p style={styles.aboutText}>
-                    Aplicație pentru gestionarea proiectelor și documentației de arhitectură.
-                    Full stack: Next.js, PostgreSQL, Vercel, infrastructură cloud.
+                    Aplicație pentru gestionarea proiectelor și documentației de arhitectură in format digital (digitalizare). CRM, real time messages add.
+                    Full stack: ▲ Next.js 16.2.6 (Turbopack), PostgreSQL, supabase,  Vercel, infrastructură cloud based on ARM Gravyton CPU.
                   </p>
                 </DropdownRow>
               </div>
@@ -455,7 +455,7 @@ const styles: Record<string, React.CSSProperties> = {
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
-  
+
   aboutText: {
     fontSize: '11.5px',
     color: '#999999',

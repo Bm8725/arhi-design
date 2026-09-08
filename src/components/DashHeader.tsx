@@ -4,10 +4,25 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 
+const GITHUB_REPO = 'Bm8725/arhi-design';
+
+interface RepoStats {
+  commits: number | null;
+  lastUpdate: string | null;
+  loading: boolean;
+  eroare: boolean;
+}
+
 export default function DashHeader() {
   const [time, setTime] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [repoStats, setRepoStats] = useState<RepoStats>({
+    commits: null,
+    lastUpdate: null,
+    loading: true,
+    eroare: false,
+  });
 
   useEffect(() => {
     const updateTime = () => {
@@ -29,6 +44,71 @@ export default function DashHeader() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Fetch stats din GitHub — nr. de commit-uri + data ultimei actualizări.
+  // Se încarcă o singură dată, doar când dropdown-ul e deschis prima oară,
+  // ca să nu consumăm din rate-limit-ul GitHub degeaba la fiecare randare.
+  useEffect(() => {
+    if (!dropdownOpen || repoStats.commits !== null || repoStats.eroare) return;
+
+    let isMounted = true;
+    async function fetchGithubStats() {
+      try {
+        const [repoRes, commitsRes] = await Promise.all([
+          fetch(`https://api.github.com/repos/${GITHUB_REPO}`),
+          fetch(`https://api.github.com/repos/${GITHUB_REPO}/commits?per_page=1`),
+        ]);
+
+        if (!repoRes.ok || !commitsRes.ok) throw new Error('GitHub API a răspuns cu eroare');
+
+        const repoData = await repoRes.json();
+
+        // Trick-ul standard GitHub pentru numărul total de commit-uri:
+        // header-ul "Link" din răspunsul paginat conține numărul ultimei pagini.
+        let commitCount: number | null = null;
+        const linkHeader = commitsRes.headers.get('link');
+        if (linkHeader) {
+          const match = linkHeader.match(/&page=(\d+)>;\s*rel="last"/);
+          if (match) commitCount = parseInt(match[1], 10);
+        } else {
+          const commitsData = await commitsRes.json();
+          commitCount = Array.isArray(commitsData) ? commitsData.length : null;
+        }
+
+        if (isMounted) {
+          setRepoStats({
+            commits: commitCount,
+            lastUpdate: repoData.pushed_at ?? repoData.updated_at ?? null,
+            loading: false,
+            eroare: false,
+          });
+        }
+      } catch (err) {
+        console.error('Eroare la fetch statistici GitHub:', err);
+        if (isMounted) {
+          setRepoStats((prev) => ({ ...prev, loading: false, eroare: true }));
+        }
+      }
+    }
+
+    fetchGithubStats();
+    return () => {
+      isMounted = false;
+    };
+  }, [dropdownOpen, repoStats.commits, repoStats.eroare]);
+
+  const dataFormatata = repoStats.lastUpdate
+    ? new Date(repoStats.lastUpdate).toLocaleDateString('ro-RO', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      }) +
+      ' · ' +
+      new Date(repoStats.lastUpdate).toLocaleTimeString('ro-RO', {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : null;
 
   return (
     <header style={styles.header}>
@@ -77,6 +157,26 @@ export default function DashHeader() {
                 <span style={styles.dropdownLabel}>Repository</span>
                 {/* Pune aici numele autorului */}
                 <span style={styles.dropdownValue}>https://github.com/Bm8725/arhi-design </span>
+              </div>
+
+              <div style={styles.dropdownDivider} />
+
+              <div style={styles.dropdownRow}>
+                <span style={styles.dropdownLabel}>Commits</span>
+                <span style={styles.dropdownValue}>
+                  {repoStats.loading
+                    ? 'Se încarcă...'
+                    : repoStats.eroare
+                    ? '—'
+                    : (repoStats.commits ?? '—')}
+                </span>
+              </div>
+
+              <div style={styles.dropdownRow}>
+                <span style={styles.dropdownLabel}>Ultima actualizare</span>
+                <span style={styles.dropdownValue}>
+                  {repoStats.loading ? 'Se încarcă...' : repoStats.eroare ? '—' : dataFormatata ?? '—'}
+                </span>
               </div>
 
               <div style={styles.dropdownDivider} />

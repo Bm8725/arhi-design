@@ -58,6 +58,7 @@ type Product = {
   categorie: string | null
   tags: string[] | null
   imagine_url: string | null
+  imagini: string[] | null
   fisier_url: string | null
   activ: boolean
   featured: boolean
@@ -103,6 +104,7 @@ const ORDER_STATUSES = ['pending', 'paid', 'processing', 'completed', 'refunded'
 const PHASE_STATUSES = ['neinceputa', 'in_progres', 'finalizata', 'blocata']
 const DOC_TIPURI = ['altul', 'contract', 'plan', 'autorizatie', 'deviz', 'raport', 'dxf', 'dwg', 'pdf', 'imagine']
 const DOC_ACCEPT = '.pdf,.dxf,.dwg,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.zip,.rar,.svg,.ifc,.skp'
+const PRODUCT_FILE_ACCEPT = '.pdf,.dxf,.dwg,.doc,.docx,.xls,.xlsx,.zip,.rar,.ifc,.skp,.dwf'
 
 const STATUS_COLORS: Record<string, string> = {
   nou: '#6ee7b7', in_progres: '#e2b36e', in_asteptare: '#a5b4fc',
@@ -194,6 +196,9 @@ export default function AdminDashboardPage() {
   const supabase = createClient()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const imgInputRef = useRef<HTMLInputElement>(null)
+  const newImgInputRef = useRef<HTMLInputElement>(null)
+  const prodFileInputRef = useRef<HTMLInputElement>(null)
+  const editProdFileInputRef = useRef<HTMLInputElement>(null)
   const msgEndRef = useRef<HTMLDivElement>(null)
 
   const [mounted, setMounted] = useState(false)
@@ -232,7 +237,7 @@ export default function AdminDashboardPage() {
   })
   const [newProduct, setNewProduct] = useState({
     nume: '', descriere: '', descriere_scurta: '', pret: '', pret_vechi: '',
-    categorie: '', imagine_url: '', fisier_url: '', activ: true, featured: false,
+    categorie: '', imagine_url: '', imagini: [] as string[], fisier_url: '', activ: true, featured: false,
     tags: [] as string[]
   })
   const [newTagInput, setNewTagInput] = useState('')
@@ -251,9 +256,13 @@ export default function AdminDashboardPage() {
   const [uploadError, setUploadError] = useState('')
   const [dragOver, setDragOver] = useState(false)
 
-  // Upload image state
+  // Upload imagini produs (galerie)
   const [imgUploading, setImgUploading] = useState(false)
   const [editImgUploading, setEditImgUploading] = useState(false)
+
+  // Upload fișier binar produs (pt. download)
+  const [prodFileUploading, setProdFileUploading] = useState(false)
+  const [editProdFileUploading, setEditProdFileUploading] = useState(false)
 
   const [projectFilter, setProjectFilter] = useState('')
   const [orderFilter, setOrderFilter] = useState('')
@@ -319,24 +328,82 @@ export default function AdminDashboardPage() {
     setMessages(ms || [])
   }
 
-  // ── Image upload pentru produs nou ──
-  async function uploadProductImage(file: File, isEdit = false) {
+  // ── Galerie imagini produs (upload multiplu) ──
+  async function uploadProductImages(files: FileList | File[], isEdit = false) {
+    const fileArr = Array.from(files)
+    if (fileArr.length === 0) return
     if (isEdit) setEditImgUploading(true)
     else setImgUploading(true)
     try {
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
-      const path = `products/${Date.now()}_${safeName}`
-      const { error } = await supabase.storage.from('products').upload(path, file, { upsert: false })
-      if (error) throw new Error(error.message)
-      const { data: pub } = supabase.storage.from('products').getPublicUrl(path)
-      const url = pub.publicUrl
-      if (isEdit) setEditProduct(prev => prev ? { ...prev, imagine_url: url } : prev)
-      else setNewProduct(prev => ({ ...prev, imagine_url: url }))
+      const uploadedUrls: string[] = []
+      for (const file of fileArr) {
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+        const path = `products/${Date.now()}_${safeName}`
+        const { error } = await supabase.storage.from('products').upload(path, file, { upsert: false })
+        if (error) throw new Error(error.message)
+        const { data: pub } = supabase.storage.from('products').getPublicUrl(path)
+        uploadedUrls.push(pub.publicUrl)
+      }
+      if (isEdit) {
+        setEditProduct(prev => {
+          if (!prev) return prev
+          const imagini = [...(prev.imagini || []), ...uploadedUrls]
+          return { ...prev, imagini, imagine_url: prev.imagine_url || imagini[0] }
+        })
+      } else {
+        setNewProduct(prev => {
+          const imagini = [...prev.imagini, ...uploadedUrls]
+          return { ...prev, imagini, imagine_url: prev.imagine_url || imagini[0] }
+        })
+      }
     } catch (err: any) {
-      alert('Eroare upload imagine: ' + err.message)
+      alert('Eroare upload imagini: ' + err.message)
     } finally {
       if (isEdit) setEditImgUploading(false)
       else setImgUploading(false)
+    }
+  }
+
+  function removeProductImage(url: string, isEdit = false) {
+    if (isEdit) {
+      setEditProduct(prev => {
+        if (!prev) return prev
+        const imagini = (prev.imagini || []).filter(u => u !== url)
+        const imagine_url = prev.imagine_url === url ? (imagini[0] || '') : prev.imagine_url
+        return { ...prev, imagini, imagine_url }
+      })
+    } else {
+      setNewProduct(prev => {
+        const imagini = prev.imagini.filter(u => u !== url)
+        const imagine_url = prev.imagine_url === url ? (imagini[0] || '') : prev.imagine_url
+        return { ...prev, imagini, imagine_url }
+      })
+    }
+  }
+
+  function setCoverImage(url: string, isEdit = false) {
+    if (isEdit) setEditProduct(prev => prev ? { ...prev, imagine_url: url } : prev)
+    else setNewProduct(prev => ({ ...prev, imagine_url: url }))
+  }
+
+  // ── Fișier binar produs (pt. download) ──
+  async function uploadProductFile(file: File, isEdit = false) {
+    if (isEdit) setEditProdFileUploading(true)
+    else setProdFileUploading(true)
+    try {
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+      const path = `files/${Date.now()}_${safeName}`
+      const { error: upErr } = await supabase.storage.from('product-files').upload(path, file, { upsert: false })
+      if (upErr) throw new Error(upErr.message)
+      const { data: signedData, error: signErr } = await supabase.storage.from('product-files').createSignedUrl(path, 60 * 60 * 24 * 365 * 10)
+      if (signErr || !signedData?.signedUrl) throw new Error('Nu s-a putut genera URL-ul')
+      if (isEdit) setEditProduct(prev => prev ? { ...prev, fisier_url: signedData.signedUrl } : prev)
+      else setNewProduct(prev => ({ ...prev, fisier_url: signedData.signedUrl }))
+    } catch (err: any) {
+      alert('Eroare upload fișier: ' + err.message)
+    } finally {
+      if (isEdit) setEditProdFileUploading(false)
+      else setProdFileUploading(false)
     }
   }
 
@@ -389,21 +456,32 @@ export default function AdminDashboardPage() {
   // ── Product CRUD ──
   async function createProduct() {
     if (!newProduct.nume) return
-    await supabase.from('products').insert([{
+    const { error } = await supabase.from('products').insert([{
       ...newProduct,
       pret: Number(newProduct.pret) || 0,
       pret_vechi: newProduct.pret_vechi ? Number(newProduct.pret_vechi) : null,
-      tags: newProduct.tags.length > 0 ? newProduct.tags : null
+      tags: newProduct.tags.length > 0 ? newProduct.tags : null,
+      imagini: newProduct.imagini.length > 0 ? newProduct.imagini : null,
     }])
+    if (error) {
+      alert('Nu s-a putut publica produsul:\n' + error.message)
+      console.error('createProduct error:', error)
+      return
+    }
     setShowNewProduct(false)
-    setNewProduct({ nume: '', descriere: '', descriere_scurta: '', pret: '', pret_vechi: '', categorie: '', imagine_url: '', fisier_url: '', activ: true, featured: false, tags: [] })
+    setNewProduct({ nume: '', descriere: '', descriere_scurta: '', pret: '', pret_vechi: '', categorie: '', imagine_url: '', imagini: [], fisier_url: '', activ: true, featured: false, tags: [] })
     setNewTagInput('')
     fetchProducts()
   }
   async function updateProduct() {
     if (!editProduct?.id) return
     const { id, ...rest } = editProduct
-    await supabase.from('products').update(rest).eq('id', id)
+    const { error } = await supabase.from('products').update(rest).eq('id', id)
+    if (error) {
+      alert('Nu s-au putut salva modificările:\n' + error.message)
+      console.error('updateProduct error:', error)
+      return
+    }
     setEditProduct(null); fetchProducts()
   }
   async function toggleProduct(id: string, field: string, value: boolean) {
@@ -456,6 +534,15 @@ export default function AdminDashboardPage() {
     const { id, provider, email, created_at, rol, activ, ...rest } = editClient as any
     await supabase.from('profiles').update(rest).eq('id', id)
     setEditClient(null); fetchClients()
+  }
+  async function deleteClient(id: string, name: string) {
+    // Dublă confirmare — ștergerea unui utilizator e ireversibilă și poate afecta
+    // proiecte/comenzi asociate, așa că cerem confirmare explicită de două ori.
+    if (!confirm(`Ești sigur că vrei să ștergi utilizatorul "${name || id}"?`)) return
+    if (!confirm(`Confirmă din nou: chiar vrei să ștergi definitiv "${name || id}"? Acțiunea nu poate fi anulată.`)) return
+    const { error } = await supabase.from('profiles').delete().eq('id', id)
+    if (error) { alert('Eroare la ștergere: ' + error.message); return }
+    fetchClients()
   }
 
   // ── Messages ──
@@ -525,6 +612,14 @@ export default function AdminDashboardPage() {
     if (!b) return '—'
     if (b < 1024 * 1024) return `${(b / 1024).toFixed(0)} KB`
     return `${(b / 1024 / 1024).toFixed(1)} MB`
+  }
+  function fileNameFromUrl(url?: string | null) {
+    if (!url) return ''
+    try {
+      const clean = url.split('?')[0]
+      const last = clean.split('/').pop() || ''
+      return decodeURIComponent(last.replace(/^\d+_/, ''))
+    } catch { return url }
   }
 
   const filteredProjects = projects.filter(p => p.nume.toLowerCase().includes(projectFilter.toLowerCase()) || (p.profiles_client?.full_name || '').toLowerCase().includes(projectFilter.toLowerCase()))
@@ -612,6 +707,15 @@ export default function AdminDashboardPage() {
         .upload-zone.has-file { border-color: #e2b36e; }
         .img-upload-zone { border: 2px dashed #333; background: #0f0f0f; padding: 16px; text-align: center; cursor: pointer; transition: .2s; margin-bottom: 14px; }
         .img-upload-zone:hover { border-color: #e2b36e; }
+        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; margin-bottom: 14px; }
+        .gallery-thumb { position: relative; aspect-ratio: 1; border: 2px solid #222; overflow: hidden; cursor: pointer; }
+        .gallery-thumb.is-cover { border-color: #e2b36e; }
+        .gallery-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .gallery-thumb .gx { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; background: rgba(0,0,0,.75); color: #f87171; font-size: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .gallery-thumb .gcover { position: absolute; bottom: 0; left: 0; right: 0; background: #e2b36e; color: #000; font-size: 8px; text-align: center; font-weight: 700; padding: 1px 0; }
+        .gallery-add { aspect-ratio: 1; border: 2px dashed #333; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #444; font-size: 20px; transition: .2s; }
+        .gallery-add:hover { border-color: #e2b36e; color: #e2b36e; }
+        .file-chip { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 2px solid #e2b36e; background: rgba(226,179,110,0.05); padding: 12px 14px; margin-bottom: 14px; font-size: 11px; color: #e2b36e; }
         .section-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
         .section-title { font-size: 14px; font-weight: 700; text-transform: uppercase; color: #555; }
         .empty { font-size: 14px; color: #444; padding: 48px 20px; text-align: center; border: 2px dashed #1f1f1f; background: #0f0f0f; font-weight: 700; }
@@ -1028,6 +1132,7 @@ export default function AdminDashboardPage() {
                           <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
                             {p.activ && <span style={{ fontSize: 8, color: '#34d399', border: '1px solid #34d399', padding: '2px 5px' }}>ACTIV</span>}
                             {p.featured && <span style={{ fontSize: 8, color: '#e2b36e', border: '1px solid #e2b36e', padding: '2px 5px' }}>TOP</span>}
+                            {p.fisier_url && <span style={{ fontSize: 8, color: '#a5b4fc', border: '1px solid #a5b4fc', padding: '2px 5px' }}>FIȘIER</span>}
                           </div>
                         </div>
                         <div style={{ fontSize: 10, color: '#444', marginBottom: 6 }}>{p.categorie || '—'}</div>
@@ -1035,6 +1140,7 @@ export default function AdminDashboardPage() {
                           {Number(p.pret).toLocaleString('ro-RO')} lei
                           {p.pret_vechi && <span style={{ fontSize: 10, color: '#333', textDecoration: 'line-through', marginLeft: 8 }}>{Number(p.pret_vechi).toLocaleString('ro-RO')}</span>}
                         </div>
+                        {p.imagini && p.imagini.length > 0 && <div style={{ fontSize: 9, color: '#444', marginBottom: 6 }}>🖼 {p.imagini.length} poze</div>}
                         {p.tags && <div style={{ marginBottom: 8 }}>{p.tags.map(t => <span key={t} className="tag">{t}</span>)}</div>}
                         <div style={{ fontSize: 9, color: '#333', marginBottom: 14 }}>{p.nr_descarcari} descărcări</div>
                         <div className="btn-row" style={{ marginTop: 0 }}>
@@ -1088,6 +1194,9 @@ export default function AdminDashboardPage() {
                                 <button className="btn sm" style={{ color: c.activ ? '#f87171' : '#34d399', borderColor: c.activ ? '#f87171' : '#34d399' }}
                                   onClick={() => toggleClient(c.id, !c.activ)}>{c.activ ? 'BLOCHEAZĂ' : 'ACTIVEAZĂ'}</button>
                               )}
+                              {isSuperAdmin && (
+                                <button className="btn sm danger" onClick={() => deleteClient(c.id, c.full_name || '')}>ȘTERGE</button>
+                              )}
                             </div>
                           </td>
                         </tr>
@@ -1107,19 +1216,23 @@ export default function AdminDashboardPage() {
           <div className="modal">
             <div className="modal-title">PRODUS NOU</div>
 
-            {/* Upload imagine */}
-            <div className="section-title" style={{ marginBottom: 8 }}>IMAGINE PRODUS</div>
-            <div className="img-upload-zone" onClick={() => { const i = document.createElement('input'); i.type='file'; i.accept='image/*'; i.onchange=(e:any)=>{ const f=e.target.files?.[0]; if(f) uploadProductImage(f) }; i.click() }}>
-              {imgUploading
-                ? <div style={{ fontSize: 11, color: '#e2b36e' }}>SE ÎNCARCĂ...</div>
-                : newProduct.imagine_url
-                  ? <img src={newProduct.imagine_url} alt="" style={{ width: '100%', height: 120, objectFit: 'cover', display: 'block' }} />
-                  : <div style={{ fontSize: 11, color: '#444', padding: 20 }}>Click pentru upload imagine · JPG, PNG, WEBP</div>
-              }
+            {/* Galerie imagini produs */}
+            <div className="section-title" style={{ marginBottom: 8 }}>POZE PRODUS</div>
+            <div className="gallery-grid">
+              {newProduct.imagini.map(url => (
+                <div key={url} className={`gallery-thumb ${newProduct.imagine_url === url ? 'is-cover' : ''}`} onClick={() => setCoverImage(url, false)} title="Click pentru a seta ca poză principală">
+                  <img src={url} alt="" />
+                  <span className="gx" onClick={e => { e.stopPropagation(); removeProductImage(url, false) }}>×</span>
+                  {newProduct.imagine_url === url && <span className="gcover">PRINCIPALĂ</span>}
+                </div>
+              ))}
+              <div className="gallery-add" onClick={() => newImgInputRef.current?.click()}>
+                {imgUploading ? '…' : '+'}
+              </div>
             </div>
-            {newProduct.imagine_url && (
-              <button className="btn sm danger" style={{ marginBottom: 14 }} onClick={() => setNewProduct(p => ({ ...p, imagine_url: '' }))}>ȘTERGE IMAGINE</button>
-            )}
+            <input ref={newImgInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }}
+              onChange={e => { if (e.target.files) uploadProductImages(e.target.files, false); e.target.value = '' }} />
+            <div style={{ fontSize: 9, color: '#444', marginBottom: 14 }}>Poți încărca mai multe poze deodată. Click pe o poză o setează ca principală (coperta produsului).</div>
 
             <input className="inp" placeholder="Nume produs *" value={newProduct.nume} onChange={e => setNewProduct({ ...newProduct, nume: e.target.value })} />
             <input className="inp" placeholder="Descriere scurtă" value={newProduct.descriere_scurta} onChange={e => setNewProduct({ ...newProduct, descriere_scurta: e.target.value })} />
@@ -1129,7 +1242,28 @@ export default function AdminDashboardPage() {
               <input className="inp" placeholder="Preț vechi (lei)" type="number" value={newProduct.pret_vechi} onChange={e => setNewProduct({ ...newProduct, pret_vechi: e.target.value })} />
             </div>
             <input className="inp" placeholder="Categorie" value={newProduct.categorie} onChange={e => setNewProduct({ ...newProduct, categorie: e.target.value })} />
-            <input className="inp" placeholder="URL fișier descărcare" value={newProduct.fisier_url} onChange={e => setNewProduct({ ...newProduct, fisier_url: e.target.value })} />
+
+            {/* Fișier binar de download */}
+            <div className="section-title" style={{ marginBottom: 8 }}>FIȘIER DE DESCĂRCAT (PRODUS DIGITAL)</div>
+            {newProduct.fisier_url ? (
+              <div className="file-chip">
+                <span>📎 {fileNameFromUrl(newProduct.fisier_url) || 'fișier încărcat'}</span>
+                <span style={{ display: 'flex', gap: 8 }}>
+                  <a href={newProduct.fisier_url} target="_blank" rel="noreferrer" style={{ color: '#e2b36e' }}>VEZI</a>
+                  <span className="tag-x" style={{ color: '#f87171', fontSize: 14 }} onClick={() => setNewProduct(p => ({ ...p, fisier_url: '' }))}>×</span>
+                </span>
+              </div>
+            ) : (
+              <div className="img-upload-zone" onClick={() => prodFileInputRef.current?.click()}>
+                {prodFileUploading
+                  ? <div style={{ fontSize: 11, color: '#e2b36e' }}>SE ÎNCARCĂ...</div>
+                  : <div style={{ fontSize: 11, color: '#444' }}>Click pentru upload fișier · PDF, DWG, DXF, ZIP, etc.</div>
+                }
+              </div>
+            )}
+            <input ref={prodFileInputRef} type="file" accept={PRODUCT_FILE_ACCEPT} style={{ display: 'none' }}
+              onChange={e => { const f = e.target.files?.[0]; if (f) uploadProductFile(f, false); e.target.value = '' }} />
+            <input className="inp" placeholder="...sau lipește un URL manual" value={newProduct.fisier_url} onChange={e => setNewProduct({ ...newProduct, fisier_url: e.target.value })} />
 
             {/* Tags */}
             <div className="section-title" style={{ marginBottom: 8 }}>TAGS</div>
@@ -1158,21 +1292,23 @@ export default function AdminDashboardPage() {
           <div className="modal">
             <div className="modal-title">EDITEAZĂ PRODUS</div>
 
-            {/* Upload imagine edit */}
-            <div className="section-title" style={{ marginBottom: 8 }}>IMAGINE PRODUS</div>
-            <div className="img-upload-zone" onClick={() => imgInputRef.current?.click()}>
-              {editImgUploading
-                ? <div style={{ fontSize: 11, color: '#e2b36e', padding: 20 }}>SE ÎNCARCĂ...</div>
-                : editProduct.imagine_url
-                  ? <img src={editProduct.imagine_url} alt="" style={{ width: '100%', height: 120, objectFit: 'cover', display: 'block' }} />
-                  : <div style={{ fontSize: 11, color: '#444', padding: 20 }}>Click pentru upload imagine</div>
-              }
+            {/* Galerie imagini produs */}
+            <div className="section-title" style={{ marginBottom: 8 }}>POZE PRODUS</div>
+            <div className="gallery-grid">
+              {(editProduct.imagini || []).map(url => (
+                <div key={url} className={`gallery-thumb ${editProduct.imagine_url === url ? 'is-cover' : ''}`} onClick={() => setCoverImage(url, true)} title="Click pentru a seta ca poză principală">
+                  <img src={url} alt="" />
+                  <span className="gx" onClick={e => { e.stopPropagation(); removeProductImage(url, true) }}>×</span>
+                  {editProduct.imagine_url === url && <span className="gcover">PRINCIPALĂ</span>}
+                </div>
+              ))}
+              <div className="gallery-add" onClick={() => imgInputRef.current?.click()}>
+                {editImgUploading ? '…' : '+'}
+              </div>
             </div>
-            <input ref={imgInputRef} type="file" accept="image/*" style={{ display: 'none' }}
-              onChange={e => { const f = e.target.files?.[0]; if (f) uploadProductImage(f, true) }} />
-            {editProduct.imagine_url && (
-              <button className="btn sm danger" style={{ marginBottom: 14 }} onClick={() => setEditProduct(p => p ? { ...p, imagine_url: '' } : p)}>ȘTERGE IMAGINE</button>
-            )}
+            <input ref={imgInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }}
+              onChange={e => { if (e.target.files) uploadProductImages(e.target.files, true); e.target.value = '' }} />
+            <div style={{ fontSize: 9, color: '#444', marginBottom: 14 }}>Poți încărca mai multe poze deodată. Click pe o poză o setează ca principală (coperta produsului).</div>
 
             <input className="inp" placeholder="Nume *" value={editProduct.nume || ''} onChange={e => setEditProduct({ ...editProduct, nume: e.target.value })} />
             <input className="inp" placeholder="Descriere scurtă" value={editProduct.descriere_scurta || ''} onChange={e => setEditProduct({ ...editProduct, descriere_scurta: e.target.value })} />
@@ -1182,7 +1318,28 @@ export default function AdminDashboardPage() {
               <input className="inp" type="number" placeholder="Preț vechi" value={editProduct.pret_vechi ?? ''} onChange={e => setEditProduct({ ...editProduct, pret_vechi: Number(e.target.value) })} />
             </div>
             <input className="inp" placeholder="Categorie" value={editProduct.categorie || ''} onChange={e => setEditProduct({ ...editProduct, categorie: e.target.value })} />
-            <input className="inp" placeholder="URL fișier" value={editProduct.fisier_url || ''} onChange={e => setEditProduct({ ...editProduct, fisier_url: e.target.value })} />
+
+            {/* Fișier binar de download */}
+            <div className="section-title" style={{ marginBottom: 8 }}>FIȘIER DE DESCĂRCAT (PRODUS DIGITAL)</div>
+            {editProduct.fisier_url ? (
+              <div className="file-chip">
+                <span>📎 {fileNameFromUrl(editProduct.fisier_url) || 'fișier încărcat'}</span>
+                <span style={{ display: 'flex', gap: 8 }}>
+                  <a href={editProduct.fisier_url} target="_blank" rel="noreferrer" style={{ color: '#e2b36e' }}>VEZI</a>
+                  <span className="tag-x" style={{ color: '#f87171', fontSize: 14 }} onClick={() => setEditProduct(p => p ? { ...p, fisier_url: '' } : p)}>×</span>
+                </span>
+              </div>
+            ) : (
+              <div className="img-upload-zone" onClick={() => editProdFileInputRef.current?.click()}>
+                {editProdFileUploading
+                  ? <div style={{ fontSize: 11, color: '#e2b36e' }}>SE ÎNCARCĂ...</div>
+                  : <div style={{ fontSize: 11, color: '#444' }}>Click pentru upload fișier · PDF, DWG, DXF, ZIP, etc.</div>
+                }
+              </div>
+            )}
+            <input ref={editProdFileInputRef} type="file" accept={PRODUCT_FILE_ACCEPT} style={{ display: 'none' }}
+              onChange={e => { const f = e.target.files?.[0]; if (f) uploadProductFile(f, true); e.target.value = '' }} />
+            <input className="inp" placeholder="...sau lipește un URL manual" value={editProduct.fisier_url || ''} onChange={e => setEditProduct({ ...editProduct, fisier_url: e.target.value })} />
 
             {/* Tags edit */}
             <div className="section-title" style={{ marginBottom: 8 }}>TAGS</div>

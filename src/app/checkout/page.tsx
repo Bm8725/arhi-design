@@ -91,9 +91,12 @@ export default function CheckoutPage() {
       window.dispatchEvent(new Event('storage'))
       window.dispatchEvent(new Event('cartUpdated'))
       router.push('/dashboard/client')
-    } catch (err) {
+    } catch (err: any) {
       console.error(err)
-      alert('Eroare la procesarea comenzii.')
+      // FIX: arătăm mesajul real de la Supabase (cod + text), nu doar un alert generic,
+      // ca să se poată identifica exact ce blochează insert-ul (schema, RLS, duplicat etc.)
+      const details = err?.message ? `\n\nDetalii: ${err.message}${err?.code ? ` (cod: ${err.code})` : ''}` : ''
+      alert('Eroare la procesarea comenzii.' + details)
     } finally {
       setLoading(false)
     }

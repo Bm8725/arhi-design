@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Link invalid — lipsește token-ul.' }, { status: 400 })
   }
 
-  const supabase = createClient()
+  const supabase = await createClient()
 
   // 1. Găsim rândul de download după token
   const { data: downloadRow, error: dErr } = await supabase

@@ -16,6 +16,7 @@ export default function CheckoutPage() {
   const [mounted, setMounted] = useState(false)
   const [cart, setCart] = useState<Product[]>([])
   const [userId, setUserId] = useState<string | null>(null)
+  const [userEmail, setUserEmail] = useState<string>('')
   const [loading, setLoading] = useState(false)
   const [checkingAuth, setCheckingAuth] = useState(true)
 
@@ -29,6 +30,7 @@ export default function CheckoutPage() {
       if (!session) return router.push('/login')
 
       setUserId(session.user.id)
+      setUserEmail(session.user.email || '')
 
       // Încercăm să preluăm automat datele salvate în profilul utilizatorului
       const { data: profile } = await supabase
@@ -72,10 +74,28 @@ export default function CheckoutPage() {
     setLoading(true)
 
     try {
+      // FIX: tabela `downloads` are order_id obligatoriu (not-null, FK spre orders),
+      // dar checkout-ul nu crea nicio comandă înainte — de aici eroarea
+      // "null value in column order_id violates not-null constraint".
+      // Creăm întâi comanda, apoi folosim id-ul ei la insertul din downloads.
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .insert([{
+          email: userEmail,
+          total,
+          status: 'paid', // 'completed' nu e valoare validă în enum-ul order_status — 'paid' e folosit deja în tot restul aplicației
+          user_id: userId,
+        }])
+        .select()
+        .single()
+
+      if (orderError) throw orderError
+
       // Structura exactă pentru tabela public.downloads
       const downloadItems = cart.map(item => ({
         product_id: item.id,
         user_id: userId,
+        order_id: orderData.id,
         nr_descarcari: 0,
         max_descarcari: 3
       }))

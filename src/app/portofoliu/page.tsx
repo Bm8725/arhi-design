@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import WhatsAppWidget from '@/components/WhatsAppWidget'
@@ -553,10 +554,13 @@ export default function PortofoliuPage() {
               onClick={() => openProject(p.id)}
               className="group relative bg-[#121212] text-left aspect-[4/5] overflow-hidden focus:outline-none focus-visible:ring-1 focus-visible:ring-amber-500"
             >
-              <img
+              <Image
                 src={p.cover}
                 alt={p.title}
-                className="absolute inset-0 w-full h-full object-cover opacity-70 grayscale group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700 ease-out"
+                fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                priority={i < 3}
+                className="object-cover opacity-70 grayscale group-hover:grayscale-0 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700 ease-out"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/10 to-transparent" />
 
@@ -640,11 +644,14 @@ export default function PortofoliuPage() {
                 onTouchEnd={handleTouchEnd}
                 onClick={openFullscreen}
               >
-                <img
+                <Image
                   key={imgIndex}
                   src={active.images[imgIndex]}
                   alt={`${active.title} — imagine ${imgIndex + 1}`}
-                  className="absolute inset-0 w-full h-full object-contain transition-opacity duration-500"
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  priority
+                  className="object-contain transition-opacity duration-500"
                 />
 
                 <span className="pointer-events-none absolute bottom-4 right-4 z-10 h-9 w-9 flex items-center justify-center border border-white/20 bg-black/50 text-white/80 opacity-0 group-hover/img:opacity-100 transition-opacity duration-300">
@@ -791,11 +798,14 @@ export default function PortofoliuPage() {
                 onClick={(e) => e.stopPropagation()}
               >
                 <div className="relative w-full h-[100dvh] sm:h-[92vh]">
-                  <img
+                  <Image
                     key={imgIndex}
                     src={active.images[imgIndex]}
                     alt={`${active.title} — imagine ${imgIndex + 1}`}
-                    className="absolute inset-0 w-full h-full object-contain"
+                    fill
+                    sizes="100vw"
+                    priority
+                    className="object-contain"
                   />
                 </div>
               </div>

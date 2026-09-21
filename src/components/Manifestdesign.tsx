@@ -85,7 +85,7 @@ export default function ManifestDesign() {
 
           <div className="lg:col-span-8">
             <p className="text-xl sm:text-2xl md:text-3xl lg:text-5xl font-extralight font-serif tracking-tight leading-tight text-[#121212] max-w-4xl">
-              „Designul nu este doar despre cum arată un spațiu, ci despre comment îți <span className="italic font-normal text-[#6b6255]">măsoară timpul</span> și îți dictează starea.”
+              „Designul nu este doar despre cum arată un spațiu, ci despre cum îți <span className="italic font-normal text-[#6b6255]">măsoară timpul</span> și îți dictează starea.”
             </p>
             <div className="h-[1px] w-24 sm:w-32 bg-[#121212] mt-5 sm:mt-6 md:mt-8 mb-4 md:mb-6" />
             <p className="text-xs text-[#7c7265] max-w-md leading-relaxed font-light tracking-wide">

@@ -142,6 +142,14 @@ const NAV_ICON: Record<Section, React.ReactNode> = {
   ),
 }
 
+const LOGOUT_ICON = (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+    <path d="m16 17 5-5-5-5" />
+    <path d="M21 12H9" />
+  </svg>
+)
+
 export default function ClientDashboardPage() {
   const router = useRouter()
   const supabase = createClient()
@@ -303,29 +311,35 @@ export default function ClientDashboardPage() {
   return (
     <>
 <style>{`
-        .c-root{min-height:100vh;background:#ffffff;font-family:'Inter',sans-serif;color:#111111;display:flex;flex-direction:column;position:relative;overflow-x:hidden}
+        .c-root{min-height:100vh;background:#ffffff;font-family:'Inter',sans-serif;color:#111111;display:flex;flex-direction:column;position:relative;overflow-x:hidden;overflow-x:clip}
         .c-ambient{position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse 60% 30% at 50% 0%,rgba(226,179,110,0.06) 0%,transparent 60%)}
-        .c-wrap{position:relative;z-index:1;max-width:1120px;width:100%;margin:0 auto;padding:110px 24px 120px;flex:1;opacity:0;transform:translateY(12px);transition:.5s ease;display:grid;grid-template-columns:248px minmax(0,1fr);gap:40px;align-items:start}
-        .c-wrap.ready{opacity:1;transform:translateY(0)}
+        .c-wrap{position:relative;z-index:1;max-width:1440px;width:100%;margin:0 auto;padding:110px 28px 120px;flex:1;opacity:0;transform:translateY(12px);transition:.5s ease;display:grid;grid-template-columns:288px minmax(0,1fr);gap:44px;align-items:start}
+        .c-wrap.ready{opacity:1;transform:none}
         .c-main{min-width:0}
 
-        /* ── SIDEBAR ── */
-        .c-side{position:sticky;top:100px;background:#0e0e0e;padding:20px 12px 14px;display:flex;flex-direction:column;gap:4px;box-shadow:0 22px 44px -22px rgba(0,0,0,.5)}
-        .c-side-user{display:flex;align-items:center;gap:12px;padding:6px 8px 18px;margin-bottom:10px;border-bottom:1px solid rgba(255,255,255,.08)}
-        .c-avatar{width:38px;height:38px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#e2b36e;color:#111;font-weight:800;font-size:15px;text-transform:uppercase}
-        .c-side-name{font-size:13px;color:#fff;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .c-side-role{font-size:8px;color:#e2b36e;letter-spacing:.22em;text-transform:uppercase;margin-top:3px;font-weight:700}
-        .c-side-label{font-size:8px;color:#666;letter-spacing:.25em;text-transform:uppercase;padding:6px 12px 8px;font-weight:700}
-        .c-nav-item{position:relative;display:flex;align-items:center;gap:12px;width:100%;padding:13px 12px;background:transparent;border:none;color:#a3a3a3;font-family:inherit;font-size:12px;font-weight:600;letter-spacing:.02em;cursor:pointer;text-align:left;transition:.2s}
+        /* ── SIDEBAR (desktop: full panel) ── */
+        .c-side{position:sticky;top:100px;height:calc(100vh - 128px);min-height:480px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;padding:26px 16px 18px;background:radial-gradient(ellipse 120% 40% at 0% 0%,rgba(226,179,110,.18),transparent 60%),linear-gradient(180deg,#151515,#0a0a0a);box-shadow:0 30px 60px -30px rgba(0,0,0,.55);scrollbar-width:none}
+        .c-side::-webkit-scrollbar{display:none}
+        .c-side-user{display:flex;align-items:center;gap:14px;padding:4px 8px 22px;margin-bottom:12px;border-bottom:1px solid rgba(255,255,255,.08)}
+        .c-avatar{width:46px;height:46px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#e2b36e;color:#111;font-weight:800;font-size:18px;text-transform:uppercase;box-shadow:0 0 0 3px rgba(226,179,110,.25)}
+        .c-side-text{min-width:0}
+        .c-side-name{font-size:14px;color:#fff;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .c-side-role{font-size:8px;color:#e2b36e;letter-spacing:.22em;text-transform:uppercase;margin-top:4px;font-weight:700}
+        .c-side-label{font-size:8px;color:#666;letter-spacing:.25em;text-transform:uppercase;padding:6px 14px 10px;font-weight:700}
+        .c-nav-item{position:relative;display:flex;align-items:center;gap:14px;width:100%;padding:15px 14px;background:transparent;border:none;color:#a3a3a3;font-family:inherit;font-size:13px;font-weight:600;letter-spacing:.02em;cursor:pointer;text-align:left;transition:.2s}
         .c-nav-item::before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:3px;background:#e2b36e;transform:scaleY(0);transition:.2s}
-        .c-nav-item:hover{color:#fff;background:rgba(255,255,255,.05)}
-        .c-nav-item.on{color:#fff;background:rgba(226,179,110,.12)}
+        .c-nav-item:hover{color:#fff;background:rgba(255,255,255,.06)}
+        .c-nav-item.on{color:#fff;background:linear-gradient(90deg,rgba(226,179,110,.24),rgba(226,179,110,.04))}
         .c-nav-item.on::before{transform:scaleY(1)}
         .c-nav-ico{display:flex;flex-shrink:0;color:inherit}
         .c-nav-item.on .c-nav-ico{color:#e2b36e}
         .c-nav-label{flex:1}
-        .c-nav-count{font-size:10px;min-width:22px;text-align:center;padding:2px 7px;background:rgba(255,255,255,.08);color:#ddd;font-weight:700}
+        .c-nav-count{font-size:10px;min-width:24px;text-align:center;padding:2px 8px;background:rgba(255,255,255,.08);color:#ddd;font-weight:700}
         .c-nav-item.on .c-nav-count{background:#e2b36e;color:#111}
+        .c-side-spacer{flex:1}
+        .c-side-foot{padding-top:12px;margin-top:8px;border-top:1px solid rgba(255,255,255,.08)}
+        .c-out:hover{background:#c0392b;color:#fff}
+        .c-out:hover .c-nav-ico{color:#fff}
 
         .c-header{display:flex;justify-content:space-between;align-items:center;padding-bottom:24px;border-bottom:2px solid #111;margin-bottom:32px}
         .c-greeting{font-size:10px;color:#aaa;letter-spacing:.25em;margin-bottom:6px;text-transform:uppercase}
@@ -438,19 +452,31 @@ export default function ClientDashboardPage() {
 
         .c-empty{font-size:9px;color:#ddd;text-align:center;padding:48px 0;letter-spacing:.2em;text-transform:uppercase}
 
-        /* Sidebar becomes a scrollable top bar on tablets and phones */
-        @media(max-width:860px){
-          .c-wrap{grid-template-columns:minmax(0,1fr);gap:22px}
-          .c-side{position:static;flex-direction:row;overflow-x:auto;padding:6px;gap:4px;box-shadow:none;-webkit-overflow-scrolling:touch}
-          .c-side-user,.c-side-label{display:none}
-          .c-nav-item{width:auto;flex-shrink:0;padding:12px 16px;white-space:nowrap}
+        /* ── TABLET: slim icon rail ── */
+        @media(min-width:700px) and (max-width:1099px){
+          .c-wrap{grid-template-columns:76px minmax(0,1fr);gap:24px;padding:110px 20px 120px}
+          .c-side{padding:18px 8px 14px;align-items:center}
+          .c-side-user{padding:0 0 16px;justify-content:center;width:100%}
+          .c-side-text,.c-side-label,.c-nav-label{display:none}
+          .c-nav-item{justify-content:center;padding:16px 0}
+          .c-nav-count{position:absolute;top:5px;right:6px;font-size:8px;min-width:16px;padding:1px 4px}
+          .c-side-foot{width:100%}
+        }
+
+        /* ── MOBILE: bottom tab bar ── */
+        @media(max-width:699px){
+          .c-wrap{grid-template-columns:minmax(0,1fr);gap:0;padding:96px 16px calc(104px + env(safe-area-inset-bottom))}
+          .c-side{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:60;height:auto;min-height:0;overflow:visible;flex-direction:row;justify-content:space-around;gap:2px;padding:6px 6px calc(6px + env(safe-area-inset-bottom));background:#0e0e0e;box-shadow:0 -10px 30px rgba(0,0,0,.28)}
+          .c-side-user,.c-side-label,.c-side-spacer{display:none}
+          .c-side-foot{display:contents}
+          .c-nav-item{flex:1;min-width:0;width:auto;flex-direction:column;justify-content:center;align-items:center;gap:5px;padding:10px 2px 9px;font-size:9px;letter-spacing:.04em;text-align:center}
           .c-nav-label{flex:0 0 auto}
-          .c-nav-item::before{top:auto;left:10px;right:10px;bottom:0;width:auto;height:3px;transform:scaleX(0)}
+          .c-nav-item::before{top:0;bottom:auto;left:22%;right:22%;width:auto;height:3px;transform:scaleX(0)}
           .c-nav-item.on::before{transform:scaleX(1)}
+          .c-nav-count{position:absolute;top:4px;left:calc(50% + 8px);font-size:8px;min-width:15px;padding:1px 4px}
         }
 
         @media(max-width:480px){
-          .c-wrap{padding:100px 16px 110px}
           .c-phase-track{width:60px}
           .c-order-head{gap:8px}
           .c-msg.mine{margin-left:0}
@@ -469,7 +495,7 @@ export default function ClientDashboardPage() {
           <aside className="c-side" aria-label="Meniu client">
             <div className="c-side-user">
               <div className="c-avatar" aria-hidden>{userName.charAt(0) || 'C'}</div>
-              <div style={{ minWidth: 0 }}>
+              <div className="c-side-text">
                 <div className="c-side-name">{userName}</div>
                 <div className="c-side-role">Cont client</div>
               </div>
@@ -481,7 +507,7 @@ export default function ClientDashboardPage() {
               ['fisiere', 'Fișiere', downloads.length],
               ['noutati', 'Noutăți', null],
             ] as [Section, string, number | null][]).map(([s, label, count]) => (
-              <button key={s} className={`c-nav-item${section === s ? ' on' : ''}`}
+              <button key={s} className={`c-nav-item${section === s ? ' on' : ''}`} title={label}
                 aria-current={section === s ? 'page' : undefined}
                 onClick={() => { setActiveProjectId(null); setSection(s) }}>
                 <span className="c-nav-ico">{NAV_ICON[s]}</span>
@@ -489,6 +515,14 @@ export default function ClientDashboardPage() {
                 {count !== null && <span className="c-nav-count">{count}</span>}
               </button>
             ))}
+            <div className="c-side-spacer" />
+            <div className="c-side-foot">
+              <button className="c-nav-item c-out" title="Logout"
+                onClick={() => supabase.auth.signOut().then(() => router.push('/login'))}>
+                <span className="c-nav-ico">{LOGOUT_ICON}</span>
+                <span className="c-nav-label">Logout</span>
+              </button>
+            </div>
           </aside>
 
           <div className="c-main">
@@ -499,9 +533,6 @@ export default function ClientDashboardPage() {
               <div className="c-greeting">BINE AI VENIT</div>
               <div className="c-name">{userName.split(' ')[0]} <span>.</span></div>
             </div>
-            <button className="c-logout" onClick={() => supabase.auth.signOut().then(() => router.push('/login'))}>
-              Logout
-            </button>
           </div>
 
           {/* ════════════════════════════════════════════════════════════ */}

@@ -253,7 +253,7 @@ export default function ShoppingCartPage() {
 
               <div className="summary-card">
                 <h3 className="font-serif text-xl border-b border-white/10 pb-3">Sumar</h3>
-                <div className="flex justify-between text-xs my-4 text-white/60"><span>Produse ({cart.length})</span><span>{total.toFixed(2)} RON</span></div>
+                <div className="flex justify-between text-xs my-4 text-white/60"><span>Digital products ({cart.length})</span><span>{total.toFixed(2)} RON</span></div>
                 <div className="flex justify-between font-serif text-lg pt-4 border-t border-white/10"><span>Total</span><span className="text-[#e2b36e]">{total.toFixed(2)} RON</span></div>
                 
                 {/* Schimbat în Link pentru trimitere securizată către pagina separată de checkout */}

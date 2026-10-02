@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { createPortal } from 'react-dom'
 import { createClient } from '@/lib/supabase/client'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
@@ -181,6 +180,12 @@ export default function ClientDashboardPage() {
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
 
   useEffect(() => {
+    if (!document.querySelector('meta[name="viewport"]')) {
+      const m = document.createElement('meta')
+      m.name = 'viewport'
+      m.content = 'width=device-width, initial-scale=1'
+      document.head.appendChild(m)
+    }
     setTimeout(() => setMounted(true), 50)
     fetchData()
   }, [])
@@ -339,6 +344,7 @@ export default function ClientDashboardPage() {
   return (
     <>
 <style>{`
+        .c-root,.c-root *,.c-root *::before,.c-root *::after{box-sizing:border-box}
         .c-root{min-height:100vh;background:#ffffff;font-family:'Inter',sans-serif;color:#111111;display:flex;flex-direction:column;position:relative;overflow-x:hidden;overflow-x:clip}
         .c-ambient{position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse 60% 30% at 50% 0%,rgba(226,179,110,0.06) 0%,transparent 60%)}
         .c-wrap{position:relative;z-index:1;max-width:1440px;width:100%;margin:0 auto;padding:110px 28px 120px;flex:1;opacity:0;transform:translateY(12px);transition:.5s ease;display:grid;grid-template-columns:288px minmax(0,1fr);gap:44px;align-items:start}
@@ -480,28 +486,34 @@ export default function ClientDashboardPage() {
 
         .c-empty{font-size:9px;color:#ddd;text-align:center;padding:48px 0;letter-spacing:.2em;text-transform:uppercase}
 
-        /* ── TABLET: slim icon rail ── */
-        @media(min-width:700px) and (max-width:1099px){
-          .c-wrap{grid-template-columns:76px minmax(0,1fr);gap:24px;padding:110px 20px 120px}
+        /* ── TABLET + MOBILE: slim side rail (the bottom of the phone stays free for your own menu) ── */
+        @media(max-width:1099px){
           .c-side{padding:18px 8px 14px;align-items:center}
           .c-side-user{padding:0 0 16px;justify-content:center;width:100%}
-          .c-side-text,.c-side-label,.c-nav-label{display:none}
+          .c-side-text,.c-side-label{display:none}
           .c-nav-item{justify-content:center;padding:16px 0}
           .c-nav-count{position:absolute;top:5px;right:6px;font-size:8px;min-width:16px;padding:1px 4px}
           .c-side-foot{width:100%}
         }
-
-        /* ── MOBILE: bottom tab bar (rendered in <body>, so no parent can move or hide it) ── */
-        .c-bar{display:none}
+        @media(min-width:700px) and (max-width:1099px){
+          .c-wrap{grid-template-columns:76px minmax(0,1fr);gap:24px;padding:110px 20px 120px}
+          .c-nav-label{display:none}
+        }
         @media(max-width:699px){
-          .c-wrap{grid-template-columns:minmax(0,1fr);gap:0;padding:96px 16px calc(104px + env(safe-area-inset-bottom))}
-          .c-side{display:none}
-          .c-bar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:9999;justify-content:space-around;gap:2px;padding:6px 6px calc(6px + env(safe-area-inset-bottom));background:#0e0e0e;box-shadow:0 -10px 30px rgba(0,0,0,.28);font-family:'Inter',sans-serif}
-          .c-bar .c-nav-item{flex:1;min-width:0;width:auto;flex-direction:column;justify-content:center;align-items:center;gap:5px;padding:10px 2px 9px;font-size:9px;letter-spacing:.04em;text-align:center}
-          .c-bar .c-nav-label{flex:0 0 auto}
-          .c-bar .c-nav-item::before{top:0;bottom:auto;left:22%;right:22%;width:auto;height:3px;transform:scaleX(0)}
-          .c-bar .c-nav-item.on::before{transform:scaleX(1)}
-          .c-bar .c-nav-count{position:absolute;top:4px;left:calc(50% + 8px);font-size:8px;min-width:15px;padding:1px 4px}
+          .c-wrap{grid-template-columns:58px minmax(0,1fr);gap:12px;padding:96px 12px calc(110px + env(safe-area-inset-bottom))}
+          .c-side{top:84px;height:auto;min-height:0;overflow:visible;padding:12px 3px 8px}
+          .c-side-spacer{display:none}
+          .c-avatar{width:36px;height:36px;font-size:15px}
+          .c-side-user{padding-bottom:12px;margin-bottom:8px}
+          .c-nav-item{flex-direction:column;gap:4px;padding:11px 0 9px}
+          .c-nav-label{flex:0 0 auto;font-size:8px;letter-spacing:.03em}
+          .c-nav-count{top:3px;right:3px;min-width:14px;padding:1px 3px}
+          .c-side-foot{margin-top:6px;padding-top:8px}
+          .c-header{padding-bottom:16px;margin-bottom:20px}
+          .c-name{font-size:24px}
+          .c-subtabs{overflow-x:auto}
+          .c-subtab{padding:10px 12px 12px;white-space:nowrap;flex-shrink:0}
+          .c-dl-card{flex-wrap:wrap}
         }
 
         @media(max-width:480px){
@@ -780,15 +792,6 @@ export default function ClientDashboardPage() {
 
         
         <Footer />
-
-        {/* ── Bottom bar (mobile), rendered straight into <body> ── */}
-        {mounted && createPortal(
-          <nav className="c-bar" aria-label="Meniu client">
-            {navButtons}
-            {logoutBtn}
-          </nav>,
-          document.body
-        )}
       </div>
     </>
   )

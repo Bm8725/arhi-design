@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { createPortal } from 'react-dom'
 import { createClient } from '@/lib/supabase/client'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
@@ -302,6 +303,33 @@ export default function ClientDashboardPage() {
     ? Math.round(phases.reduce((s, p) => s + p.progres, 0) / phases.length)
     : 0
 
+  const NAV_ITEMS: [Section, string, number | null][] = [
+    ['proiecte', 'Proiecte', projects.length],
+    ['comenzi', 'Comenzi', orders.length],
+    ['fisiere', 'Fișiere', downloads.length],
+    ['noutati', 'Noutăți', null],
+  ]
+  function goSection(s: Section) {
+    setActiveProjectId(null)
+    setSection(s)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+  const logout = () => supabase.auth.signOut().then(() => router.push('/login'))
+  const navButtons = NAV_ITEMS.map(([s, label, count]) => (
+    <button key={s} className={`c-nav-item${section === s ? ' on' : ''}`} title={label}
+      aria-current={section === s ? 'page' : undefined} onClick={() => goSection(s)}>
+      <span className="c-nav-ico">{NAV_ICON[s]}</span>
+      <span className="c-nav-label">{label}</span>
+      {count !== null && <span className="c-nav-count">{count}</span>}
+    </button>
+  ))
+  const logoutBtn = (
+    <button className="c-nav-item c-out" title="Logout" onClick={logout}>
+      <span className="c-nav-ico">{LOGOUT_ICON}</span>
+      <span className="c-nav-label">Logout</span>
+    </button>
+  )
+
   if (loading) return (
     <div style={{ minHeight: '100vh', background: '#0c0c0c', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'DM Mono, monospace', color: '#e2b36e', fontSize: 11, letterSpacing: '0.2em' }}>
       Loading...
@@ -463,17 +491,17 @@ export default function ClientDashboardPage() {
           .c-side-foot{width:100%}
         }
 
-        /* ── MOBILE: bottom tab bar ── */
+        /* ── MOBILE: bottom tab bar (rendered in <body>, so no parent can move or hide it) ── */
+        .c-bar{display:none}
         @media(max-width:699px){
           .c-wrap{grid-template-columns:minmax(0,1fr);gap:0;padding:96px 16px calc(104px + env(safe-area-inset-bottom))}
-          .c-side{position:fixed;left:0;right:0;bottom:0;top:auto;z-index:60;height:auto;min-height:0;overflow:visible;flex-direction:row;justify-content:space-around;gap:2px;padding:6px 6px calc(6px + env(safe-area-inset-bottom));background:#0e0e0e;box-shadow:0 -10px 30px rgba(0,0,0,.28)}
-          .c-side-user,.c-side-label,.c-side-spacer{display:none}
-          .c-side-foot{display:contents}
-          .c-nav-item{flex:1;min-width:0;width:auto;flex-direction:column;justify-content:center;align-items:center;gap:5px;padding:10px 2px 9px;font-size:9px;letter-spacing:.04em;text-align:center}
-          .c-nav-label{flex:0 0 auto}
-          .c-nav-item::before{top:0;bottom:auto;left:22%;right:22%;width:auto;height:3px;transform:scaleX(0)}
-          .c-nav-item.on::before{transform:scaleX(1)}
-          .c-nav-count{position:absolute;top:4px;left:calc(50% + 8px);font-size:8px;min-width:15px;padding:1px 4px}
+          .c-side{display:none}
+          .c-bar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:9999;justify-content:space-around;gap:2px;padding:6px 6px calc(6px + env(safe-area-inset-bottom));background:#0e0e0e;box-shadow:0 -10px 30px rgba(0,0,0,.28);font-family:'Inter',sans-serif}
+          .c-bar .c-nav-item{flex:1;min-width:0;width:auto;flex-direction:column;justify-content:center;align-items:center;gap:5px;padding:10px 2px 9px;font-size:9px;letter-spacing:.04em;text-align:center}
+          .c-bar .c-nav-label{flex:0 0 auto}
+          .c-bar .c-nav-item::before{top:0;bottom:auto;left:22%;right:22%;width:auto;height:3px;transform:scaleX(0)}
+          .c-bar .c-nav-item.on::before{transform:scaleX(1)}
+          .c-bar .c-nav-count{position:absolute;top:4px;left:calc(50% + 8px);font-size:8px;min-width:15px;padding:1px 4px}
         }
 
         @media(max-width:480px){
@@ -491,7 +519,7 @@ export default function ClientDashboardPage() {
 
         <div className={`c-wrap${mounted ? ' ready' : ''}`}>
 
-          {/* ── Sidebar ── */}
+          {/* ── Sidebar (PC and tablet) ── */}
           <aside className="c-side" aria-label="Meniu client">
             <div className="c-side-user">
               <div className="c-avatar" aria-hidden>{userName.charAt(0) || 'C'}</div>
@@ -501,28 +529,9 @@ export default function ClientDashboardPage() {
               </div>
             </div>
             <div className="c-side-label">Meniu</div>
-            {([
-              ['proiecte', 'Proiecte', projects.length],
-              ['comenzi', 'Comenzi', orders.length],
-              ['fisiere', 'Fișiere', downloads.length],
-              ['noutati', 'Noutăți', null],
-            ] as [Section, string, number | null][]).map(([s, label, count]) => (
-              <button key={s} className={`c-nav-item${section === s ? ' on' : ''}`} title={label}
-                aria-current={section === s ? 'page' : undefined}
-                onClick={() => { setActiveProjectId(null); setSection(s) }}>
-                <span className="c-nav-ico">{NAV_ICON[s]}</span>
-                <span className="c-nav-label">{label}</span>
-                {count !== null && <span className="c-nav-count">{count}</span>}
-              </button>
-            ))}
+            {navButtons}
             <div className="c-side-spacer" />
-            <div className="c-side-foot">
-              <button className="c-nav-item c-out" title="Logout"
-                onClick={() => supabase.auth.signOut().then(() => router.push('/login'))}>
-                <span className="c-nav-ico">{LOGOUT_ICON}</span>
-                <span className="c-nav-label">Logout</span>
-              </button>
-            </div>
+            <div className="c-side-foot">{logoutBtn}</div>
           </aside>
 
           <div className="c-main">
@@ -771,6 +780,15 @@ export default function ClientDashboardPage() {
 
         
         <Footer />
+
+        {/* ── Bottom bar (mobile), rendered straight into <body> ── */}
+        {mounted && createPortal(
+          <nav className="c-bar" aria-label="Meniu client">
+            {navButtons}
+            {logoutBtn}
+          </nav>,
+          document.body
+        )}
       </div>
     </>
   )

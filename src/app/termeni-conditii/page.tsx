@@ -148,62 +148,67 @@ export default function TermeniConditiiPage() {
         }
       `}</style>
 
-      <div className="c-root">
+           <div className="c-root">
         <div className="c-grid" />
         <Navbar />
 
         <div className={`c-wrap${mounted ? ' ready' : ''}`}>
-          <div className="c-eyebrow">TERMENI LEGALI // SECȚIUNE GENERALĂ</div>
+          <div className="c-eyebrow">TERMENI LEGALI // CONTRACT DIGITAL</div>
           <h1 className="c-title">TERMENI ȘI CONDIȚII.</h1>
 
-          {/* Bloc generic 01 */}
+          {/* Bloc 01 - Utilizarea Site-ului */}
           <div className="c-card">
-            <h2 className="c-section-title">01 / INTRODUCERE</h2>
+            <h2 className="c-section-title">01 / DISPOZIȚII GENERALE</h2>
             <div className="c-text">
               <p>
-                Acesta este un bloc de text generalist. Puteți înlocui acest conținut cu termenii și regulile specifice aplicației sau platformei dumneavoastră digitale.
+                Prezentul document stabilește regulile și condițiile de utilizare a platformei digitale <strong>proarh4d.ro</strong>. Prin accesarea site-ului, navigarea în portofoliu sau achiziția de pe shop-ul nostru, sunteți de acord să respectați integral acești termeni. Platforma este administrată de biroul de proiectare și consultanță arhitecturală <strong>PROARH.4D</strong>.
               </p>
             </div>
           </div>
 
-          {/* Bloc generic 02 - Cu tabel inclus */}
+          {/* Bloc 02 - Servicii, Shop 3D și Drepturi */}
           <div className="c-card">
-            <h2 className="c-section-title">02 / STRUCTURĂ ȘI DATE TEHNICE</h2>
+            <h2 className="c-section-title">02 / PROPRIETATE INTELECTUALĂ ȘI LIVRABILE</h2>
             <div className="c-text">
               <p>
-                Mai jos se află o schemă tabelară de bază pe care o puteți folosi pentru a segmenta planurile tarifare, fazele proiectului sau permisiunile utilizatorilor.
+                Toate conceptele, schițele CAD, randările 3D, imaginile și modelele arhitecturale prezentate sau vândute prin intermediul acestui site aparțin în exclusivitate <strong>PROARH.4D</strong> și sunt protejate de legea drepturilor de autor. Achiziția de modele 3D de pe shop oferă o licență de utilizare non-exclusivă, fiind strict interzisă revânzarea sau redistribuirea fișierelor sursă.
               </p>
               
               <table className="c-table">
                 <thead>
                   <tr>
-                    <th style={{ width: '30%' }}>PARAMETRU</th>
-                    <th style={{ width: '50%' }}>DESCRIERE GENERALĂ</th>
-                    <th style={{ width: '20%' }}>STATUS</th>
+                    <th style={{ width: '30%' }}>SERVICIU / PRODUS</th>
+                    <th style={{ width: '50%' }}>DREPTURI DE UTILIZARE & SPECIFICAȚII</th>
+                    <th style={{ width: '20%' }}>STATUS LICENȚĂ</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td><strong>PARAM_01</strong></td>
-                    <td>Exemplu de text tehnic pentru prima coloană de specificații.</td>
-                    <td>ACTIV</td>
+                    <td><strong>Proiectare & Arhitectură</strong></td>
+                    <td>Drept de execuție unic pentru conceptul autorizat (case, vile, clădiri administrative).</td>
+                    <td>UNIC / EXCLUSIV</td>
                   </tr>
                   <tr>
-                    <td><strong>PARAM_02</strong></td>
-                    <td>Exemplu de text tehnic pentru a doua coloană de specificații.</td>
-                    <td>REVOCABIL</td>
+                    <td><strong>Modele 3D & Obiecte Shop</strong></td>
+                    <td>Utilizare comercială sau personală integrată în randări proprii. Interzisă redistribuirea.</td>
+                    <td>NON-EXCLUSIV</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Randări & Materiale Media</strong></td>
+                    <td>Prezentare portofoliu cu obligația de păstrare a semnăturii autorului Bogdan Șotîngeanu.</td>
+                    <td>PROTEJAT</td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </div>
 
-          {/* Bloc generic 03 */}
+          {/* Bloc 03 - Responsabilități și nZEB */}
           <div className="c-card">
-            <h2 className="c-section-title">03 / RESPONSABILITĂȚI</h2>
+            <h2 className="c-section-title">03 / LIMITAREA RESPONSABILITĂȚII</h2>
             <div className="c-text">
               <p>
-                Text adițional pentru completarea politicii site-ului. Fundalul alb și textul de contrast închis asigură o citire impecabilă pe orice tip de ecran.
+                Modelele digitale și informațiile din secțiunea de consultanță au un scop conceptual și orientativ. <strong>PROARH.4D</strong> nu își asumă răspunderea pentru erori cauzate de utilizarea neconformă a fișierelor descărcate fără verificarea tehnică sau adaptarea lor la contextul real de pe teren de către specialiști autorizați (structuriști, instalatori). Orice proiect de execuție sau documentație nZEB se va supune unui contract distinct semnat fizic sau digital.
               </p>
             </div>
           </div>
@@ -214,9 +219,9 @@ export default function TermeniConditiiPage() {
           </div>
         </div>
 
-
         <Footer />
       </div>
+
     </>
   )
 }

@@ -140,7 +140,7 @@ export default function ShopPage() {
                             : 'bg-black text-white hover:bg-[#bfa054]'
                         }`}
                       >
-                        {isAlreadyInCart ? 'Vizualizează' : 'Detalii'}
+                        {isAlreadyInCart ? 'View' : 'Details'}
                       </Link>
                     </div>
                   </div>

@@ -371,47 +371,47 @@ export default function CheckoutPage() {
         <Navbar />
 
         <div className={`a-wrap${mounted ? ' ready' : ''}`}>
-          <h1 className="a-title">Detalii <em>finalizare.</em></h1>
+          <h1 className="a-title">Details <em>finalization.</em></h1>
 
           <div className="checkout-grid">
             {/* Formular Facturare */}
             <form onSubmit={handleFinalPlata} className="a-form-section">
-              <h3 style={{ fontSize: '18px', marginBottom: '24px' }}>Date client</h3>
+              <h3 style={{ fontSize: '18px', marginBottom: '24px' }}>Client Data</h3>
 
               <div className="a-field">
-                <label className="a-label">Nume complet</label>
+                <label className="a-label">The name</label>
                 <input className="a-input" type="text" value={nume} onChange={e => setNume(e.target.value)} required />
               </div>
 
               <div className="a-field">
-                <label className="a-label">Telefon</label>
+                <label className="a-label">Tel</label>
                 <input className="a-input" type="text" value={telefon} onChange={e => setTelefon(e.target.value)} required />
               </div>
 
               <h3 style={{ fontSize: '18px', marginTop: '32px', marginBottom: '16px' }}>
-                {isFree ? 'Descărcare gratuită' : 'Metodă de plată'}
+                {isFree ? 'Free Download' : 'Payment Method'}
               </h3>
               <p className="a-hint" style={{ fontSize: '12px', marginBottom: '24px' }}>
                 {hasPaidItems
-                  ? 'Plata cu cardul nu este încă disponibilă pe site. Momentan poți finaliza doar comenzi cu produse gratuite.'
-                  : 'Produsele din coș sunt gratuite — nu e nevoie de card.'}
+                  ? 'Payment with card is not yet available on the site. Currently, you can only finalize orders with free products.'
+                  : 'The products in your cart are free — no card is needed.'}
               </p>
 
               <button type="submit" className="a-btn-submit" disabled={loading || cart.length === 0 || hasPaidItems}>
                 {loading
-                  ? 'Se procesează...'
+                  ? 'Processing...'
                   : hasPaidItems
-                    ? 'Plată indisponibilă momentan'
-                    : 'Obține gratuit'}
+                    ? 'Payment unavailable at the moment'
+                    : 'Get for free'}
               </button>
 
               {cart.length === 0 && (
-                <p className="a-empty-cart-msg">Coșul tău e gol — adaugă produse înainte de a plăti.</p>
+                <p className="a-empty-cart-msg">Your cart is empty — add products before checking out.</p>
               )}
 
               {hasPaidItems && (
                 <div className="a-paid-warning">
-                  Următoarele produse din coș sunt plătite și nu pot fi finalizate momentan:{' '}
+                  The following products in your cart are paid and cannot be finalized at the moment:{' '}
                   {paidItems.map(p => p.nume).join(', ')}. Elimină-le din coș pentru a continua cu restul comenzii.
                 </div>
               )}
@@ -419,16 +419,16 @@ export default function CheckoutPage() {
 
             {/* Sumar Produse */}
             <div className="summary-card">
-              <h3 style={{ fontSize: '20px' }}>Comanda ta</h3>
+              <h3 style={{ fontSize: '20px' }}>Your order</h3>
 
               {cart.length === 0 ? (
-                <p className="summary-empty">Nu ai produse în coș.</p>
+                <p className="summary-empty">You have no items in your cart.</p>
               ) : (
                 cart.map(item => (
                   <div key={item.id} className="item-row">
                     <span>{item.nume}</span>
                     <span style={{ color: '#bfa054' }}>
-                      {Number(item.pret) === 0 ? 'Gratuit' : `${Number(item.pret).toFixed(2)} RON`}
+                      {Number(item.pret) === 0 ? 'Free' : `${Number(item.pret).toFixed(2)} RON`}
                     </span>
                   </div>
                 ))
@@ -436,7 +436,7 @@ export default function CheckoutPage() {
 
               <div className="summary-total">
                 <span>Total general</span>
-                <span>{isFree ? 'Gratuit' : `${total.toFixed(2)} RON`}</span>
+                <span>{isFree ? 'Free' : `${total.toFixed(2)} RON`}</span>
               </div>
             </div>
           </div>

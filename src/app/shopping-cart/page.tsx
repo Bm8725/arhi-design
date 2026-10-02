@@ -230,12 +230,12 @@ export default function ShoppingCartPage() {
 
         <div className={`a-wrap${mounted ? ' ready' : ''}`}>
           <div className="a-eyebrow">Comandă sigură</div>
-          <h1 className="a-title">Coșul tău de <em>achiziții.</em></h1>
+          <h1 className="a-title">Your cart <em>achizitions.</em></h1>
 
           {cart.length === 0 ? (
             <div className="text-center py-10">
-              <p className="text-white/40 text-sm">Coșul este gol.</p>
-              <Link href="/shop" className="text-[#e2b36e] text-xs uppercase mt-4 block">← Înapoi la magazin</Link>
+              <p className="text-white/40 text-sm">Your cart is empty.</p>
+              <Link href="/shop" className="text-[#e2b36e] text-xs uppercase mt-4 block">← Back to shop</Link>
             </div>
           ) : (
             <div className="cart-grid">
@@ -258,7 +258,7 @@ export default function ShoppingCartPage() {
                 
                 {/* Schimbat în Link pentru trimitere securizată către pagina separată de checkout */}
                 <Link href="/checkout" className="a-btn-submit hover:border-[#e2b36e] hover:text-white">
-                  Continuă spre checkout
+                  Continue to checkout
                 </Link>
               </div>
             </div>

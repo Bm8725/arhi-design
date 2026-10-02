@@ -200,16 +200,16 @@ export default function ProductDetailPage() {
 
               <div className="border-t-2 border-[#1a1a1a] pt-6">
                 <p className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold mb-4">
-                  Acces și descărcare fișiere proiect
+                  Acces and download the digital product.
                 </p>
 
                 {isInCart ? (
                   <Link href="/shopping-cart" className="btn-black-solid" style={{ background: '#bfa054', borderColor: '#bfa054' }}>
-                    Vezi coșul de cumpărături →
+                    View shopping cart →
                   </Link>
                 ) : (
                   <button onClick={handleAddToCart} className="btn-black-solid">
-                    Adaugă în coș
+                    Add to cart
                   </button>
                 )}
 
@@ -220,13 +220,14 @@ export default function ProductDetailPage() {
                     </>
                   ) : (
                     <>
-                      <Share2 className="w-4 h-4" /> Distribuie proiectul
+                      <Share2 className="w-4 h-4" /> Share this product
                     </>
                   )}
                 </button>
 
-                <p className="text-[10px] text-zinc-400 text-center pt-4 font-medium leading-relaxed">
-                  * Tranzacție securizată. Link-ul unic generat va fi disponibil instant în panoul de control după procesarea plății.
+                <p className="text-[13px] text-zinc-400 text-center pt-4 font-medium leading-relaxed">
+              
+                  *secure transaction. The unique link will be available instantly in the control panel after payment processing. 
                 </p>
               </div>
 

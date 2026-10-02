@@ -11,6 +11,7 @@ import WhatsAppWidget from '@/components/WhatsAppWidget'
 export default function ShopPage() {
   const supabase = createClient()
   const [products, setProducts] = useState<any[]>([])
+  const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [userId, setUserId] = useState<string | null>(null)
   const [cartIds, setCartIds] = useState<string[]>([]) 
@@ -46,12 +47,40 @@ export default function ShopPage() {
     setCartIds(ids)
   }
 
+  // Funcție helper pentru eliminarea diacriticelor (normalizează textul pentru o căutare sensibilă)
+  const normalizeText = (text: string): string => {
+    if (!text) return ''
+    return text
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Elimină accentele/diacriticele standard
+      .replace(/ș/g, 's')
+      .replace(/ț/g, 't')
+      .replace(/ă/g, 'a')
+      .replace(/î/g, 'i')
+      .replace(/â/g, 'a')
+      .trim()
+  }
+
+  // Filtrare avansată multi-cuvânt și insensibilă la diacritice
+  const filteredProducts = products.filter((product) => {
+    if (!searchQuery.trim()) return true
+
+    // Împărțim textul căutat în cuvinte individuale
+    const searchTerms = normalizeText(searchQuery).split(/\s+/)
+    
+    // Unim toate câmpurile text ale produsului într-un singur șir normalizat
+    const productContent = normalizeText(
+      `${product.nume} ${product.categorie || ''} ${product.descriere_scurta || ''} ${product.descriere || ''}`
+    )
+
+    // Produsul este valid doar dacă TOATE cuvintele introduse se regăsesc în conținutul său
+    return searchTerms.every((term) => productContent.includes(term))
+  })
+
   return (
     <div className="bg-[#ffffff] min-h-screen text-[#1a1a1a] font-mono relative">
-      {/* Stiluri injectate pentru consistență premium pe alb */}
       <style>{`
-        @import url('https://googleapis.com');
-        
         .shop-root {
           font-family: 'DM Mono', monospace;
         }
@@ -75,11 +104,32 @@ export default function ShopPage() {
       <Navbar />
 
       <div className="shop-container max-w-[1100px] mx-auto px-5 pt-[140px] pb-20 shop-root">
-        <div className="mb-14 text-center">
+        <div className="mb-10 text-center">
           <span className="text-[#bfa054] text-xs font-bold uppercase tracking-[0.3em] block mb-2">CATALOG</span>
           <h1 className="font-serif-premium text-4xl md:text-5xl font-normal tracking-tight text-black">
             Digital <em>products.</em>
           </h1>
+        </div>
+
+        {/* Search Bar - Advanced Multi-term Filtering */}
+        <div className="mb-12 max-w-md mx-auto w-full px-1">
+          <div className="relative border-2 border-[#1a1a1a] bg-white transition-all duration-200 focus-within:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
+            <input
+              type="text"
+              placeholder="Search catalog..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-4 py-3 text-sm bg-transparent border-none outline-none text-[#1a1a1a] placeholder-zinc-400 font-mono pr-16"
+            />
+            {searchQuery && (
+              <button 
+                onClick={() => setSearchQuery('')}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-black text-[10px] uppercase font-bold tracking-wider transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
 
         {loading ? (
@@ -89,18 +139,23 @@ export default function ShopPage() {
           </div>
         ) : products.length === 0 ? (
           <p className="text-center text-zinc-500 py-20 font-bold text-sm uppercase tracking-wider">No products available at the moment.</p>
+        ) : filteredProducts.length === 0 ? (
+          <div className="text-center py-20 border-2 border-dashed border-zinc-200 bg-zinc-50/50 max-w-md mx-auto">
+            <p className="text-zinc-500 font-bold text-xs uppercase tracking-wider mb-2">No results found</p>
+            <p className="text-zinc-400 text-xs">We couldn't find any match for "{searchQuery}"</p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8">
-            {products.map((product) => {
+            {filteredProducts.map((product) => {
               const isAlreadyInCart = cartIds.includes(product.id)
 
               return (
                 <div key={product.id} className="bg-[#ffffff] border-2 border-[#1a1a1a] overflow-hidden flex flex-col group relative shadow-[0_4px_20px_rgba(0,0,0,0.02)]">
                   
-                  {/* Badge discret "În Coș" peste imagine */}
+                  {/* Cart Status Badge */}
                   {isAlreadyInCart && (
                     <span className="absolute top-3 right-3 z-10 bg-black text-[#ffffff] text-[9px] font-mono tracking-widest uppercase px-2 py-1 font-bold">
-                      În coș
+                      In cart
                     </span>
                   )}
 
@@ -112,7 +167,7 @@ export default function ShopPage() {
                         className="w-full h-full object-cover group-hover:scale-102 transition duration-500"
                       />
                     ) : (
-                      <div className="flex items-center justify-center h-full text-zinc-400 text-xs font-bold uppercase tracking-wider">Nicio imagine</div>
+                      <div className="flex items-center justify-center h-full text-zinc-400 text-xs font-bold uppercase tracking-wider">No image available</div>
                     )}
                   </div>
 

@@ -113,6 +113,35 @@ const STATUS_COLOR: Record<string, string> = {
 
 type Section = 'proiecte' | 'comenzi' | 'fisiere' | 'noutati'
 
+// Icons for the sidebar (stroke icons, 24x24)
+const NAV_ICON: Record<Section, React.ReactNode> = {
+  proiecte: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+    </svg>
+  ),
+  comenzi: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+      <path d="M3 6h18" />
+      <path d="M16 10a4 4 0 0 1-8 0" />
+    </svg>
+  ),
+  fisiere: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <path d="m7 10 5 5 5-5" />
+      <path d="M12 15V3" />
+    </svg>
+  ),
+  noutati: (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  ),
+}
+
 export default function ClientDashboardPage() {
   const router = useRouter()
   const supabase = createClient()
@@ -276,8 +305,27 @@ export default function ClientDashboardPage() {
 <style>{`
         .c-root{min-height:100vh;background:#ffffff;font-family:'Inter',sans-serif;color:#111111;display:flex;flex-direction:column;position:relative;overflow-x:hidden}
         .c-ambient{position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse 60% 30% at 50% 0%,rgba(226,179,110,0.06) 0%,transparent 60%)}
-        .c-wrap{position:relative;z-index:1;max-width:680px;width:100%;margin:0 auto;padding:110px 20px 120px;flex:1;opacity:0;transform:translateY(12px);transition:.5s ease}
+        .c-wrap{position:relative;z-index:1;max-width:1120px;width:100%;margin:0 auto;padding:110px 24px 120px;flex:1;opacity:0;transform:translateY(12px);transition:.5s ease;display:grid;grid-template-columns:248px minmax(0,1fr);gap:40px;align-items:start}
         .c-wrap.ready{opacity:1;transform:translateY(0)}
+        .c-main{min-width:0}
+
+        /* ── SIDEBAR ── */
+        .c-side{position:sticky;top:100px;background:#0e0e0e;padding:20px 12px 14px;display:flex;flex-direction:column;gap:4px;box-shadow:0 22px 44px -22px rgba(0,0,0,.5)}
+        .c-side-user{display:flex;align-items:center;gap:12px;padding:6px 8px 18px;margin-bottom:10px;border-bottom:1px solid rgba(255,255,255,.08)}
+        .c-avatar{width:38px;height:38px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#e2b36e;color:#111;font-weight:800;font-size:15px;text-transform:uppercase}
+        .c-side-name{font-size:13px;color:#fff;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .c-side-role{font-size:8px;color:#e2b36e;letter-spacing:.22em;text-transform:uppercase;margin-top:3px;font-weight:700}
+        .c-side-label{font-size:8px;color:#666;letter-spacing:.25em;text-transform:uppercase;padding:6px 12px 8px;font-weight:700}
+        .c-nav-item{position:relative;display:flex;align-items:center;gap:12px;width:100%;padding:13px 12px;background:transparent;border:none;color:#a3a3a3;font-family:inherit;font-size:12px;font-weight:600;letter-spacing:.02em;cursor:pointer;text-align:left;transition:.2s}
+        .c-nav-item::before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:3px;background:#e2b36e;transform:scaleY(0);transition:.2s}
+        .c-nav-item:hover{color:#fff;background:rgba(255,255,255,.05)}
+        .c-nav-item.on{color:#fff;background:rgba(226,179,110,.12)}
+        .c-nav-item.on::before{transform:scaleY(1)}
+        .c-nav-ico{display:flex;flex-shrink:0;color:inherit}
+        .c-nav-item.on .c-nav-ico{color:#e2b36e}
+        .c-nav-label{flex:1}
+        .c-nav-count{font-size:10px;min-width:22px;text-align:center;padding:2px 7px;background:rgba(255,255,255,.08);color:#ddd;font-weight:700}
+        .c-nav-item.on .c-nav-count{background:#e2b36e;color:#111}
 
         .c-header{display:flex;justify-content:space-between;align-items:center;padding-bottom:24px;border-bottom:2px solid #111;margin-bottom:32px}
         .c-greeting{font-size:10px;color:#aaa;letter-spacing:.25em;margin-bottom:6px;text-transform:uppercase}
@@ -285,11 +333,6 @@ export default function ClientDashboardPage() {
         .c-name span{color:#e2b36e}
         .c-logout{background:#111;border:none;color:#fff;font-family:inherit;font-size:9px;letter-spacing:.18em;cursor:pointer;transition:.2s;text-transform:uppercase;padding:10px 20px;font-weight:700}
         .c-logout:hover{background:#c0392b;color:#fff}
-
-        .c-nav{display:flex;gap:6px;margin-bottom:32px;flex-wrap:wrap}
-        .c-pill{font-size:9px;padding:11px 18px;border:2px solid #e0e0e0;background:#ffffff;color:#888;cursor:pointer;letter-spacing:.12em;transition:.2s;text-transform:uppercase;font-family:inherit;font-weight:600}
-        .c-pill:hover{color:#111;border-color:#111;background:#f5f5f5}
-        .c-pill.on{border-color:#111;color:#fff;background:#111;font-weight:700}
 
         /* Proiecte */
         .c-proj-card{border:2px solid #ececec;padding:22px;margin-bottom:8px;cursor:pointer;transition:all .2s;background:#ffffff;position:relative}
@@ -395,12 +438,21 @@ export default function ClientDashboardPage() {
 
         .c-empty{font-size:9px;color:#ddd;text-align:center;padding:48px 0;letter-spacing:.2em;text-transform:uppercase}
 
+        /* Sidebar becomes a scrollable top bar on tablets and phones */
+        @media(max-width:860px){
+          .c-wrap{grid-template-columns:minmax(0,1fr);gap:22px}
+          .c-side{position:static;flex-direction:row;overflow-x:auto;padding:6px;gap:4px;box-shadow:none;-webkit-overflow-scrolling:touch}
+          .c-side-user,.c-side-label{display:none}
+          .c-nav-item{width:auto;flex-shrink:0;padding:12px 16px;white-space:nowrap}
+          .c-nav-label{flex:0 0 auto}
+          .c-nav-item::before{top:auto;left:10px;right:10px;bottom:0;width:auto;height:3px;transform:scaleX(0)}
+          .c-nav-item.on::before{transform:scaleX(1)}
+        }
+
         @media(max-width:480px){
           .c-wrap{padding:100px 16px 110px}
           .c-phase-track{width:60px}
           .c-order-head{gap:8px}
-          .c-nav{gap:4px}
-          .c-pill{padding:9px 12px;font-size:9px}
           .c-msg.mine{margin-left:0}
           .c-msg.mine::before{display:none}
           .c-msg.theirs{margin-right:0}
@@ -413,6 +465,34 @@ export default function ClientDashboardPage() {
 
         <div className={`c-wrap${mounted ? ' ready' : ''}`}>
 
+          {/* ── Sidebar ── */}
+          <aside className="c-side" aria-label="Meniu client">
+            <div className="c-side-user">
+              <div className="c-avatar" aria-hidden>{userName.charAt(0) || 'C'}</div>
+              <div style={{ minWidth: 0 }}>
+                <div className="c-side-name">{userName}</div>
+                <div className="c-side-role">Cont client</div>
+              </div>
+            </div>
+            <div className="c-side-label">Meniu</div>
+            {([
+              ['proiecte', 'Proiecte', projects.length],
+              ['comenzi', 'Comenzi', orders.length],
+              ['fisiere', 'Fișiere', downloads.length],
+              ['noutati', 'Noutăți', null],
+            ] as [Section, string, number | null][]).map(([s, label, count]) => (
+              <button key={s} className={`c-nav-item${section === s ? ' on' : ''}`}
+                aria-current={section === s ? 'page' : undefined}
+                onClick={() => { setActiveProjectId(null); setSection(s) }}>
+                <span className="c-nav-ico">{NAV_ICON[s]}</span>
+                <span className="c-nav-label">{label}</span>
+                {count !== null && <span className="c-nav-count">{count}</span>}
+              </button>
+            ))}
+          </aside>
+
+          <div className="c-main">
+
           {/* ── Header ── */}
           <div className="c-header">
             <div>
@@ -423,22 +503,6 @@ export default function ClientDashboardPage() {
               Logout
             </button>
           </div>
-
-          {/* ── Nav ── */}
-          {!activeProjectId && (
-            <div className="c-nav">
-              {([
-                ['proiecte', `Proiecte (${projects.length})`],
-                ['comenzi', `Comenzi (${orders.length})`],
-                ['fisiere', `Fișiere (${downloads.length})`],
-                ['noutati', 'Noutăți'],
-              ] as [Section, string][]).map(([s, label]) => (
-                <button key={s} className={`c-pill${section === s ? ' on' : ''}`} onClick={() => setSection(s)}>
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
 
           {/* ════════════════════════════════════════════════════════════ */}
           {/* PROIECTE                                                      */}
@@ -671,6 +735,7 @@ export default function ClientDashboardPage() {
               ))
           )}
 
+          </div>
         </div>
 
         

@@ -229,7 +229,7 @@ export default function ShoppingCartPage() {
         <Navbar />
 
         <div className={`a-wrap${mounted ? ' ready' : ''}`}>
-          <div className="a-eyebrow">Comandă sigură</div>
+          <div className="a-eyebrow">Secure Order</div>
           <h1 className="a-title">Your cart <em>achizitions.</em></h1>
 
           {cart.length === 0 ? (
@@ -244,7 +244,7 @@ export default function ShoppingCartPage() {
                   <div key={item.id} className="cart-item">
                     <div>
                       <h3 className="item-title">{item.nume}</h3>
-                      <button onClick={() => removeFromCart(item.id)} className="btn-remove hover:text-red-400">[ Șterge ]</button>
+                      <button onClick={() => removeFromCart(item.id)} className="btn-remove hover:text-red-400">[ DELETE ]</button>
                     </div>
                     <div className="text-[#e2b36e]">{Number(item.pret).toFixed(2)} RON</div>
                   </div>

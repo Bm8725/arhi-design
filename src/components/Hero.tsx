@@ -96,7 +96,7 @@ export default function Hero() {
 
             <div className="space-y-2">
               <span className="text-[10px] font-mono tracking-[0.25em] text-yellow-400 uppercase block font-bold transition-colors duration-300">
-                CONCEPT / CONSULTANȚĂ / AUTORIZARE / EXECUȚIE
+                CONCEPT / CONSULTANȚĂ / AUTORIZARE / EXECUȚIE / DIGITALIZAT / SHOP
               </span>
               <h2 className="text-xl sm:text-3xl font-bold tracking-tight text-white uppercase leading-tight transition-transform duration-500 group-hover:translate-x-1">
                 Arhitectură Rezidențială <span className="text-yellow-400">.</span>
@@ -104,7 +104,7 @@ export default function Hero() {
             </div>
 
             <p className="text-white/90 font-normal text-xs sm:text-sm leading-relaxed tracking-wide transition-all duration-500 group-hover:text-white">
-              Case și vile unicat, ansambluri premium și spații interioare arhitecturale configurate prin detalii riguroase și materiale moderne.
+              Case și vile unicat, ansambluri premium și spații interioare arhitecturale configurate prin detalii riguroase și materiale moderne. Totul digitalizat si securizat.
             </p>
           </div>
 

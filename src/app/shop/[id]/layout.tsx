@@ -1,6 +1,10 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
-import { headers } from 'next/headers'
+
+const SITE = 'https://proarh4d.ro'
+
+// WhatsApp / Facebook nu afișează bine aceste formate, deci trec prin /api/og/[id], care le face JPEG
+const NEEDS_CONVERT = /\.(gif|webp|avif|svg|bmp|tiff?)(\?.*)?$/i
 
 type Product = {
   nume: string | null
@@ -28,19 +32,12 @@ async function getProduct(id: string): Promise<Product | null> {
   }
 }
 
-async function getOrigin() {
-  const h = await headers()
-  const host = h.get('x-forwarded-host') || h.get('host') || 'localhost:3000'
-  const proto = h.get('x-forwarded-proto') || (host.startsWith('localhost') ? 'http' : 'https')
-  return `${proto}://${host}`
-}
-
 const clean = (s: string | null | undefined) => (s || '').replace(/\s+/g, ' ').trim()
 const cut = (s: string, n: number) => (s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s)
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> | { id: string } }): Promise<Metadata> {
   const { id } = await params
-  const [p, origin] = await Promise.all([getProduct(id), getOrigin()])
+  const p = await getProduct(id)
 
   const title = p?.nume ? `${clean(p.nume)} | Proarh.4d` : 'Proarh.4d'
 
@@ -49,10 +46,11 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const about = clean(p?.descriere_scurta) || clean(p?.descriere) || 'Proiect digital cu descărcare instantă în contul tău, după plată.'
   const description = cut(meta ? `${meta} — ${about}` : about, 160)
 
-  const image = p?.imagine_url && /^https?:\/\//i.test(p.imagine_url) ? p.imagine_url : `${origin}/arhi4d.png`
+  const photo = p?.imagine_url && /^https?:\/\//i.test(p.imagine_url) ? p.imagine_url : null
+  const image = !photo ? `${SITE}/arhi4d.png` : NEEDS_CONVERT.test(photo) ? `${SITE}/api/og/${id}` : photo
 
   return {
-    metadataBase: new URL(origin),
+    metadataBase: new URL(SITE),
     title,
     description,
     alternates: { canonical: `/shop/${id}` },

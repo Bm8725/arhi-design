@@ -39,7 +39,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const { id } = await params
   const p = await getProduct(id)
 
-  const title = p?.nume ? `${clean(p.nume)} | Proarh.4d` : 'Proarh.4d'
+  const title = p?.nume ? `${clean(p.nume)} | Proarh4d.ro` : 'Proarh4d.ro'
 
   const price = p?.pret != null && !isNaN(Number(p.pret)) ? `${Number(p.pret).toFixed(2).replace('.', ',')} lei` : ''
   const meta = [clean(p?.categorie), price].filter(Boolean).join(' · ')

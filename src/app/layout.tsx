@@ -18,7 +18,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script"; // 1. IMPORTĂ COMPONENTA NATIVĂ NEXT.JS
 import "./globals.css";
 import { Analytics } from '@vercel/analytics/next';
-import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
+import PwaInstallPrompt from "@/components/PwaInstallPrompt";
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

@@ -10,13 +10,13 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: '#000000',
     icons: [
       {
-        src: '/arhi4d.png',
-        sizes: '140x140',
+        src: '/proarh4d.ro-192x192.png',
+        sizes: '192x192',
         type: 'image/png'
       },
       {
-        src: '/proarh4d.ro.png',
-        sizes: '501x501',
+        src: '/proarh4d.ro-512x512.png',
+        sizes: '512x512',
         type: 'image/png'
       }
     ],

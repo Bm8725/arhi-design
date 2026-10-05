@@ -11,12 +11,12 @@ export default function manifest(): MetadataRoute.Manifest {
     icons: [
       {
         src: '/arhi4d.png',
-        sizes: '192x192',
+        sizes: '140x140',
         type: 'image/png'
       },
       {
         src: '/proarh4d.ro.png',
-        sizes: '512x512',
+        sizes: '501x501',
         type: 'image/png'
       }
     ],

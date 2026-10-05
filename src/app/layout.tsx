@@ -107,7 +107,7 @@ export default function RootLayout({
 
         {children}
          <Analytics />
-         <PwaInstallPrompt />
+        <PwaInstallPrompt />
       </body>
     </html>
   );

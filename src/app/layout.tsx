@@ -34,7 +34,7 @@ export const metadata: Metadata = {
   description: "Servicii premium de arhitectură, proiectare rezidențială și comercială, randări 3D și urbanism Arh. Sotingeanu Bogdan. Targoviste, Pucioasa, Fieni, Moreni, Racari, Dambovita.",
   
 
-  manifest: "/manifest.json",
+  manifest: "/manifest.webmanifest",
   
   // 1. Configurarea pentru Favicon și Apple
   icons: {
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
       { url: "/favicon.svg", type: "image/svg+xml" } 
     ],
     shortcut: "/favicon.ico",
-    apple: "/arhi4d.png", 
+    apple: "/proarh4d.ro-512x512.png", 
   },
 
   // 2. Configurarea pentru Share pe Social Media

@@ -299,7 +299,7 @@ export default function Kiosk() {
         <div style={{ background: '#ffffff', padding: '6px', borderRadius: '6px', lineHeight: 0 }}>
           <QRCode
             size={93}
-            value="https://proarh4d.ro/porofoliu"
+            value="https://proarh4d.ro/portofoliu"
             viewBox={`0 0 250 250`}
             level="H" // Toleranță maximă la erori (ajută la scanarea de la distanță sau din unghiuri dificile)
           />

@@ -267,25 +267,22 @@ export default function Kiosk() {
 
       {ready ? (
       <section key={s.id} className={`sheet${s.project ? ' full' : ''}`} aria-live="polite">
-        {s.id === 'brand' && (
-          <div className="brandwrap">
-            <div className="brand">
-              <h1>
-                {['Formă.', 'Funcție.', 'Spațiu.'].map((w, k) => (
-                  <span key={w}>
-                    <em style={{ animationDelay: `${0.2 + 0.18 * k}s` }}>{w}</em>
-                  </span>
-                ))}
-              </h1>
-              <p>Birou de proiectare și consultanță arhitecturală, Târgoviște, Dâmbovița.</p>
-            </div>
-            <svg className="draw" viewBox="0 0 400 300" fill="none" aria-hidden="true">
-              {PATHS.map(([d, delay, gold], k) => (
-                <path key={k} d={d} pathLength={1} className={gold ? 'g' : ''} style={{ animationDelay: `${delay - 0.5}s` }} />
-              ))}
-            </svg>
-          </div>
-        )}
+                {s.id === 'brand' && (
+                <div className="sheet-brand" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2rem', height: '100%', textAlign: 'center' }}>
+                    <div>
+                    <h1 style={{ fontSize: '3rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Arhitectură & Design</h1>
+                    <p style={{ fontSize: '1.5rem', opacity: 0.8 }}>Proiectare completă pentru construcții durabile.</p>
+                    </div>
+                    <div className="brand-image-container" style={{ width: '100%', maxHeight: '50vh', display: 'flex', justifyContent: 'center' }}>
+                    <img 
+                        src="/kiosk.png" 
+                        alt="Pro Arhi 4D" 
+                        style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: '12px' }} 
+                    />
+                    </div>
+                </div>
+                )}
+
 
         {s.id === 'wipe' && (
           <div className="wipe">

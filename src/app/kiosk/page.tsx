@@ -350,7 +350,7 @@ export default function Kiosk() {
     {/* Textul în stânga */}
     <div style={{ flex: '1.2', textAlign: 'left' }}>
       <h1 style={{ fontSize: '4.5rem', fontWeight: 'bold', marginBottom: '1.5rem', lineHeight: '1.1', letterSpacing: '-0.02em' }}>
-        Forma funtie Spatiu.
+        Forma funcție Spatiu.
       </h1>
       <p style={{ fontSize: '2rem', opacity: 0.8, lineHeight: '1.5', maxWidth: '500px' }}>
         Proiectare completă pentru construcții durabile. www.proarh4d.ro

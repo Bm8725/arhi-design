@@ -6,6 +6,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import QRCode from 'react-qr-code';
 
 type Proj = { title: string; place: string; area?: string; status?: string; images: string[] };
 type Sheet = { id: string; title: string; ms: number; product?: any; project?: Proj };
@@ -257,10 +258,66 @@ export default function Kiosk() {
         <span>Se încarcă imaginile, {loaded} din {ASSETS.length}</span>
       </div>
 
-      <header className="top">
-        <strong>Arh. Bogdan Șotîngeanu</strong>
-        <span>Birou de proiectare și consultanță arhitecturală</span>
-      </header>
+      <header 
+      className="top" 
+      style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        padding: '1rem 2rem', 
+        background: 'rgba(255, 255, 255, 0.05)', 
+        backdropFilter: 'blur(10px)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+      }}
+    >
+      {/* Datele de identificare birou */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+        <strong style={{ fontSize: '1.25rem', letterSpacing: '0.5px' }}>Arh. Bogdan Șotîngeanu</strong>
+        <span style={{ fontSize: '0.85rem', opacity: 0.7 }}>Birou de proiectare și consultanță arhitecturală</span>
+      </div>
+
+      {/* Widget QR Code pentru accesare Portofoliu de pe telefon */}
+      <a 
+        href="https://proarh4d.ro" 
+        target="_blank" 
+        rel="noopener noreferrer" 
+        style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '12px', 
+          background: '#ffffff', 
+          padding: '6px 12px', 
+          borderRadius: '8px', 
+          textDecoration: 'none',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+          transition: 'transform 0.2s ease'
+        }}
+        onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.03)'}
+        onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+      >
+        {/* Codul QR efectiv - Versiune mărită pentru scanare rapidă */}
+        <div style={{ background: '#ffffff', padding: '6px', borderRadius: '6px', lineHeight: 0 }}>
+          <QRCode
+            size={93}
+            value="https://proarh4d.ro/porofoliu"
+            viewBox={`0 0 250 250`}
+            level="H" // Toleranță maximă la erori (ajută la scanarea de la distanță sau din unghiuri dificile)
+          />
+        </div>
+
+        
+        {/* Text explicativ scurt pentru clienții din fața ecranului */}
+        <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+          <span style={{ fontSize: '10px', fontWeight: '800', color: '#111111', letterSpacing: '0.5px', lineHeight: '1.2' }}>
+            SCANEAZĂ QR
+          </span>
+          <span style={{ fontSize: '12px', fontWeight: '600', color: '#444444', lineHeight: '1.2' }}>
+            Portofoliu 
+          </span>
+        </div>
+      </a>
+    </header>
+
 
       <button className="hit left" onClick={() => go(-1)} aria-label="Foaia anterioară" />
       <button className="hit right" onClick={() => go(1)} aria-label="Foaia următoare" />

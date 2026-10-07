@@ -267,21 +267,64 @@ export default function Kiosk() {
 
       {ready ? (
       <section key={s.id} className={`sheet${s.project ? ' full' : ''}`} aria-live="polite">
-                {s.id === 'brand' && (
-                <div className="sheet-brand" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2rem', height: '100%', textAlign: 'center' }}>
-                    <div>
-                    <h1 style={{ fontSize: '3rem', fontWeight: 'bold', marginBottom: '0.5rem' }}>Arhitectură & Design</h1>
-                    <p style={{ fontSize: '1.5rem', opacity: 0.8 }}>Proiectare completă pentru construcții durabile.</p>
-                    </div>
-                    <div className="brand-image-container" style={{ width: '100%', maxHeight: '50vh', display: 'flex', justifyContent: 'center' }}>
-                    <img 
-                        src="/kiosk.png" 
-                        alt="Pro Arhi 4D" 
-                        style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: '12px' }} 
-                    />
-                    </div>
-                </div>
-                )}
+{s.id === 'brand' && (
+  <div className="sheet-brand" style={{ 
+    display: 'flex', 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    gap: '5rem', 
+    height: '100%', 
+    padding: '0 4rem',
+    animation: 'fadeInUp 1s ease-out forwards'
+  }}>
+    {/* Definiție animație direct în stil inline (alternativ o poți pune în CSS-ul tău global) */}
+    <style>{`
+      @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+      @keyframes softZoom {
+        from { transform: scale(0.95); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+      }
+    `}</style>
+
+    {/* Textul în stânga */}
+    <div style={{ flex: '1.2', textAlign: 'left' }}>
+      <h1 style={{ fontSize: '4.5rem', fontWeight: 'bold', marginBottom: '1.5rem', lineHeight: '1.1', letterSpacing: '-0.02em' }}>
+        Arhitectură & Design
+      </h1>
+      <p style={{ fontSize: '2rem', opacity: 0.8, lineHeight: '1.5', maxWidth: '500px' }}>
+        Proiectare completă pentru construcții durabile.
+      </p>
+    </div>
+
+    {/* Poza în dreapta */}
+    <div className="brand-image-container" style={{ 
+      flex: '1', 
+      height: '65vh', 
+      display: 'flex', 
+      justifyContent: 'center', 
+      alignItems: 'center',
+      animation: 'softZoom 1.2s ease-out forwards'
+    }}>
+      <img 
+        src="/kiosk.png" 
+        alt="Pro Arhi 4D" 
+        style={{ 
+          maxWidth: '100%', 
+          maxHeight: '100%', 
+          objectFit: 'contain', 
+          borderRadius: '16px',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.15)' 
+        }} 
+      />
+    </div>
+  </div>
+)}
+
+
 
 
         {s.id === 'wipe' && (

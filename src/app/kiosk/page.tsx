@@ -132,6 +132,35 @@ export default function Kiosk() {
     return () => document.removeEventListener('fullscreenchange', onChange);
   }, []);
 
+  // Ține ecranul aprins (Screen Wake Lock API). Se reia când revii în pagină, la primul gest și din minut în minut.
+  useEffect(() => {
+    let lock: WakeLockSentinel | null = null;
+    let alive = true;
+    const acquire = async () => {
+      if (!('wakeLock' in navigator) || document.visibilityState !== 'visible') return;
+      if (lock && !lock.released) return;
+      try {
+        const l = await navigator.wakeLock.request('screen');
+        if (alive) lock = l;
+        else l.release();
+      } catch {}
+    };
+    const onVis = () => { if (document.visibilityState === 'visible') acquire(); };
+    acquire();
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('pointerdown', acquire);
+    window.addEventListener('keydown', acquire);
+    const t = setInterval(acquire, 60000);
+    return () => {
+      alive = false;
+      clearInterval(t);
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('pointerdown', acquire);
+      window.removeEventListener('keydown', acquire);
+      lock?.release().catch(() => {});
+    };
+  }, []);
+
   // Încarcă și decodează toate imaginile înainte să pornească rularea (maximum 25 de secunde).
   useEffect(() => {
     let alive = true;

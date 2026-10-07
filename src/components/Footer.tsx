@@ -35,6 +35,7 @@ export default function Footer() {
           <div className="flex flex-col lg:flex-row lg:items-center gap-x-12 gap-y-6">
             <div className="flex flex-wrap gap-x-8 gap-y-3 text-[10px] uppercase tracking-[0.2em] text-white/40">
               <Link href="/noi" className="hover:text-white transition-colors duration-300">Despre Noi</Link>
+              <Link href="/kiosk" className="hover:text-white transition-colors duration-300">kiosk mode</Link>
               <Link href="/termeni-conditii" className="hover:text-white transition-colors duration-300">Termeni si Conditii</Link>
               <Link href="/politica-confidentialitate" className="hover:text-white transition-colors duration-300">Confidentialitate</Link>
               <Link href="/politica-cookie" className="hover:text-white transition-colors duration-300">Cookie</Link>

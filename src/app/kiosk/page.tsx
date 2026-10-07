@@ -7,13 +7,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
-type Sheet = { id: string; title: string; ms: number; product?: any };
+type Proj = { title: string; place: string; area?: string; status?: string; images: string[] };
+type Sheet = { id: string; title: string; ms: number; product?: any; project?: Proj };
 
 const SHEETS: Sheet[] = [
   { id: 'brand', title: 'Prezentare', ms: 8000 },
   { id: 'wipe', title: 'De la schiță la randare', ms: 10000 },
   { id: 'servicii', title: 'Servicii', ms: 9000 },
-  { id: 'lucrari', title: 'Lucrări recente', ms: 9000 },
   { id: 'shop', title: 'Shop 3D', ms: 9000 },
 ];
 
@@ -24,13 +24,64 @@ const STEPS = [
   ['Execuție', 'Detalii de execuție și urmărirea lucrării pe teren.'],
 ];
 
-const WORKS = [
-  ['Sediu firmă GEO-STING', 'Târgoviște'],
-  ['Spații comerciale Micro VI', 'Târgoviște'],
-  ['NIMET, zona industrială', 'Dâmbovița'],
-  ['Ansamblu recreativ cu cazare și cramă', 'Târgoviște'],
-  ['Parohia Poroinica, în execuție', 'Mătăsaru'],
+// Copie compactă a listei PROJECTS din pagina de portofoliu (pozele sunt din /public).
+// Ideal: mută lista într-un fișier comun (ex. src/data/projects.ts) și importă-o în ambele pagini.
+const PROJECTS: Proj[] = [
+  { title: 'Vila Dutescu', place: 'Padina-Lăptici, Moroeni', area: '380 m²', status: 'Construit',
+    images: ['/dutescu.png', '/dutescu2.png', '/dutescu3.png', '/dutescu4.png'] },
+  { title: 'Biserică parohială, Parohia Poroinica I', place: 'Tețcoiu, Mătăsaru', area: '130 m²', status: 'În execuție',
+    images: ['/biserica.png', '/biserica1.png', '/biserica2.png', '/biserica3.png', '/biserica4.png'] },
+  { title: 'Locuință unifamilială contemporană P+1', place: 'Privat', area: '224 m²', status: 'Realizat',
+    images: ['/barbu.png', '/barbu1.png', '/barbu2.png', '/barbu3.png', '/barbu4.png', '/barbu5.png'] },
+  { title: 'Amenajare spații comerciale', place: 'B-dul Unirii, Târgoviște', area: '1.432,75 m²', status: 'Realizat',
+    images: ['/m1.jpeg', '/futurist1.png', '/futurist2.png', '/futurist3.png', '/m2.jpeg'] },
+  { title: 'Locuință P+1 cu garaj', place: 'Str. Înfrățirii, Târgoviște', area: '286,80 m²', status: 'Realizat',
+    images: ['/dobra1.png', '/dobra2.png', '/dobra3.png', '/dobra4.png', '/dobra5.png'] },
+  { title: 'Sediu firmă GEO-STING', place: 'Str. Petru Cercel, Târgoviște',
+    images: ['/geo.png', '/geo1.png', '/geo2.png', '/geo3.png', '/geo41.jpg', '/geo5.jpg', '/geo6.jpg'] },
+  { title: 'Spații comerciale Micro VI', place: 'Zona Pieței Mercur, Târgoviște', status: 'Realizat',
+    images: ['/spa.png', '/spa1.png', '/spa2.png', '/spa3.png', '/spa4.png', '/spa5.png'] },
+  { title: 'Ansamblu recreativ cu cazare și cramă', place: 'Târgoviște',
+    images: ['/samy.png', '/samy1.png', '/samy2.png', '/samy3.png', '/samy4.png'] },
+  { title: 'Locuință P+M', place: 'Cartier Priseaca, Târgoviște', area: '160 m²', status: 'În curs de autorizare',
+    images: ['/balcangiu.png', '/balcangiu1.png', '/balcangiu2.png', '/balcangiu3.png', '/balcangiu4.png', '/balcangiu5.png'] },
+  { title: 'Foișor hexagonal din lemn', place: 'Târgoviște', area: '12 m²', status: 'Realizat',
+    images: ['/foisor1.png', '/foisor2.png', '/foisor3.png'] },
+  { title: 'Centru de training P+1', place: 'România', status: 'Construit',
+    images: ['/centru.jpg', '/centru2.jpg', '/centru3.jpg', '/centru_training.jpg'] },
+  { title: 'Micro VI, variantă cromatică', place: 'Zona Pieței Mercur, Târgoviște', status: 'Concept',
+    images: ['/spaa.png', '/spaa1.png', '/spaa2.png', '/spaa3.png', '/spaa4.png'] },
 ];
+
+const PROJECT_SHEETS: Sheet[] = PROJECTS.map((p, k) => ({
+  id: `w-${k}`,
+  title: 'Lucrări',
+  ms: Math.min(12000, Math.max(7000, p.images.length * 2400)),
+  project: p,
+}));
+
+// Galerie: pozele se schimbă singure, cu zoom lent.
+function Gallery({ images, title }: { images: string[]; title: string }) {
+  const [k, setK] = useState(0);
+  useEffect(() => {
+    if (images.length < 2) return;
+    const t = setInterval(() => setK((v) => (v + 1) % images.length), 2400);
+    return () => clearInterval(t);
+  }, [images.length]);
+  return (
+    <div className="gal">
+      {images.map((src, j) => (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img key={src} src={src} alt={j === k ? title : ''} className={j === k ? 'on' : ''} />
+      ))}
+      <div className="dots" aria-hidden="true">
+        {images.map((src, j) => (
+          <i key={src} className={j === k ? 'on' : ''} />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 // Casa se desenează singură pe foaia de prezentare: [traseu, întârziere în secunde, cotă aurie]
 const PATHS: [string, number, boolean][] = [
@@ -67,8 +118,11 @@ export default function Kiosk() {
   const [time, setTime] = useState('');
   // Foile fixe, plus câte o foaie pentru fiecare produs activ din shop.
   const sheets = useMemo<Sheet[]>(() => {
-    const base = SHEETS.filter((x) => x.id !== 'shop' || products.length === 0);
-    return [...base, ...products.map((p) => ({ id: `p-${p.id}`, title: 'Shop 3D', ms: 8000, product: p }))];
+    const head = SHEETS.filter((x) => x.id !== 'shop');
+    const tail: Sheet[] = products.length
+      ? products.map((p) => ({ id: `p-${p.id}`, title: 'Shop 3D', ms: 8000, product: p }))
+      : SHEETS.filter((x) => x.id === 'shop');
+    return [...head, ...PROJECT_SHEETS, ...tail];
   }, [products]);
   const n = sheets.length;
   const cur = i % n;
@@ -153,7 +207,7 @@ export default function Kiosk() {
       <button className="hit left" onClick={() => go(-1)} aria-label="Foaia anterioară" />
       <button className="hit right" onClick={() => go(1)} aria-label="Foaia următoare" />
 
-      <section key={s.id} className="sheet" aria-live="polite">
+      <section key={s.id} className={`sheet${s.project ? ' full' : ''}`} aria-live="polite">
         <div className="curtain" />
         {s.id === 'brand' && (
           <div className="brandwrap">
@@ -208,17 +262,16 @@ export default function Kiosk() {
           </div>
         )}
 
-        {s.id === 'lucrari' && (
-          <div className="list">
-            <h2>Lucrări sub semnătura noastră</h2>
-            <ul>
-              {WORKS.map(([a, b], k) => (
-                <li key={a} style={{ animationDelay: `${0.7 + 0.15 * k}s` }}>
-                  <strong>{a}</strong>
-                  <span>{b}</span>
-                </li>
-              ))}
-            </ul>
+        {s.project && (
+          <div className="work">
+            <Gallery images={s.project.images} title={s.project.title} />
+            <div className="cap">
+              <h2>{s.project.title}</h2>
+              <p>{s.project.place}</p>
+              {(s.project.area || s.project.status) && (
+                <p className="meta">{[s.project.area, s.project.status].filter(Boolean).join('   ')}</p>
+              )}
+            </div>
           </div>
         )}
 
@@ -375,6 +428,20 @@ const css = `
 .ticker{position:relative;z-index:4;overflow:hidden;white-space:nowrap;background:var(--ink);border-top:1px solid rgba(26,26,26,.35);padding:1.1vmin 0;font-size:clamp(.7rem,1.7vmin,1.1rem);color:var(--concrete)}
 .ticker div{display:inline-block;padding-left:100%;animation:marq 60s linear infinite}
 .clock{margin-right:2.4vmin;color:var(--paper)}
+.sheet.full{padding:0}
+.work{position:absolute;inset:0}
+.gal{position:absolute;inset:0;background:#e9e4d8}
+.gal img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity 1s ease}
+.gal img.on{opacity:1;animation:kb2 2.8s ease-out both}
+.dots{position:absolute;right:4vmin;bottom:5vmin;display:flex;gap:.9vmin;padding:1.2vmin 1.6vmin;background:rgba(26,26,26,.6)}
+.dots i{width:3vmin;height:3px;background:rgba(255,255,255,.4)}
+.dots i.on{background:#fff}
+.cap{position:absolute;left:5vmin;bottom:5vmin;z-index:1;max-width:min(46ch,62vw);padding:3vmin 3.4vmin;background:var(--ink);
+  border:2px solid var(--paper);box-shadow:1.2vmin 1.2vmin 0 var(--gold);animation:up .8s ease .7s both}
+.cap h2{font-size:clamp(1.4rem,4.4vmin,3.6rem);line-height:1.05;letter-spacing:-.02em}
+.cap p{margin-top:1.4vmin;color:var(--concrete);font-size:clamp(.85rem,2vmin,1.4rem)}
+.cap .meta{color:var(--wood)}
+@keyframes kb2{from{transform:scale(1.1)}}
 @keyframes rise{to{transform:none}}
 @keyframes draw{to{stroke-dashoffset:0}}
 @keyframes curtain{to{transform:scaleX(0)}}
@@ -393,7 +460,7 @@ const css = `
   .block{grid-template-columns:1fr auto}.what{display:none}
 }
 @media (prefers-reduced-motion:reduce){
-  .k,.k::before,.info>*,.pic,.pic img,.k .list li{animation:none}
+  .k,.k::before,.info>*,.pic,.pic img,.k .list li,.gal img.on,.cap{animation:none}
   .brand h1 em{animation:none;transform:none}
   .draw path{animation:none;stroke-dashoffset:0}
   .list li::after{animation:none;transform:none}

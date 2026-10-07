@@ -32,12 +32,39 @@ const WORKS = [
   ['Parohia Poroinica, în execuție', 'Mătăsaru'],
 ];
 
+// Casa se desenează singură pe foaia de prezentare: [traseu, întârziere în secunde, cotă aurie]
+const PATHS: [string, number, boolean][] = [
+  ['M20 250H380', 0.7, false], ['M70 250V140H250V250', 1.0, false], ['M55 140L160 70L265 140', 1.5, false],
+  ['M250 250V170H340V250', 1.9, false], ['M250 170H340', 2.0, false], ['M200 105V70H222V120', 2.3, false],
+  ['M130 250V195H165V250', 2.2, false], ['M85 165H115V195H85Z', 2.4, false], ['M185 165H235V200H185Z', 2.5, false],
+  ['M275 195H320V225H275Z', 2.6, false], ['M70 275H340', 2.9, true], ['M70 268V282', 3.0, true],
+  ['M340 268V282', 3.0, true], ['M372 250V70', 3.1, true], ['M365 70H379', 3.2, true], ['M365 250H379', 3.2, true],
+];
+
+function Price({ value }: { value: number }) {
+  const [v, setV] = useState(0);
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) { setV(value); return; }
+    let raf = 0;
+    const t0 = performance.now();
+    const tick = (t: number) => {
+      const k = Math.min(1, (t - t0 - 700) / 1400);
+      setV(value * (1 - Math.pow(1 - Math.max(0, k), 3)));
+      if (k < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value]);
+  return <>{v.toFixed(2)} lei</>;
+}
+
 export default function Kiosk() {
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
   const [hideCursor, setHideCursor] = useState(false);
   const [products, setProducts] = useState<any[]>([]);
   const [full, setFull] = useState(false);
+  const [time, setTime] = useState('');
   // Foile fixe, plus câte o foaie pentru fiecare produs activ din shop.
   const sheets = useMemo<Sheet[]>(() => {
     const base = SHEETS.filter((x) => x.id !== 'shop' || products.length === 0);
@@ -57,6 +84,13 @@ export default function Kiosk() {
     const onChange = () => setFull(!!document.fullscreenElement);
     document.addEventListener('fullscreenchange', onChange);
     return () => document.removeEventListener('fullscreenchange', onChange);
+  }, []);
+
+  useEffect(() => {
+    const tick = () => setTime(new Date().toLocaleTimeString('ro-RO', { hour: '2-digit', minute: '2-digit' }));
+    tick();
+    const t = setInterval(tick, 15000);
+    return () => clearInterval(t);
   }, []);
 
   // Produsele active din shop, reîmprospătate la 5 minute.
@@ -120,14 +154,24 @@ export default function Kiosk() {
       <button className="hit right" onClick={() => go(1)} aria-label="Foaia următoare" />
 
       <section key={s.id} className="sheet" aria-live="polite">
+        <div className="curtain" />
         {s.id === 'brand' && (
-          <div className="brand">
-            <h1>
-              <span>Formă.</span>
-              <span>Funcție.</span>
-              <span>Spațiu.</span>
-            </h1>
-            <p>Birou de proiectare și consultanță arhitecturală, Târgoviște, Dâmbovița.</p>
+          <div className="brandwrap">
+            <div className="brand">
+              <h1>
+                {['Formă.', 'Funcție.', 'Spațiu.'].map((w, k) => (
+                  <span key={w}>
+                    <em style={{ animationDelay: `${0.7 + 0.18 * k}s` }}>{w}</em>
+                  </span>
+                ))}
+              </h1>
+              <p>Birou de proiectare și consultanță arhitecturală, Târgoviște, Dâmbovița.</p>
+            </div>
+            <svg className="draw" viewBox="0 0 400 300" fill="none" aria-hidden="true">
+              {PATHS.map(([d, delay, gold], k) => (
+                <path key={k} d={d} pathLength={1} className={gold ? 'g' : ''} style={{ animationDelay: `${delay}s` }} />
+              ))}
+            </svg>
           </div>
         )}
 
@@ -154,7 +198,7 @@ export default function Kiosk() {
             <h2>De la prima idee la autorizație</h2>
             <ol>
               {STEPS.map(([a, b], k) => (
-                <li key={a} style={{ animationDelay: `${0.15 * k}s` }}>
+                <li key={a} style={{ animationDelay: `${0.7 + 0.15 * k}s` }}>
                   <b>{k + 1}</b>
                   <strong>{a}</strong>
                   <span>{b}</span>
@@ -168,8 +212,8 @@ export default function Kiosk() {
           <div className="list">
             <h2>Lucrări sub semnătura noastră</h2>
             <ul>
-              {WORKS.map(([a, b]) => (
-                <li key={a}>
+              {WORKS.map(([a, b], k) => (
+                <li key={a} style={{ animationDelay: `${0.7 + 0.15 * k}s` }}>
                   <strong>{a}</strong>
                   <span>{b}</span>
                 </li>
@@ -192,7 +236,7 @@ export default function Kiosk() {
               <p className="cat">{s.product.categorie || 'Digital'}</p>
               <h2>{s.product.nume}</h2>
               <p className="desc">{s.product.descriere_scurta || s.product.descriere}</p>
-              <p className="price">{Number(s.product.pret).toFixed(2)} lei</p>
+              <p className="price"><Price value={Number(s.product.pret) || 0} /></p>
               <div className="url">proarh4d.ro/shop</div>
             </div>
           </div>
@@ -207,6 +251,12 @@ export default function Kiosk() {
         )}
       </section>
 
+      <div className="ticker" aria-hidden="true">
+        <div>
+          {'Proiectare rezidențială   Randări 3D   Consultanță nZEB   Autorizare   Execuție   Modele 3D în shop   '.repeat(2)}
+        </div>
+      </div>
+
       <footer className="block">
         <div className="who">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -216,6 +266,7 @@ export default function Kiosk() {
         </div>
         <div className="what">{s.title}</div>
         <div className="num">
+          <b className="clock">{time}</b>
           Foaia {cur + 1} din {n}
           {paused ? ' · pauză' : ''}
         </div>
@@ -239,9 +290,9 @@ export default function Kiosk() {
 const css = `
 .k{--ink:#fbf9f4;--paper:#1a1a1a;--concrete:#5f5b53;--wood:#8f7125;--gold:#bfa054;
   position:fixed;inset:0;background:var(--ink);color:var(--paper);overflow:hidden;
-  font-family:"DM Mono",ui-monospace,monospace;display:grid;grid-template-rows:1fr auto;
+  font-family:"DM Mono",ui-monospace,monospace;display:grid;grid-template-rows:1fr auto auto;
   background-image:linear-gradient(rgba(26,26,26,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(26,26,26,.045) 1px,transparent 1px);
-  background-size:6vmin 6vmin}
+  background-size:6vmin 6vmin;animation:pan 24s linear infinite}
 .k.nocursor{cursor:none}
 .k h1,.k h2,.k p,.k ol,.k ul{margin:0;padding:0}
 .fs{position:fixed;top:2vmin;right:2vmin;z-index:6;padding:.7em 1.2em;background:var(--ink);color:var(--paper);
@@ -252,11 +303,11 @@ const css = `
 .hit{position:absolute;top:0;bottom:0;width:30%;z-index:3;background:none;border:0;cursor:inherit}
 .hit.left{left:0}.hit.right{right:0}
 .hit:focus-visible{outline:2px solid var(--wood);outline-offset:-4px}
-.sheet{position:relative;padding:7vmin 8vmin;display:flex;min-height:0;animation:in .5s ease both}
+.sheet{position:relative;padding:7vmin 8vmin;display:flex;min-height:0;overflow:hidden}
 @keyframes in{from{opacity:0}to{opacity:1}}
 
 .brand{align-self:center}
-.brand h1{font-weight:700;font-size:clamp(3rem,15vmin,12rem);line-height:.9;letter-spacing:-.04em;display:flex;flex-direction:column}
+.brand h1{font-weight:700;font-size:clamp(3rem,13vmin,10rem);line-height:.9;letter-spacing:-.04em;display:flex;flex-direction:column}
 .brand h1 span:nth-child(2){padding-left:.5em}
 .brand h1 span:nth-child(3){padding-left:1em}
 .brand p{margin-top:5vmin;max-width:34ch;font-size:clamp(1rem,2.6vmin,2rem);color:var(--concrete);line-height:1.35}
@@ -306,12 +357,48 @@ const css = `
 .info .desc{margin-top:3vmin;color:var(--concrete);font-size:clamp(.95rem,2.3vmin,1.7rem);line-height:1.45;max-width:36ch;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .info .price{margin-top:4vmin;font-size:clamp(1.6rem,5.5vmin,4.5rem);font-weight:700}
 .info .url{margin-top:4vmin;font-size:clamp(1rem,3vmin,2.4rem);padding:1.6vmin 2.4vmin}
+.k::before{content:'';position:absolute;inset:-20%;pointer-events:none;background:radial-gradient(ellipse 40% 32% at 22% 30%,rgba(191,160,84,.17),transparent 70%);animation:drift 26s ease-in-out infinite alternate}
+.curtain{position:absolute;inset:0;z-index:2;pointer-events:none;background:var(--gold);transform-origin:right;animation:curtain .9s cubic-bezier(.7,0,.2,1) forwards}
+.brandwrap{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:4vmin;width:100%;align-items:center}
+.brand h1 span{display:block;overflow:hidden;padding:.1em 0 .16em}
+.brand h1 em{display:block;font-style:normal;transform:translateY(115%);animation:rise 1s cubic-bezier(.2,.8,.2,1) forwards}
+.draw{width:100%;max-height:62vh;overflow:visible}
+.draw path{stroke:var(--paper);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1.1s ease forwards}
+.draw path.g{stroke:var(--gold)}
+.k .list li{position:relative;border-bottom:0;animation:in2 .7s ease both}
+.list li::after{content:'';position:absolute;left:0;right:0;bottom:0;height:1px;background:var(--paper);opacity:.4;transform:scaleX(0);transform-origin:left;animation:grow .9s ease forwards;animation-delay:inherit}
+.pic{animation:sh 1s ease .6s both}
+.pic img{animation:kb 14s ease-out both}
+.info>*{animation:up .8s ease both}
+.info>:nth-child(1){animation-delay:.7s}.info>:nth-child(2){animation-delay:.85s}.info>:nth-child(3){animation-delay:1s}
+.info>:nth-child(4){animation-delay:1.15s}.info>:nth-child(5){animation-delay:1.3s}
+.ticker{position:relative;z-index:4;overflow:hidden;white-space:nowrap;background:var(--ink);border-top:1px solid rgba(26,26,26,.35);padding:1.1vmin 0;font-size:clamp(.7rem,1.7vmin,1.1rem);color:var(--concrete)}
+.ticker div{display:inline-block;padding-left:100%;animation:marq 60s linear infinite}
+.clock{margin-right:2.4vmin;color:var(--paper)}
+@keyframes rise{to{transform:none}}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes curtain{to{transform:scaleX(0)}}
+@keyframes in2{from{opacity:0;transform:translateX(-3vmin)}}
+@keyframes grow{to{transform:scaleX(1)}}
+@keyframes kb{from{transform:scale(1.16)}to{transform:scale(1)}}
+@keyframes up{from{opacity:0;transform:translateY(2.5vmin)}}
+@keyframes sh{from{box-shadow:0 0 0 var(--gold)}}
+@keyframes marq{to{transform:translateX(-100%)}}
+@keyframes drift{to{transform:translate(8%,10%)}}
+@keyframes pan{to{background-position:6vmin 6vmin,6vmin 6vmin}}
 @media (max-aspect-ratio:1/1){
-  .wipe,.prod{grid-template-columns:1fr;gap:4vmin}.wipe h2{max-width:none}
+  .wipe,.prod,.brandwrap{grid-template-columns:1fr;gap:4vmin}
+  .draw{max-height:28vh}.wipe h2{max-width:none}
   .list ol li{grid-template-columns:5vmin 1fr}.list ol li span{grid-column:2}
   .block{grid-template-columns:1fr auto}.what{display:none}
 }
 @media (prefers-reduced-motion:reduce){
+  .k,.k::before,.info>*,.pic,.pic img,.k .list li{animation:none}
+  .brand h1 em{animation:none;transform:none}
+  .draw path{animation:none;stroke-dashoffset:0}
+  .list li::after{animation:none;transform:none}
+  .ticker div{animation:none;padding-left:0}
+  .curtain{display:none}
   .sheet,.list li{animation:none}
   .stage .top{animation:none;clip-path:inset(0 50% 0 0)}
   .stage .line{animation:none;left:50%}

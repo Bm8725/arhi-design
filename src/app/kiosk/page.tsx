@@ -1,5 +1,5 @@
 'use client';
-// Plasează fișierul în: app/kiosk/page.jsx  ->  proarh4d.ro/kiosk
+// Plasează fișierul în: src/app/kiosk/page.tsx  ->  proarh4d.ro/kiosk
 // Produsele active din shop vin din Supabase (tabelul "products"), la fel ca în app/shop/page.
 // Imaginile /plan.webp și /design.webp sunt cele din folderul public al site-ului.
 // Comenzi: săgeți sau click stânga/dreapta = schimbă foaia, Spațiu = pauză, F sau butonul = ecran complet.
@@ -7,7 +7,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
-const SHEETS = [
+type Sheet = { id: string; title: string; ms: number; product?: any };
+
+const SHEETS: Sheet[] = [
   { id: 'brand', title: 'Prezentare', ms: 8000 },
   { id: 'wipe', title: 'De la schiță la randare', ms: 10000 },
   { id: 'servicii', title: 'Servicii', ms: 9000 },
@@ -34,17 +36,17 @@ export default function Kiosk() {
   const [i, setI] = useState(0);
   const [paused, setPaused] = useState(false);
   const [hideCursor, setHideCursor] = useState(false);
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [full, setFull] = useState(false);
   // Foile fixe, plus câte o foaie pentru fiecare produs activ din shop.
-  const sheets = useMemo(() => {
+  const sheets = useMemo<Sheet[]>(() => {
     const base = SHEETS.filter((x) => x.id !== 'shop' || products.length === 0);
     return [...base, ...products.map((p) => ({ id: `p-${p.id}`, title: 'Shop 3D', ms: 8000, product: p }))];
   }, [products]);
   const n = sheets.length;
   const cur = i % n;
 
-  const go = useCallback((d) => setI((v) => (v + d + n) % n), [n]);
+  const go = useCallback((d: number) => setI((v) => (v + d + n) % n), [n]);
 
   const toggleFull = useCallback(() => {
     if (document.fullscreenElement) document.exitFullscreen();
@@ -82,13 +84,13 @@ export default function Kiosk() {
   }, [cur, paused, go, sheets]);
 
   useEffect(() => {
-    const onKey = (e) => {
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === 'ArrowRight') go(1);
       else if (e.key === 'ArrowLeft') go(-1);
       else if (e.key === ' ') { e.preventDefault(); setPaused((p) => !p); }
       else if (e.key.toLowerCase() === 'f') toggleFull();
     };
-    let idle;
+    let idle: ReturnType<typeof setTimeout> | undefined;
     const onMove = () => {
       setHideCursor(false);
       clearTimeout(idle);

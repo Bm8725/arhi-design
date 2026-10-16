@@ -644,6 +644,7 @@ const css = `
 .tag{position:absolute;bottom:2vmin;padding:.4em .8em;background:var(--ink);font-size:clamp(.75rem,1.8vmin,1.2rem)}
 .t1{left:2vmin}.t2{right:2vmin}
 
+
 /* Servicii */
 .list{align-self:center;width:100%}
 .list h2{max-width:20ch;margin-bottom:5vmin}

@@ -4,7 +4,7 @@
  * author: Eng. Balcangiu Marius
  * design: proarh4d.ro
  * compiled for: Proarh.4d design 2026 | www.proarh4d.ro, cloud hosting: Vercel, domain: proarh4d.ro
- * copyright: © 2026 Proarh.4d birou de arhitectura. All rights reserved.
+ * copyright: © 2026 Proarh.4d birou de arhitectura. Arh. Bogdan Sotingeanu All rights reserved.
  * 
  * This is the root layout file for the Proarh.4d architecture design studio website. It sets up the global HTML structure, metadata for SEO and social sharing, and includes a minimalist service worker registration to enable PWA installation prompts. The layout uses Google Fonts (Geist Sans and Geist Mono) and applies global styles from globals.css. The body of the document is styled with Tailwind CSS classes to ensure a consistent look across the site.
  * 

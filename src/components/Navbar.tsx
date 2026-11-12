@@ -262,7 +262,7 @@ export default function Navbar() {
       subOptions: [
      
         { name: 'Proiectare & Arhitectură', href: '/proiectare-arhitectura' },
-        { name: 'Randări 3D ', href: '/randari-3d' },
+       
 
       ]
     },

@@ -12,7 +12,7 @@ const COMPANY = {
   site: 'proarh4d.ro',
   cui: '36685509',
   regCom: 'J15/1090/28/10/2016',
-
+  email: 'proiectearh4d@gmail.com', // 
 }
 const LAST_UPDATE = 'noiembrie 2026'
 

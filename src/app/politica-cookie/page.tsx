@@ -6,14 +6,13 @@ import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import CookieBanner from "@/components/Cookiebanner";
 
-/* DATE OPERATOR – aceleași ca în celelalte pagini legale; completează înainte de publicare */
 const COMPANY = {
   name: 'PROIECTEARH 4D S.R.L.',
   brand: 'PROARH.4D',
   site: 'proarh4d.ro',
   cui: '36685509',
   regCom: 'J15/1090/28/10/2016',
-  email: '[COMPLETEAZĂ – e-mail contact]',
+  email: 'proiectearh4d@gmail.com', // 
 }
 const LAST_UPDATE = 'noiembrie 2026'
 

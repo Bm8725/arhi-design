@@ -1,23 +1,30 @@
 /**
  * components/WhatsAppWidget.tsx
- * Widget de contact WhatsApp – PROARH.4D (PROIECTEARH 4D S.R.L.)
+ * Widget de contact PROARH.4D (PROIECTEARH 4D S.R.L.) cu Arhi AI integrat.
  *
- * Ce s-a schimbat față de versiunea veche:
- *  - mesajele nu mai afirmă „am preluat mesajul” (nimic nu pleacă până nu apeși Trimite în WhatsApp)
- *  - program într-o singură constantă (OPEN/CLOSE), calculat pe fusul Europe/Bucharest
- *  - fără avatar de la terți (nu se mai trimite IP-ul către dicebear) – inițiale locale
- *  - notă GDPR înainte de deschiderea WhatsApp
- *  - topicuri rapide, ora reală a mesajului, mesaj diferit în afara programului
- *  - Escape închide, focus gestionat, aria-*, fără elemente focusabile când e închis
- *  - sunet dezactivat implicit (buton de pornire în header)
- *  - bula se închide pentru sesiune (sessionStorage, cheia 'wa-widget-state')
- *  - peste bannerul de cookie când chatul e deschis
+ * Cum funcționează:
+ *  - Utilizator AUTENTIFICAT (Supabase): conversează cu Arhi AI direct în widget
+ *    (același /api/chat ca pagina /arhi-chat). Oricând poate trece la un om pe WhatsApp,
+ *    cu întrebarea lui precompletată.
+ *  - Vizitator NEAUTENTIFICAT: fluxul clasic WhatsApp (mesaj precompletat, trimis din aplicație)
+ *    + invitație de autentificare pentru răspunsuri instant de la Arhi AI.
+ *  - Deschidere din afară (ex. buton pe pagina Arhi AI):
+ *      window.dispatchEvent(new Event('open-whatsapp-widget'))
+ *
+ * Transparență: răspunsurile AI sunt marcate ca „asistent virtual” și au notă de avertizare.
+ * IMPORTANT: /api/chat trebuie să verifice sesiunea și să limiteze cererile pe server
+ * (blocarea din interfață nu protejează cheia API).
  */
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
-import { X, Send, CheckCheck, ChevronRight, ChevronLeft, Phone, Volume2, VolumeX } from 'lucide-react';
+import {
+  X, Send, CheckCheck, ChevronRight, ChevronLeft, Phone, Volume2, VolumeX, Wand2, RotateCcw,
+} from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+import { streamChat, chatErrorText, newId, type ChatMessage } from '@/lib/arhi-chat';
+import ArhiMessage from '@/components/ArhiMessage';
 
 /* ============ SETĂRI ============ */
 const OPEN = 9;   // ora de deschidere (România)
@@ -25,6 +32,9 @@ const CLOSE = 21; // ora de închidere (România)
 const SCHEDULE_LABEL = `Lun–Vin, ${String(OPEN).padStart(2, '0')}:00–${CLOSE}:00`;
 const STORAGE_KEY = 'wa-widget-state';
 const MAX_LEN = 500;
+// true  = Arhi AI în widget doar pentru utilizatori autentificați (ca pe pagina /arhi-chat)
+// false = Arhi AI pentru toți vizitatorii (atunci /api/chat trebuie să permită cereri anonime, cu limită pe IP)
+const AI_REQUIRES_LOGIN = true;
 
 const architects = [
   {
@@ -119,6 +129,16 @@ const Avatar = ({ initials, size = 40 }: { initials: string; size?: number }) =>
   </div>
 );
 
+const AiAvatar = ({ size = 36 }: { size?: number }) => (
+  <div
+    style={{ width: size, height: size }}
+    className="rounded-full bg-gradient-to-br from-amber-500 to-amber-700 text-white flex items-center justify-center shrink-0"
+    aria-hidden="true"
+  >
+    <Wand2 size={Math.round(size * 0.46)} />
+  </div>
+);
+
 /* ============ COMPONENTA ============ */
 export default function WhatsAppWidget() {
   const [step, setStep] = useState<ChatStep>('idle');
@@ -132,17 +152,52 @@ export default function WhatsAppWidget() {
   const [showReply, setShowReply] = useState(false);
   const [selectedArchitect, setSelectedArchitect] = useState<Architect>(architects[0]);
 
+  // --- AI ---
+  const [userId, setUserId] = useState<string | null>(null);
+  const [aiMessages, setAiMessages] = useState<ChatMessage[]>([]);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const fabRef = useRef<HTMLButtonElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const multiple = architects.length > 1;
   const isOpen = step !== 'idle';
+  const aiEnabled = AI_REQUIRES_LOGIN ? !!userId : true;
 
   const clearTimers = () => {
     timers.current.forEach(clearTimeout);
     timers.current = [];
   };
 
-  // Disponibilitate (după montare, ca să nu apară diferențe la hidratare)
+  // Autentificare (Supabase) – determină dacă AI-ul este disponibil în widget
+  useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
+    try {
+      const supabase = createClient();
+      supabase.auth
+        .getSession()
+        .then(({ data }) => setUserId(data.session?.user?.id ?? null))
+        .catch(() => setUserId(null));
+      const {
+        data: { subscription },
+      } = supabase.auth.onAuthStateChange((_event, session) => {
+        setUserId(session?.user?.id ?? null);
+        if (!session) {
+          abortRef.current?.abort();
+          setAiMessages([]);
+          setAiLoading(false);
+        }
+      });
+      unsubscribe = () => subscription.unsubscribe();
+    } catch {
+      setUserId(null);
+    }
+    return () => unsubscribe?.();
+  }, []);
+
+  // Disponibilitate om (după montare, ca să nu apară diferențe la hidratare)
   useEffect(() => {
     const update = () => setAvailable(isAvailableNow());
     update();
@@ -172,6 +227,12 @@ export default function WhatsAppWidget() {
     }
   };
 
+  // Scroll automat în conversație
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+  }, [aiMessages, showReply, showTyping, sentMessage, aiError, step]);
+
   // Blochează scroll-ul paginii când chatul e full-screen pe mobil
   useEffect(() => {
     if (isOpen && window.innerWidth < 640) document.body.style.overflow = 'hidden';
@@ -183,6 +244,9 @@ export default function WhatsAppWidget() {
 
   const handleClose = useCallback(() => {
     clearTimers();
+    abortRef.current?.abort();
+    setAiLoading(false);
+    setAiMessages((prev) => prev.filter((m) => m.content !== ''));
     setStep('idle');
     setShowTyping(false);
     setShowReply(false);
@@ -201,21 +265,89 @@ export default function WhatsAppWidget() {
     return () => window.removeEventListener('keydown', onKey);
   }, [isOpen, handleClose]);
 
-  useEffect(() => () => clearTimers(), []);
+  useEffect(
+    () => () => {
+      clearTimers();
+      abortRef.current?.abort();
+    },
+    []
+  );
 
-  const openWidget = () => {
-    dismissBubble();
+  const openWidget = useCallback(() => {
+    setShowBubble(false);
+    try {
+      sessionStorage.setItem(STORAGE_KEY, 'bubble-dismissed');
+    } catch {
+      /* storage indisponibil */
+    }
     setSelectedArchitect(architects[0]);
-    setStep(multiple ? 'list' : 'chat');
-  };
+    setStep(architects.length > 1 ? 'list' : 'chat');
+  }, []);
+
+  // Deschidere din exterior
+  useEffect(() => {
+    window.addEventListener('open-whatsapp-widget', openWidget);
+    return () => window.removeEventListener('open-whatsapp-widget', openWidget);
+  }, [openWidget]);
 
   const handleSelectArchitect = (arch: Architect) => {
     setSelectedArchitect(arch);
     setStep('chat');
   };
 
+  /* ---------- AI ---------- */
+  const runAi = async (history: ChatMessage[]) => {
+    abortRef.current?.abort();
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
+
+    const assistantId = newId();
+    setAiError(null);
+    setAiLoading(true);
+    setAiMessages([...history, { id: assistantId, role: 'assistant', content: '' }]);
+    if (soundOn) playPop(700);
+
+    try {
+      await streamChat(history, ctrl.signal, (full) =>
+        setAiMessages((prev) => prev.map((m) => (m.id === assistantId ? { ...m, content: full } : m)))
+      );
+      if (soundOn) playPop(480);
+    } catch (e) {
+      if (ctrl.signal.aborted) return;
+      setAiMessages((prev) => prev.filter((m) => m.id !== assistantId || m.content !== ''));
+      setAiError(chatErrorText(e));
+    } finally {
+      if (abortRef.current === ctrl) setAiLoading(false);
+    }
+  };
+
+  const retryAi = () => {
+    const base = aiMessages.filter((m) => m.content !== '');
+    if (base.length === 0 || base[base.length - 1].role !== 'user') return;
+    runAi(base);
+  };
+
+  const resetAi = () => {
+    abortRef.current?.abort();
+    setAiMessages([]);
+    setAiError(null);
+    setAiLoading(false);
+  };
+
+  /* ---------- Trimitere ---------- */
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Autentificat -> Arhi AI
+    if (aiEnabled) {
+      const text = userMessage.trim();
+      if (!text || aiLoading) return;
+      setUserMessage('');
+      runAi([...aiMessages.filter((m) => m.content !== ''), { id: newId(), role: 'user', content: text }]);
+      return;
+    }
+
+    // Vizitator -> flux WhatsApp
     const text = userMessage.trim() !== '' ? userMessage.trim() : defaultText;
     setSentMessage(text);
     setSentTime(nowLabel());
@@ -247,9 +379,9 @@ export default function WhatsAppWidget() {
     }
   };
 
-  const handleOpenWhatsApp = () => {
+  const openWhatsAppWith = (text: string) => {
     const page = typeof window !== 'undefined' ? window.location.pathname : '';
-    const body = `${sentMessage || defaultText}\n\n(Pagina: ${page})`;
+    const body = `${text}\n\n(Pagina: ${page})`;
     window.open(
       `https://wa.me/${selectedArchitect.phone}?text=${encodeURIComponent(body)}`,
       '_blank',
@@ -257,7 +389,20 @@ export default function WhatsAppWidget() {
     );
   };
 
+  const handleOpenWhatsApp = () => openWhatsAppWith(sentMessage || defaultText);
+
+  // Predare de la AI către un om: întrebarea utilizatorului merge precompletată
+  const handoffToHuman = () => {
+    const lastUser = [...aiMessages].reverse().find((m) => m.role === 'user')?.content;
+    openWhatsAppWith(
+      lastUser
+        ? `Bună ziua, am discutat cu asistentul virtual și aș dori să vorbesc cu un consultant. Întrebarea mea: ${lastUser.slice(0, 400)}`
+        : defaultText
+    );
+  };
+
   const showBack = step === 'redirect' || (step === 'chat' && multiple);
+  const hasAiConversation = aiEnabled && aiMessages.length > 0;
 
   return (
     <div
@@ -302,11 +447,13 @@ export default function WhatsAppWidget() {
           <button
             onClick={openWidget}
             className="block w-full text-left px-4 py-3 rounded-2xl rounded-br-none"
-            aria-label="Deschide conversația WhatsApp"
+            aria-label="Deschide conversația"
           >
             <p className="text-sm text-neutral-800 font-medium leading-snug">Salutare! 👋 Vă putem ajuta?</p>
             <p className="text-xs text-neutral-500 mt-1 leading-relaxed">
-              {available
+              {aiEnabled
+                ? 'Întrebați-l pe Arhi AI sau scrieți-ne pe WhatsApp.'
+                : available
                 ? 'Suntem online. Scrieți-ne pe WhatsApp.'
                 : `Răspundem pe WhatsApp ${SCHEDULE_LABEL}.`}
             </p>
@@ -334,13 +481,13 @@ export default function WhatsAppWidget() {
       <div
         id="wa-chat-window"
         role="dialog"
-        aria-label="Conversație WhatsApp"
+        aria-label="Conversație"
         aria-hidden={!isOpen}
         className={`
           fixed inset-0 rounded-none
           sm:absolute sm:inset-auto sm:bottom-16 sm:right-0 sm:top-auto
           sm:w-[380px] sm:rounded-2xl
-          w-auto max-h-none sm:max-h-[580px]
+          w-auto max-h-none sm:max-h-[600px] sm:h-[600px]
           bg-white border-0 sm:border sm:border-black/10 overflow-hidden
           shadow-[0_20px_60px_rgba(0,0,0,0.25)]
           transition-[opacity,transform,visibility] duration-[420ms] ease-[cubic-bezier(0.16,1,0.3,1)] origin-bottom-right
@@ -366,17 +513,25 @@ export default function WhatsAppWidget() {
             <div className="w-9 h-9 rounded-full bg-white/15 shrink-0 flex items-center justify-center text-white overflow-hidden">
               {step === 'list' ? (
                 <WhatsAppIcon size={18} />
+              ) : aiEnabled && step === 'chat' ? (
+                <AiAvatar size={36} />
               ) : (
                 <Avatar initials={selectedArchitect.initials} size={36} />
               )}
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold text-white truncate">
-                {step === 'list' ? 'Alegeți un consultant' : selectedArchitect.name}
+                {step === 'list'
+                  ? 'Alegeți un consultant'
+                  : aiEnabled && step === 'chat'
+                  ? 'Arhi AI'
+                  : selectedArchitect.name}
               </p>
               <p className="text-[11px] text-emerald-100/90 mt-0.5 truncate">
                 {step === 'list'
                   ? 'PROARH.4D Studio'
+                  : aiEnabled && step === 'chat'
+                  ? 'Asistent virtual · răspunsuri automate'
                   : available
                   ? '● Online acum'
                   : `Program: ${SCHEDULE_LABEL}`}
@@ -384,6 +539,16 @@ export default function WhatsAppWidget() {
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">
+            {step === 'chat' && hasAiConversation && (
+              <button
+                onClick={resetAi}
+                className="p-1.5 rounded-full hover:bg-white/15 text-white/80 hover:text-white transition-colors"
+                aria-label="Conversație nouă"
+                title="Conversație nouă"
+              >
+                <RotateCcw size={15} />
+              </button>
+            )}
             {(step === 'chat' || step === 'redirect') && (
               <>
                 <button
@@ -415,7 +580,7 @@ export default function WhatsAppWidget() {
           </div>
         </div>
 
-        {/* LISTA CONSULTANȚI (apare doar dacă există mai mulți) */}
+        {/* LISTA CONSULTANȚI (doar dacă există mai mulți) */}
         {step === 'list' && (
           <div className="wa-animated-bg p-3 flex flex-col gap-2 overflow-y-auto flex-1">
             <p className="text-[11px] text-neutral-500 px-1 pb-1 uppercase tracking-widest">Echipa noastră</p>
@@ -451,21 +616,37 @@ export default function WhatsAppWidget() {
         {/* CHAT */}
         {(step === 'chat' || step === 'redirect') && (
           <>
-            <div className="wa-animated-bg px-4 py-3 flex flex-col gap-3 overflow-y-auto flex-1" style={{ minHeight: 200 }}>
-              {/* Bun venit, în funcție de program */}
+            <div
+              ref={scrollRef}
+              className="wa-animated-bg px-4 py-3 flex flex-col gap-3 overflow-y-auto flex-1"
+              style={{ minHeight: 200 }}
+              role="log"
+              aria-live="polite"
+            >
+              {/* Bun venit */}
               <div className="wa-msg-anim self-start max-w-[88%]">
                 <div className="bg-white rounded-2xl rounded-tl-none px-3 py-2 shadow-sm">
-                  <p className="text-sm text-neutral-700 leading-relaxed">
-                    Bună! 👋 Sunt {selectedArchitect.name.replace('Arh. ', '')}.{' '}
-                    {available
-                      ? 'Cu ce vă putem ajuta?'
-                      : `Momentan suntem offline (${SCHEDULE_LABEL}). Lăsați-ne mesajul și vă răspundem în următoarea zi lucrătoare.`}
-                  </p>
+                  {aiEnabled && step === 'chat' ? (
+                    <>
+                      <p className="text-[11px] uppercase tracking-wider text-amber-700/80 mb-1">Arhi AI · asistent virtual</p>
+                      <p className="text-sm text-neutral-700 leading-relaxed">
+                        Bună! 👋 Vă pot ajuta cu întrebări despre urbanism, autorizații și serviciile biroului.
+                        Pentru ceva concret, vă pun în legătură cu un consultant pe WhatsApp.
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-neutral-700 leading-relaxed">
+                      Bună! 👋 Sunt {selectedArchitect.name.replace('Arh. ', '')}.{' '}
+                      {available
+                        ? 'Cu ce vă putem ajuta?'
+                        : `Momentan suntem offline (${SCHEDULE_LABEL}). Lăsați-ne mesajul și vă răspundem în următoarea zi lucrătoare.`}
+                    </p>
+                  )}
                 </div>
               </div>
 
-              {/* Topicuri rapide */}
-              {step === 'chat' && (
+              {/* Topicuri rapide (doar înainte de prima întrebare) */}
+              {step === 'chat' && aiMessages.length === 0 && (
                 <div className="wa-msg-anim self-start max-w-[92%] flex flex-wrap gap-1.5" style={{ animationDelay: '100ms' }}>
                   {topics.map((t) => (
                     <button
@@ -480,9 +661,27 @@ export default function WhatsAppWidget() {
                 </div>
               )}
 
+              {/* Invitație de autentificare pentru AI (vizitatori) */}
+              {step === 'chat' && !aiEnabled && AI_REQUIRES_LOGIN && (
+                <div className="wa-msg-anim self-start max-w-[92%]" style={{ animationDelay: '160ms' }}>
+                  <div className="bg-white/90 border border-amber-600/25 rounded-2xl px-3 py-2 shadow-sm">
+                    <p className="text-xs text-neutral-700 leading-relaxed">
+                      <strong>Răspunsuri instant?</strong> Autentificați-vă și puteți discuta cu Arhi AI, asistentul nostru virtual.
+                    </p>
+                    <Link
+                      href="/login"
+                      onClick={handleClose}
+                      className="inline-block mt-1.5 text-xs font-semibold text-amber-800 underline underline-offset-2 hover:text-amber-900"
+                    >
+                      Autentificare →
+                    </Link>
+                  </div>
+                </div>
+              )}
+
               {/* Linkuri rapide */}
-              {step === 'chat' && (
-                <div className="wa-msg-anim self-start max-w-[92%]" style={{ animationDelay: '180ms' }}>
+              {step === 'chat' && aiMessages.length === 0 && (
+                <div className="wa-msg-anim self-start max-w-[92%]" style={{ animationDelay: '220ms' }}>
                   <p className="text-[11px] text-neutral-500 mb-1 ml-1">Sau vizitați:</p>
                   <div className="flex flex-wrap gap-1.5">
                     {quickLinks.map((link) => (
@@ -499,8 +698,55 @@ export default function WhatsAppWidget() {
                 </div>
               )}
 
-              {/* Mesajul scris de utilizator */}
-              {sentMessage !== '' && (
+              {/* ----- CONVERSAȚIA CU AI ----- */}
+              {aiEnabled && step === 'chat' &&
+                aiMessages.map((m) =>
+                  m.role === 'user' ? (
+                    <div key={m.id} className="wa-msg-anim self-end max-w-[88%]">
+                      <div className="bg-[#dcf8c6] rounded-2xl rounded-tr-none px-3 py-2 shadow-sm">
+                        <p className="text-sm text-neutral-800 leading-relaxed break-words whitespace-pre-wrap">{m.content}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div key={m.id} className="wa-msg-anim self-start max-w-[92%]">
+                      <div className="bg-white rounded-2xl rounded-tl-none px-3 py-2 shadow-sm text-sm text-neutral-700 leading-relaxed">
+                        {m.content ? (
+                          <ArhiMessage content={m.content} />
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 py-1" aria-label="Arhi scrie">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-600/70 animate-bounce motion-reduce:animate-none" style={{ animationDelay: '0ms' }} />
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-600/70 animate-bounce motion-reduce:animate-none" style={{ animationDelay: '150ms' }} />
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-600/70 animate-bounce motion-reduce:animate-none" style={{ animationDelay: '300ms' }} />
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )
+                )}
+
+              {aiEnabled && step === 'chat' && aiError && (
+                <div className="wa-msg-anim self-start max-w-[92%]" role="alert">
+                  <div className="bg-red-50 border border-red-200 rounded-2xl px-3 py-2">
+                    <p className="text-xs text-red-800 leading-relaxed">{aiError}</p>
+                    <button
+                      onClick={retryAi}
+                      className="mt-1 text-xs font-semibold text-red-900 underline underline-offset-2"
+                    >
+                      Reîncearcă
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {aiEnabled && step === 'chat' && hasAiConversation && !aiLoading && (
+                <p className="text-[11px] text-neutral-500 text-center px-3 leading-relaxed">
+                  Răspunsurile sunt generate automat, au caracter orientativ și pot conține erori. Nu înlocuiesc
+                  consultanța unui specialist.
+                </p>
+              )}
+
+              {/* ----- FLUXUL WHATSAPP (vizitatori) ----- */}
+              {!aiEnabled && sentMessage !== '' && (
                 <div className="wa-msg-anim self-end max-w-[88%]">
                   <div className="bg-[#dcf8c6] rounded-2xl rounded-tr-none px-3 py-2 shadow-sm">
                     <p className="text-sm text-neutral-800 leading-relaxed break-words">{sentMessage}</p>
@@ -512,7 +758,7 @@ export default function WhatsAppWidget() {
                 </div>
               )}
 
-              {showTyping && (
+              {!aiEnabled && showTyping && (
                 <div className="wa-msg-anim self-start" aria-live="polite">
                   <div className="bg-white rounded-2xl rounded-tl-none px-4 py-3 flex items-center gap-1.5 shadow-sm">
                     <span className="sr-only">Se pregătește răspunsul</span>
@@ -523,8 +769,7 @@ export default function WhatsAppWidget() {
                 </div>
               )}
 
-              {/* Mesaj automat + acțiuni (onest: mesajul nu a fost încă trimis) */}
-              {showReply && (
+              {!aiEnabled && showReply && (
                 <div className="wa-msg-anim self-start max-w-[92%] flex flex-col gap-2" aria-live="polite">
                   <div className="bg-white rounded-2xl rounded-tl-none px-3 py-2 shadow-sm">
                     <p className="text-[11px] uppercase tracking-wider text-neutral-400 mb-1">Mesaj automat</p>
@@ -565,9 +810,38 @@ export default function WhatsAppWidget() {
               )}
             </div>
 
+            {/* BARA DE PREDARE CĂTRE UN OM (doar în conversația AI) */}
+            {aiEnabled && step === 'chat' && (
+              <div className="px-3 pt-2 bg-neutral-50 border-t border-black/5 shrink-0">
+                <button
+                  onClick={handoffToHuman}
+                  className="w-full flex items-center justify-center gap-2 bg-white hover:bg-emerald-50 border border-emerald-600/30 text-emerald-800 text-xs font-semibold py-2 px-3 rounded-xl transition-colors"
+                >
+                  <WhatsAppIcon size={13} />
+                  Preferați un om? Continuați pe WhatsApp
+                </button>
+                <p className="text-[11px] text-neutral-500 leading-relaxed mt-1.5 px-1">
+                  Prin deschiderea WhatsApp, conversația continuă pe Meta. Datele sunt prelucrate de PROIECTEARH 4D S.R.L.,{' '}
+                  <Link
+                    href="/politica-confidentialitate"
+                    onClick={handleClose}
+                    className="underline underline-offset-2 hover:text-neutral-800"
+                  >
+                    detalii
+                  </Link>
+                  .
+                </p>
+              </div>
+            )}
+
             {/* INPUT */}
             {step === 'chat' && (
-              <form onSubmit={handleSendMessage} className="px-3 py-2.5 bg-neutral-50 border-t border-black/5 flex items-center gap-2 shrink-0">
+              <form
+                onSubmit={handleSendMessage}
+                className={`px-3 py-2.5 bg-neutral-50 flex items-center gap-2 shrink-0 ${
+                  aiEnabled ? '' : 'border-t border-black/5'
+                }`}
+              >
                 <label htmlFor="wa-input" className="sr-only">Mesajul dvs.</label>
                 <input
                   id="wa-input"
@@ -575,15 +849,17 @@ export default function WhatsAppWidget() {
                   value={userMessage}
                   onChange={(e) => setUserMessage(e.target.value)}
                   maxLength={MAX_LEN}
-                  placeholder="Scrieți un mesaj..."
+                  placeholder={aiEnabled ? 'Întrebați-l pe Arhi...' : 'Scrieți un mesaj...'}
                   autoFocus
                   autoComplete="off"
-                  className="flex-1 min-w-0 bg-white border border-black/10 rounded-full px-4 py-2.5 text-base sm:text-sm text-neutral-800 placeholder-neutral-400 focus:outline-none focus:border-emerald-500/60 transition-colors"
+                  disabled={aiEnabled && aiLoading}
+                  className="flex-1 min-w-0 bg-white border border-black/10 rounded-full px-4 py-2.5 text-base sm:text-sm text-neutral-800 placeholder-neutral-400 focus:outline-none focus:border-emerald-500/60 transition-colors disabled:opacity-60"
                 />
                 <button
                   type="submit"
-                  className="w-10 h-10 bg-emerald-600 text-white rounded-full hover:bg-emerald-500 transition-all active:scale-95 flex items-center justify-center flex-shrink-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-700"
-                  aria-label="Pregătește mesajul"
+                  disabled={aiEnabled && (aiLoading || userMessage.trim() === '')}
+                  className="w-10 h-10 bg-emerald-600 text-white rounded-full hover:bg-emerald-500 transition-all active:scale-95 flex items-center justify-center flex-shrink-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-700 disabled:bg-neutral-300 disabled:cursor-not-allowed"
+                  aria-label={aiEnabled ? 'Trimite întrebarea' : 'Pregătește mesajul'}
                 >
                   <Send size={15} />
                 </button>
@@ -608,7 +884,7 @@ export default function WhatsAppWidget() {
       <button
         ref={fabRef}
         onClick={() => (isOpen ? handleClose() : openWidget())}
-        aria-label={isOpen ? 'Închide chatul WhatsApp' : 'Deschide chatul WhatsApp'}
+        aria-label={isOpen ? 'Închide chatul' : 'Deschide chatul'}
         aria-expanded={isOpen}
         aria-controls="wa-chat-window"
         className={`w-12 h-12 rounded-xl flex items-center justify-center relative transition-all duration-300 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-90 shadow-xl border shrink-0 z-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-emerald-700 ${

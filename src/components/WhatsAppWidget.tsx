@@ -796,7 +796,7 @@ export default function WhatsAppWidget() {
 
                   <p className="text-[11px] text-neutral-500 leading-relaxed px-1">
                     Conversația continuă pe WhatsApp (Meta). Mesajul și datele dvs. de contact sunt
-                    prelucrate de PROIECTEARH 4D S.R.L. pentru a vă răspunde, conform{' '}
+                    prelucrate de proarh4d.ro pentru a vă răspunde, conform{' '}
                     <Link
                       href="/politica-confidentialitate"
                       onClick={handleClose}
@@ -818,7 +818,7 @@ export default function WhatsAppWidget() {
                   className="w-full flex items-center justify-center gap-2 bg-white hover:bg-emerald-50 border border-emerald-600/30 text-emerald-800 text-xs font-semibold py-2 px-3 rounded-xl transition-colors"
                 >
                   <WhatsAppIcon size={13} />
-                  Preferați un om? Continuați pe WhatsApp
+                  Preferați o persoana reala? Continuați pe WhatsApp
                 </button>
                 <p className="text-[11px] text-neutral-500 leading-relaxed mt-1.5 px-1">
                   Prin deschiderea WhatsApp, conversația continuă pe Meta. Datele sunt prelucrate de platforma,{' '}

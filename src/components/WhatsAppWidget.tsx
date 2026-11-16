@@ -1,7 +1,7 @@
 /**
  * components/WhatsAppWidget.tsx
  * Widget de contact PROARH.4D (PROIECTEARH 4D S.R.L.) cu Arhi AI integrat.
- *
+ * author BM26
  * Cum funcționează:
  *  - Utilizator AUTENTIFICAT (Supabase): conversează cu Arhi AI direct în widget
  *    (același /api/chat ca pagina /arhi-chat). Oricând poate trece la un om pe WhatsApp,
@@ -821,7 +821,7 @@ export default function WhatsAppWidget() {
                   Preferați un om? Continuați pe WhatsApp
                 </button>
                 <p className="text-[11px] text-neutral-500 leading-relaxed mt-1.5 px-1">
-                  Prin deschiderea WhatsApp, conversația continuă pe Meta. Datele sunt prelucrate de PROIECTEARH 4D S.R.L.,{' '}
+                  Prin deschiderea WhatsApp, conversația continuă pe Meta. Datele sunt prelucrate de platforma,{' '}
                   <Link
                     href="/politica-confidentialitate"
                     onClick={handleClose}

@@ -1,13 +1,28 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import Navbar from '@/components/Navbar'
-import Footer from '@/components/Footer'
-import DashHeader from '@/components/DashHeader'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
+import DashHeader from '@/components/DashHeader'
+import type { LucideIcon } from 'lucide-react'
+import {
+  LayoutDashboard, Folder, ShoppingCart, Package, Users, PlusSquare, LogOut, Menu, X,
+  ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUp, ArrowDown, ArrowUpDown,
+  Search, Download, Plus, Bell, Trash2, Pencil, Copy, Star, Upload, FileText, Send,
+  Check, AlertTriangle, Info, Paperclip, ArrowRight, ExternalLink,
+} from 'lucide-react'
 
+/* ============================================================
+   SETĂRI
+============================================================ */
+// true  = afișează și bara DashHeader existentă deasupra (dacă are funcții de care ai nevoie)
+// false = folosește bara de sus proprie din acest dashboard
+const USE_DASH_HEADER = false
+
+/* ============================================================
+   TIPURI
+============================================================ */
 type Profile = {
   id: string
   full_name: string | null
@@ -44,8 +59,17 @@ type Order = {
   total: number
   status: string
   stripe_payment_id: string | null
+  stripe_payment_intent?: string | null
+  billing_name?: string | null
   created_at: string
   user_id: string | null
+}
+
+type OrderItem = {
+  id: string
+  product_id: string | null
+  nume_produs: string
+  pret_la_cumparare: number
 }
 
 type Product = {
@@ -78,7 +102,7 @@ type Phase = {
   data_sfarsit: string | null
 }
 
-type Document = {
+type DocumentRow = {
   id: string
   project_id: string
   nume: string
@@ -99,155 +123,491 @@ type Message = {
   profiles: { full_name: string | null } | null
 }
 
+type ProjectDraft = {
+  id?: string
+  nume: string
+  descriere: string
+  status: string
+  client_id: string
+  responsabil_id: string
+  adresa: string
+  suprafata: string
+  buget: string
+  data_start: string
+  data_estimata_finalizare: string
+  data_finalizare: string
+}
+
+type ProductDraft = {
+  id?: string
+  nume: string
+  descriere: string
+  descriere_scurta: string
+  pret: string
+  pret_vechi: string
+  categorie: string
+  imagine_url: string
+  imagini: string[]
+  fisier_url: string
+  activ: boolean
+  featured: boolean
+  tags: string[]
+}
+
+type PhaseDraft = {
+  id?: string
+  nume: string
+  descriere: string
+  status: string
+  progres: number
+  data_start: string
+  data_sfarsit: string
+}
+
+type TabKey = 'overview' | 'proiecte' | 'comenzi' | 'magazin' | 'clienti'
+type SortDir = 'asc' | 'desc'
+type SortState = { key: string; dir: SortDir }
+type ToastKind = 'success' | 'error' | 'info'
+
+/* ============================================================
+   CONSTANTE
+============================================================ */
 const PROJECT_STATUSES = ['nou', 'in_progres', 'in_asteptare', 'finalizat', 'anulat']
-const ORDER_STATUSES = ['pending', 'paid', 'processing', 'completed', 'refunded', 'cancelled']
+// Trebuie să corespundă enum-ului order_status din baza de date
+const ORDER_STATUSES = ['pending', 'paid', 'processing', 'refunded', 'cancelled']
 const PHASE_STATUSES = ['neinceputa', 'in_progres', 'finalizata', 'blocata']
 const DOC_TIPURI = ['altul', 'contract', 'plan', 'autorizatie', 'deviz', 'raport', 'dxf', 'dwg', 'pdf', 'imagine']
 const DOC_ACCEPT = '.pdf,.dxf,.dwg,.doc,.docx,.xls,.xlsx,.png,.jpg,.jpeg,.zip,.rar,.svg,.ifc,.skp'
 const PRODUCT_FILE_ACCEPT = '.pdf,.dxf,.dwg,.doc,.docx,.xls,.xlsx,.zip,.rar,.ifc,.skp,.dwf'
 
 const STATUS_COLORS: Record<string, string> = {
-  nou: '#6ee7b7', in_progres: '#e2b36e', in_asteptare: '#a5b4fc',
-  finalizat: '#34d399', anulat: '#f87171', pending: '#e2b36e',
-  paid: '#34d399', processing: '#a5b4fc', completed: '#34d399',
-  refunded: '#f87171', cancelled: '#f87171', neinceputa: '#555',
-  finalizata: '#34d399', blocata: '#f87171',
+  nou: '#6ee7b7', in_progres: '#e2b36e', in_asteptare: '#a5b4fc', finalizat: '#34d399', anulat: '#f87171',
+  pending: '#e2b36e', paid: '#34d399', processing: '#a5b4fc', completed: '#34d399', refunded: '#f87171', cancelled: '#f87171',
+  neinceputa: '#8b8b93', finalizata: '#34d399', blocata: '#f87171',
 }
 
 const STATUS_LABELS: Record<string, string> = {
-  nou: 'Nou', in_progres: 'În Progres', in_asteptare: 'Așteptare',
-  finalizat: 'Finalizat', anulat: 'Anulat',
+  nou: 'Nou', in_progres: 'În progres', in_asteptare: 'În așteptare', finalizat: 'Finalizat', anulat: 'Anulat',
+  pending: 'În așteptare', paid: 'Plătită', processing: 'În procesare', completed: 'Finalizată', refunded: 'Rambursată', cancelled: 'Anulată',
+  neinceputa: 'Neînceput', finalizata: 'Finalizată', blocata: 'Blocată',
 }
 
-const PROVIDER_LABELS: Record<string, string> = {
-  google: 'Google', email: 'Email', facebook: 'Facebook', github: 'GitHub', apple: 'Apple',
-}
-const PROVIDER_COLORS: Record<string, string> = {
-  google: '#e2b36e', email: '#a5b4fc', facebook: '#7dd3fc', github: '#ccc', apple: '#ccc',
-}
-function providerLabel(p?: string | null) {
-  if (!p) return 'Email'
-  return PROVIDER_LABELS[p] || p.charAt(0).toUpperCase() + p.slice(1)
-}
-function providerColor(p?: string | null) {
-  if (!p) return PROVIDER_COLORS.email
-  return PROVIDER_COLORS[p] || '#888'
+const PROVIDER_LABELS: Record<string, string> = { google: 'Google', email: 'Email', facebook: 'Facebook', github: 'GitHub', apple: 'Apple' }
+const PROVIDER_COLORS: Record<string, string> = { google: '#e2b36e', email: '#a5b4fc', facebook: '#7dd3fc', github: '#d4d4d8', apple: '#d4d4d8' }
+
+const NAV: { key: TabKey; label: string; icon: LucideIcon }[] = [
+  { key: 'overview', label: 'Prezentare', icon: LayoutDashboard },
+  { key: 'proiecte', label: 'Proiecte', icon: Folder },
+  { key: 'comenzi', label: 'Comenzi', icon: ShoppingCart },
+  { key: 'magazin', label: 'Magazin', icon: Package },
+  { key: 'clienti', label: 'Utilizatori', icon: Users },
+]
+
+const TAB_TITLES: Record<TabKey, string> = {
+  overview: 'Prezentare generală',
+  proiecte: 'Proiecte',
+  comenzi: 'Comenzi',
+  magazin: 'Magazin',
+  clienti: 'Utilizatori',
 }
 
-// ── Mini Pie Chart ──────────────────────────────────────────────────────────
-function PieChart({ data }: { data: { label: string; value: number; color: string }[] }) {
-  const total = data.reduce((s, d) => s + d.value, 0)
-  if (total === 0) return <div style={{ fontSize: 11, color: '#444', padding: 20, textAlign: 'center' }}>Fără date</div>
+const emptyProject: ProjectDraft = {
+  nume: '', descriere: '', status: 'nou', client_id: '', responsabil_id: '', adresa: '',
+  suprafata: '', buget: '', data_start: '', data_estimata_finalizare: '', data_finalizare: '',
+}
+const emptyProduct: ProductDraft = {
+  nume: '', descriere: '', descriere_scurta: '', pret: '', pret_vechi: '', categorie: '',
+  imagine_url: '', imagini: [], fisier_url: '', activ: true, featured: false, tags: [],
+}
+const emptyPhase: PhaseDraft = { nume: '', descriere: '', status: 'neinceputa', progres: 0, data_start: '', data_sfarsit: '' }
 
-  let cumulative = 0
-  const size = 140
-  const cx = size / 2
-  const cy = size / 2
-  const r = 52
-  const ir = 28
+/* ============================================================
+   FUNCȚII AJUTĂTOARE
+============================================================ */
+const providerLabel = (p?: string | null) => (!p ? 'Email' : PROVIDER_LABELS[p] || p.charAt(0).toUpperCase() + p.slice(1))
+const providerColor = (p?: string | null) => (!p ? PROVIDER_COLORS.email : PROVIDER_COLORS[p] || '#8b8b93')
+const errMsg = (e: unknown) => (e instanceof Error ? e.message : typeof e === 'string' ? e : 'Eroare necunoscută')
 
-  const slices = data.filter(d => d.value > 0).map(d => {
-    const pct = d.value / total
-    const startAngle = cumulative * 2 * Math.PI - Math.PI / 2
-    cumulative += pct
-    const endAngle = cumulative * 2 * Math.PI - Math.PI / 2
-    const x1 = cx + r * Math.cos(startAngle)
-    const y1 = cy + r * Math.sin(startAngle)
-    const x2 = cx + r * Math.cos(endAngle)
-    const y2 = cy + r * Math.sin(endAngle)
-    const ix1 = cx + ir * Math.cos(startAngle)
-    const iy1 = cy + ir * Math.sin(startAngle)
-    const ix2 = cx + ir * Math.cos(endAngle)
-    const iy2 = cy + ir * Math.sin(endAngle)
-    const large = pct > 0.5 ? 1 : 0
-    return {
-      ...d, pct,
-      path: `M ${ix1} ${iy1} L ${x1} ${y1} A ${r} ${r} 0 ${large} 1 ${x2} ${y2} L ${ix2} ${iy2} A ${ir} ${ir} 0 ${large} 0 ${ix1} ${iy1} Z`
-    }
+function fmt(date: string | null | undefined) {
+  if (!date) return '—'
+  return new Date(date).toLocaleDateString('ro-RO', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+function fmtBytes(b: number | null) {
+  if (!b) return '—'
+  if (b < 1024 * 1024) return `${(b / 1024).toFixed(0)} KB`
+  return `${(b / 1024 / 1024).toFixed(1)} MB`
+}
+function fmtMoney(n: number) {
+  return `${Number(n).toLocaleString('ro-RO')} lei`
+}
+function fileNameFromUrl(url?: string | null) {
+  if (!url) return ''
+  try {
+    const last = url.split('?')[0].split('/').pop() || ''
+    return decodeURIComponent(last.replace(/^\d+_/, ''))
+  } catch {
+    return url
+  }
+}
+function initials(name: string) {
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]?.toUpperCase()).join('') || 'A'
+}
+
+type SortVal = string | number | null | undefined
+
+function sortItems<T>(items: T[], get: (x: T) => SortVal, dir: SortDir): T[] {
+  return items.slice().sort((x, y) => {
+    const a = get(x)
+    const b = get(y)
+    const an = a === null || a === undefined || a === ''
+    const bn = b === null || b === undefined || b === ''
+    if (an && bn) return 0
+    if (an) return 1 // valorile lipsă mereu la final
+    if (bn) return -1
+    let c: number
+    if (typeof a === 'number' && typeof b === 'number') c = a - b
+    else c = String(a).localeCompare(String(b), 'ro', { numeric: true, sensitivity: 'base' })
+    return dir === 'asc' ? c : -c
   })
+}
 
+function useSorted<T>(items: T[], getters: Record<string, (x: T) => SortVal>, initial: SortState) {
+  const [sort, setSort] = useState<SortState>(initial)
+  const sorted = useMemo(
+    () => sortItems(items, getters[sort.key] ?? (() => null), sort.dir),
+    [items, getters, sort]
+  )
+  const toggle = useCallback((key: string, first: SortDir = 'asc') => {
+    setSort((s) => (s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: first }))
+  }, [])
+  return { sort, setSort, sorted, toggle }
+}
+
+function usePagination<T>(items: T[], initialSize: number, resetKey: string) {
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSizeState] = useState(initialSize)
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize))
+  const safePage = Math.min(page, totalPages)
+
+  useEffect(() => { setPage(1) }, [resetKey])
+
+  const slice = useMemo(
+    () => items.slice((safePage - 1) * pageSize, safePage * pageSize),
+    [items, safePage, pageSize]
+  )
+  const total = items.length
+  return {
+    page: safePage,
+    setPage,
+    pageSize,
+    setPageSize: (n: number) => { setPageSizeState(n); setPage(1) },
+    totalPages,
+    slice,
+    total,
+    from: total === 0 ? 0 : (safePage - 1) * pageSize + 1,
+    to: Math.min(safePage * pageSize, total),
+  }
+}
+
+/* getters de sortare (module-level = referințe stabile) */
+const PROJECT_SORTS: { key: string; label: string; get: (p: Project) => SortVal }[] = [
+  { key: 'created_at', label: 'Data creării', get: (p) => Date.parse(p.created_at) },
+  { key: 'nume', label: 'Nume', get: (p) => p.nume },
+  { key: 'status', label: 'Status', get: (p) => PROJECT_STATUSES.indexOf(p.status) },
+  { key: 'client', label: 'Client', get: (p) => p.profiles_client?.full_name },
+  { key: 'buget', label: 'Buget', get: (p) => p.buget },
+  { key: 'suprafata', label: 'Suprafață', get: (p) => p.suprafata },
+  { key: 'termen', label: 'Termen estimat', get: (p) => (p.data_estimata_finalizare ? Date.parse(p.data_estimata_finalizare) : null) },
+]
+const PROJECT_GETTERS = Object.fromEntries(PROJECT_SORTS.map((s) => [s.key, s.get])) as Record<string, (p: Project) => SortVal>
+
+const ORDER_GETTERS: Record<string, (o: Order) => SortVal> = {
+  client: (o) => o.billing_name || o.email,
+  total: (o) => Number(o.total),
+  status: (o) => ORDER_STATUSES.indexOf(o.status),
+  date: (o) => Date.parse(o.created_at),
+}
+
+const PRODUCT_SORTS: { key: string; label: string; get: (p: Product) => SortVal }[] = [
+  { key: 'created_at', label: 'Data adăugării', get: (p) => Date.parse(p.created_at) },
+  { key: 'nume', label: 'Nume', get: (p) => p.nume },
+  { key: 'pret', label: 'Preț', get: (p) => Number(p.pret) },
+  { key: 'descarcari', label: 'Descărcări', get: (p) => p.nr_descarcari },
+  { key: 'categorie', label: 'Categorie', get: (p) => p.categorie },
+]
+const PRODUCT_GETTERS = Object.fromEntries(PRODUCT_SORTS.map((s) => [s.key, s.get])) as Record<string, (p: Product) => SortVal>
+
+const CLIENT_GETTERS: Record<string, (c: Profile) => SortVal> = {
+  nume: (c) => c.full_name,
+  companie: (c) => c.company,
+  logare: (c) => c.provider || 'email',
+  rol: (c) => c.rol,
+  status: (c) => (c.activ ? 0 : 1),
+  din: (c) => Date.parse(c.created_at),
+}
+
+const DOC_GETTERS: Record<string, (d: DocumentRow) => SortVal> = {
+  nume: (d) => d.nume,
+  tip: (d) => d.tip,
+  marime: (d) => d.marime_bytes,
+  data: (d) => Date.parse(d.created_at),
+}
+
+/* ============================================================
+   COMPONENTE UI
+============================================================ */
+function StatusBadge({ status }: { status: string }) {
+  const c = STATUS_COLORS[status] || '#8b8b93'
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
-      <svg width={size} height={size} style={{ flexShrink: 0 }}>
-        {slices.map((s, i) => (
-          <path key={i} d={s.path} fill={s.color} stroke="#0a0a0a" strokeWidth={2}>
-            <title>{s.label}: {s.value}</title>
-          </path>
-        ))}
-        <text x={cx} y={cy - 6} textAnchor="middle" fill="#fff" fontSize={18} fontWeight={700}>{total}</text>
-        <text x={cx} y={cy + 12} textAnchor="middle" fill="#555" fontSize={9}>TOTAL</text>
-      </svg>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {slices.map((s, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11 }}>
-            <span style={{ width: 10, height: 10, background: s.color, display: 'inline-block', flexShrink: 0 }} />
-            <span style={{ color: '#aaa' }}>{s.label}</span>
-            <span style={{ color: s.color, fontWeight: 700 }}>{s.value}</span>
-            <span style={{ color: '#444' }}>({(s.pct * 100).toFixed(0)}%)</span>
-          </div>
-        ))}
+    <span className="bdg" style={{ color: c, borderColor: `${c}55`, background: `${c}14` }}>
+      {STATUS_LABELS[status] || status}
+    </span>
+  )
+}
+
+function Modal({ title, onClose, children, wide }: { title: React.ReactNode; onClose: () => void; children: React.ReactNode; wide?: boolean }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+  return (
+    <div className="ov" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div className={`mdl${wide ? ' wide' : ''}`} role="dialog" aria-modal="true">
+        <div className="mdl-hd">
+          <h2>{title}</h2>
+          <button className="icon-btn" onClick={onClose} aria-label="Închide"><X size={18} /></button>
+        </div>
+        <div className="mdl-bd">{children}</div>
       </div>
     </div>
   )
 }
 
+function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+  return (
+    <label className="fld">
+      <span className="fld-l">{label}</span>
+      {children}
+      {hint && <span className="fld-h">{hint}</span>}
+    </label>
+  )
+}
+
+function Th({ label, k, sort, onSort, firstDir }: { label: string; k: string; sort: SortState; onSort: (k: string, first?: SortDir) => void; firstDir?: SortDir }) {
+  const active = sort.key === k
+  return (
+    <th aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}>
+      <button className={`th-btn${active ? ' on' : ''}`} onClick={() => onSort(k, firstDir)}>
+        {label}
+        {active ? (sort.dir === 'asc' ? <ArrowUp size={12} /> : <ArrowDown size={12} />) : <ArrowUpDown size={12} className="dim" />}
+      </button>
+    </th>
+  )
+}
+
+function pageList(page: number, total: number): (number | '…')[] {
+  if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1)
+  const out: (number | '…')[] = [1]
+  const start = Math.max(2, page - 1)
+  const end = Math.min(total - 1, page + 1)
+  if (start > 2) out.push('…')
+  for (let i = start; i <= end; i++) out.push(i)
+  if (end < total - 1) out.push('…')
+  out.push(total)
+  return out
+}
+
+function Pagination({
+  page, totalPages, total, from, to, pageSize, onPage, onSize, sizes = [10, 25, 50],
+}: {
+  page: number; totalPages: number; total: number; from: number; to: number; pageSize?: number
+  onPage: (p: number) => void; onSize?: (n: number) => void; sizes?: number[]
+}) {
+  if (total === 0) return null
+  return (
+    <nav className="pg" aria-label="Paginare">
+      <div className="pg-info">{from}–{to} din {total}</div>
+      {totalPages > 1 && (
+        <div className="pg-ctrl">
+          <button className="pg-btn" disabled={page <= 1} onClick={() => onPage(1)} aria-label="Prima pagină"><ChevronsLeft size={14} /></button>
+          <button className="pg-btn" disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label="Pagina anterioară"><ChevronLeft size={14} /></button>
+          {pageList(page, totalPages).map((p, i) =>
+            p === '…' ? (
+              <span key={`e${i}`} className="pg-ell">…</span>
+            ) : (
+              <button key={p} className={`pg-btn${p === page ? ' on' : ''}`} aria-current={p === page ? 'page' : undefined} onClick={() => onPage(p)}>{p}</button>
+            )
+          )}
+          <button className="pg-btn" disabled={page >= totalPages} onClick={() => onPage(page + 1)} aria-label="Pagina următoare"><ChevronRight size={14} /></button>
+          <button className="pg-btn" disabled={page >= totalPages} onClick={() => onPage(totalPages)} aria-label="Ultima pagină"><ChevronsRight size={14} /></button>
+        </div>
+      )}
+      {onSize && pageSize && sizes.length > 0 && (
+        <label className="pg-size">
+          Pe pagină
+          <select value={pageSize} onChange={(e) => onSize(Number(e.target.value))}>
+            {sizes.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </label>
+      )}
+    </nav>
+  )
+}
+
+function Empty({ text, icon }: { text: string; icon?: React.ReactNode }) {
+  return <div className="empty">{icon}<span>{text}</span></div>
+}
+
+function SortBar<T extends { key: string; label: string }>({
+  options, sort, onChange,
+}: { options: T[]; sort: SortState; onChange: (s: SortState) => void }) {
+  return (
+    <div className="sortbar">
+      <label className="sel-wrap">
+        <span>Sortează după</span>
+        <select value={sort.key} onChange={(e) => onChange({ key: e.target.value, dir: sort.dir })}>
+          {options.map((o) => <option key={o.key} value={o.key}>{o.label}</option>)}
+        </select>
+      </label>
+      <button
+        className="btn sm ghost"
+        onClick={() => onChange({ key: sort.key, dir: sort.dir === 'asc' ? 'desc' : 'asc' })}
+        aria-label={sort.dir === 'asc' ? 'Ordine crescătoare' : 'Ordine descrescătoare'}
+        title={sort.dir === 'asc' ? 'Crescător' : 'Descrescător'}
+      >
+        {sort.dir === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />}
+        {sort.dir === 'asc' ? 'Crescător' : 'Descrescător'}
+      </button>
+    </div>
+  )
+}
+
+function PieChart({ data }: { data: { label: string; value: number; color: string }[] }) {
+  const total = data.reduce((s, d) => s + d.value, 0)
+  if (total === 0) return <div className="muted" style={{ padding: 20, textAlign: 'center' }}>Fără date</div>
+
+  let cumulative = 0
+  const size = 150
+  const cx = size / 2
+  const cy = size / 2
+  const r = 56
+  const ir = 32
+
+  const slices = data.filter((d) => d.value > 0).map((d) => {
+    const pct = d.value / total
+    const a0 = cumulative * 2 * Math.PI - Math.PI / 2
+    cumulative += pct
+    const a1 = cumulative * 2 * Math.PI - Math.PI / 2
+    const large = pct > 0.5 ? 1 : 0
+    const p = (rad: number, a: number) => `${cx + rad * Math.cos(a)} ${cy + rad * Math.sin(a)}`
+    // un singur segment de 100% nu poate fi desenat ca arc; îl împărțim
+    const path = pct >= 0.9999
+      ? `M ${cx - r} ${cy} A ${r} ${r} 0 1 1 ${cx + r} ${cy} A ${r} ${r} 0 1 1 ${cx - r} ${cy} Z M ${cx - ir} ${cy} A ${ir} ${ir} 0 1 0 ${cx + ir} ${cy} A ${ir} ${ir} 0 1 0 ${cx - ir} ${cy} Z`
+      : `M ${p(ir, a0)} L ${p(r, a0)} A ${r} ${r} 0 ${large} 1 ${p(r, a1)} L ${p(ir, a1)} A ${ir} ${ir} 0 ${large} 0 ${p(ir, a0)} Z`
+    return { ...d, pct, path }
+  })
+
+  return (
+    <div className="pie">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label="Proiecte per status">
+        {slices.map((s, i) => (
+          <path key={i} d={s.path} fill={s.color} fillRule="evenodd" stroke="#111113" strokeWidth={2}>
+            <title>{s.label}: {s.value}</title>
+          </path>
+        ))}
+        <text x={cx} y={cy - 4} textAnchor="middle" fill="#f2f2f2" fontSize={20} fontWeight={700}>{total}</text>
+        <text x={cx} y={cy + 14} textAnchor="middle" fill="#8b8b93" fontSize={9} letterSpacing="1">TOTAL</text>
+      </svg>
+      <ul className="legend">
+        {slices.map((s, i) => (
+          <li key={i}>
+            <span className="dot" style={{ background: s.color }} />
+            <span>{s.label}</span>
+            <b style={{ color: s.color }}>{s.value}</b>
+            <em>{(s.pct * 100).toFixed(0)}%</em>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
+function RevenueBars({ data }: { data: { label: string; value: number }[] }) {
+  const max = Math.max(1, ...data.map((d) => d.value))
+  const w = 320
+  const h = 170
+  const pad = 20
+  const bw = 32
+  const gap = data.length > 1 ? (w - pad * 2 - bw * data.length) / (data.length - 1) : 0
+  const compact = (v: number) => (v >= 1000 ? `${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k` : String(Math.round(v)))
+  return (
+    <svg viewBox={`0 0 ${w} ${h}`} width="100%" role="img" aria-label="Venituri pe luni">
+      {data.map((d, i) => {
+        const bh = d.value > 0 ? Math.max(3, Math.round((d.value / max) * (h - 56))) : 0
+        const x = pad + i * (bw + gap)
+        const y = h - 28 - bh
+        return (
+          <g key={i}>
+            <rect x={x} y={h - 28 - 2} width={bw} height={2} fill="#2e2e32" />
+            {bh > 0 && (
+              <rect x={x} y={y} width={bw} height={bh} rx={3} fill="#e2b36e" opacity={0.92}>
+                <title>{d.label}: {d.value.toLocaleString('ro-RO')} lei</title>
+              </rect>
+            )}
+            {d.value > 0 && <text x={x + bw / 2} y={y - 6} textAnchor="middle" fill="#f2f2f2" fontSize={10}>{compact(d.value)}</text>}
+            <text x={x + bw / 2} y={h - 10} textAnchor="middle" fill="#8b8b93" fontSize={10}>{d.label}</text>
+          </g>
+        )
+      })}
+    </svg>
+  )
+}
+
+/* ============================================================
+   PAGINA
+============================================================ */
 export default function AdminDashboardPage() {
   const router = useRouter()
-  const supabase = createClient()
+  const supabase = useMemo(() => createClient(), [])
+
   const fileInputRef = useRef<HTMLInputElement>(null)
   const imgInputRef = useRef<HTMLInputElement>(null)
-  const newImgInputRef = useRef<HTMLInputElement>(null)
   const prodFileInputRef = useRef<HTMLInputElement>(null)
-  const editProdFileInputRef = useRef<HTMLInputElement>(null)
-  const msgEndRef = useRef<HTMLDivElement>(null)
+  const chatBoxRef = useRef<HTMLDivElement>(null)
 
-  const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(true)
   const [adminName, setAdminName] = useState('')
   const [isSuperAdmin, setIsSuperAdmin] = useState(false)
   const [currentAdminId, setCurrentAdminId] = useState('')
 
-  const [activeTab, setActiveTab] = useState('overview')
+  const [activeTab, setActiveTab] = useState<TabKey>('overview')
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null)
-  const [activeProjectTab, setActiveProjectTab] = useState('faze')
+  const [activeProjectTab, setActiveProjectTab] = useState<'faze' | 'documente' | 'mesaje'>('faze')
+  const [drawerOpen, setDrawerOpen] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
 
   const [projects, setProjects] = useState<Project[]>([])
   const [orders, setOrders] = useState<Order[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [clients, setClients] = useState<Profile[]>([])
   const [phases, setPhases] = useState<Phase[]>([])
-  const [documents, setDocuments] = useState<Document[]>([])
+  const [documents, setDocuments] = useState<DocumentRow[]>([])
   const [messages, setMessages] = useState<Message[]>([])
 
-  const [editProject, setEditProject] = useState<Partial<Project> | null>(null)
-  const [editProduct, setEditProduct] = useState<Partial<Product> | null>(null)
-  const [editPhase, setEditPhase] = useState<Partial<Phase> | null>(null)
-  const [editClient, setEditClient] = useState<Partial<Profile> | null>(null)
-  const [showNewProject, setShowNewProject] = useState(false)
-  const [showNewProduct, setShowNewProduct] = useState(false)
-  const [showNewPhase, setShowNewPhase] = useState(false)
-  const [showNotifyModal, setShowNotifyModal] = useState(false)
+  // formulare / modale
+  const [projectForm, setProjectForm] = useState<ProjectDraft | null>(null)
+  const [productForm, setProductForm] = useState<ProductDraft | null>(null)
+  const [phaseForm, setPhaseForm] = useState<PhaseDraft | null>(null)
+  const [clientForm, setClientForm] = useState<Partial<Profile> | null>(null)
   const [notifyTarget, setNotifyTarget] = useState<{ id: string; name: string } | null>(null)
   const [notifyForm, setNotifyForm] = useState({ titlu: '', mesaj: '', link: '' })
   const [previewImg, setPreviewImg] = useState<string | null>(null)
+  const [orderDetail, setOrderDetail] = useState<{ order: Order; items: OrderItem[] | null; error?: string } | null>(null)
+  const [tagInput, setTagInput] = useState('')
+  const [saving, setSaving] = useState(false)
 
-  const [newProject, setNewProject] = useState({
-    nume: '', descriere: '', status: 'nou', client_id: '', responsabil_id: '',
-    adresa: '', suprafata: '', buget: '', data_start: '', data_estimata_finalizare: ''
-  })
-  const [newProduct, setNewProduct] = useState({
-    nume: '', descriere: '', descriere_scurta: '', pret: '', pret_vechi: '',
-    categorie: '', imagine_url: '', imagini: [] as string[], fisier_url: '', activ: true, featured: false,
-    tags: [] as string[]
-  })
-  const [newTagInput, setNewTagInput] = useState('')
-  const [editTagInput, setEditTagInput] = useState('')
-  const [newPhase, setNewPhase] = useState({
-    nume: '', descriere: '', status: 'neinceputa', progres: 0, data_start: '', data_sfarsit: ''
-  })
-  const [newMessage, setNewMessage] = useState('')
-
-  // Upload doc state
+  // upload documente proiect
   const [uploadFile, setUploadFile] = useState<File | null>(null)
   const [uploadName, setUploadName] = useState('')
   const [uploadTip, setUploadTip] = useState('altul')
@@ -255,314 +615,405 @@ export default function AdminDashboardPage() {
   const [uploading, setUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
   const [dragOver, setDragOver] = useState(false)
+  const [showUpload, setShowUpload] = useState(false)
 
-  // Upload imagini produs (galerie)
+  // upload produs
   const [imgUploading, setImgUploading] = useState(false)
-  const [editImgUploading, setEditImgUploading] = useState(false)
-
-  // Upload fișier binar produs (pt. download)
   const [prodFileUploading, setProdFileUploading] = useState(false)
-  const [editProdFileUploading, setEditProdFileUploading] = useState(false)
 
+  // filtre
   const [projectFilter, setProjectFilter] = useState('')
+  const [projectStatusFilter, setProjectStatusFilter] = useState('toate')
   const [orderFilter, setOrderFilter] = useState('')
+  const [orderStatusFilter, setOrderStatusFilter] = useState('toate')
+  const [productFilter, setProductFilter] = useState('')
+  const [productView, setProductView] = useState<'toate' | 'active' | 'inactive' | 'top'>('toate')
   const [clientFilter, setClientFilter] = useState('')
+  const [clientRoleFilter, setClientRoleFilter] = useState('toate')
 
-  useEffect(() => { setTimeout(() => setMounted(true), 50); fetchAll() }, [])
-  useEffect(() => { msgEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+  const [newMessage, setNewMessage] = useState('')
 
-  useEffect(() => {
-    if (!activeProjectId) return
-    const ch = supabase.channel('admin-msg-' + activeProjectId)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `project_id=eq.${activeProjectId}` },
-        () => fetchProjectDetails(activeProjectId))
-      .subscribe()
-    return () => { supabase.removeChannel(ch) }
-  }, [activeProjectId])
+  /* ---------- notificări (toast) + confirmare ---------- */
+  const [toasts, setToasts] = useState<{ id: number; kind: ToastKind; text: string }[]>([])
+  const toastId = useRef(0)
+  const toast = useCallback((kind: ToastKind, text: string) => {
+    const id = ++toastId.current
+    setToasts((t) => [...t, { id, kind, text }])
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), kind === 'error' ? 6000 : 3500)
+  }, [])
 
-  async function fetchAll() {
+  const [confirmState, setConfirmState] = useState<{ title: string; message: string; label: string; danger: boolean } | null>(null)
+  const confirmResolver = useRef<((v: boolean) => void) | null>(null)
+  const ask = useCallback(
+    (opts: { title: string; message: string; label?: string; danger?: boolean }) =>
+      new Promise<boolean>((resolve) => {
+        confirmResolver.current = resolve
+        setConfirmState({ title: opts.title, message: opts.message, label: opts.label || 'Confirmă', danger: opts.danger ?? true })
+      }),
+    []
+  )
+  const answerConfirm = (v: boolean) => {
+    confirmResolver.current?.(v)
+    confirmResolver.current = null
+    setConfirmState(null)
+  }
+
+  /** Rulează o operație Supabase; afișează eroarea (dacă e cazul) și întoarce true/false. */
+  const mutate = useCallback(
+    async (action: () => PromiseLike<{ error: { message: string } | null }>, okMsg?: string) => {
+      try {
+        const { error } = await action()
+        if (error) { toast('error', error.message); return false }
+        if (okMsg) toast('success', okMsg)
+        return true
+      } catch (e) {
+        toast('error', errMsg(e))
+        return false
+      }
+    },
+    [toast]
+  )
+
+  /* ---------- încărcare date ---------- */
+  const fetchProjects = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*,profiles_client:profiles!projects_client_id_fkey(full_name),profiles_responsabil:profiles!projects_responsabil_id_fkey(full_name)')
+      .order('created_at', { ascending: false })
+    if (error) toast('error', 'Proiecte: ' + error.message)
+    setProjects((data as Project[]) || [])
+  }, [supabase, toast])
+
+  const fetchOrders = useCallback(async () => {
+    const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false })
+    if (error) toast('error', 'Comenzi: ' + error.message)
+    setOrders((data as Order[]) || [])
+  }, [supabase, toast])
+
+  const fetchProducts = useCallback(async () => {
+    const { data, error } = await supabase.from('products').select('*').order('created_at', { ascending: false })
+    if (error) toast('error', 'Produse: ' + error.message)
+    setProducts((data as Product[]) || [])
+  }, [supabase, toast])
+
+  const fetchClients = useCallback(async () => {
+    // RPC security definer: aduce și provider-ul de login (din auth.users)
+    const { data, error } = await supabase.rpc('get_all_profiles_with_provider')
+    if (error) {
+      const { data: fallback } = await supabase.from('profiles').select('*').order('created_at', { ascending: false })
+      setClients((fallback as Profile[]) || [])
+      return
+    }
+    setClients((data as Profile[]) || [])
+  }, [supabase])
+
+  const fetchMessages = useCallback(async (projectId: string) => {
+    const { data } = await supabase.from('messages').select('*,profiles(full_name)').eq('project_id', projectId).order('created_at')
+    setMessages((data as Message[]) || [])
+  }, [supabase])
+
+  const fetchProjectDetails = useCallback(async (projectId: string) => {
+    const [{ data: ph }, { data: dc }] = await Promise.all([
+      supabase.from('phases').select('*').eq('project_id', projectId).order('ordine'),
+      supabase.from('documents').select('*').eq('project_id', projectId).order('created_at', { ascending: false }),
+    ])
+    setPhases((ph as Phase[]) || [])
+    setDocuments((dc as DocumentRow[]) || [])
+    await fetchMessages(projectId)
+  }, [supabase, fetchMessages])
+
+  const fetchAll = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return router.push('/login')
+      if (!user) { router.push('/login'); return }
       const { data: profile } = await supabase.from('profiles').select('full_name,rol,id').eq('id', user.id).single()
-      if (!profile || (profile.rol !== 'superadmin' && profile.rol !== 'angajat')) return router.push('/dashboard/client')
+      if (!profile || (profile.rol !== 'superadmin' && profile.rol !== 'angajat')) { router.push('/dashboard/client'); return }
       setAdminName(profile.full_name || 'Admin')
       setIsSuperAdmin(profile.rol === 'superadmin')
       setCurrentAdminId(profile.id)
       await Promise.all([fetchProjects(), fetchOrders(), fetchProducts(), fetchClients()])
-    } finally { setLoading(false) }
-  }
-
-  async function fetchProjects() {
-    const { data } = await supabase.from('projects').select(`*,profiles_client:profiles!projects_client_id_fkey(full_name),profiles_responsabil:profiles!projects_responsabil_id_fkey(full_name)`).order('created_at', { ascending: false })
-    setProjects(data || [])
-  }
-  async function fetchOrders() {
-    const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false })
-    setOrders(data || [])
-  }
-  async function fetchProducts() {
-    const { data } = await supabase.from('products').select('*').order('created_at', { ascending: false })
-    setProducts(data || [])
-  }
-  async function fetchClients() {
-    // Folosim funcția RPC (security definer) ca să obținem și provider-ul de login
-    // (google/email/etc), care vine din auth.users, nu din profiles.
-    const { data, error } = await supabase.rpc('get_all_profiles_with_provider')
-    if (error) {
-      // fallback dacă funcția RPC nu există încă în DB — fără provider
-      const { data: fallback } = await supabase.from('profiles').select('*').order('created_at', { ascending: false })
-      setClients(fallback || [])
-      return
-    }
-    setClients(data || [])
-  }
-  async function fetchProjectDetails(projectId: string) {
-    const [{ data: ph }, { data: dc }, { data: ms }] = await Promise.all([
-      supabase.from('phases').select('*').eq('project_id', projectId).order('ordine'),
-      supabase.from('documents').select('*').eq('project_id', projectId).order('created_at', { ascending: false }),
-      supabase.from('messages').select('*,profiles(full_name)').eq('project_id', projectId).order('created_at'),
-    ])
-    setPhases(ph || [])
-    setDocuments(dc || [])
-    setMessages(ms || [])
-  }
-
-  // ── Galerie imagini produs (upload multiplu) ──
-  async function uploadProductImages(files: FileList | File[], isEdit = false) {
-    const fileArr = Array.from(files)
-    if (fileArr.length === 0) return
-    if (isEdit) setEditImgUploading(true)
-    else setImgUploading(true)
-    try {
-      const uploadedUrls: string[] = []
-      for (const file of fileArr) {
-        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
-        const path = `products/${Date.now()}_${safeName}`
-        const { error } = await supabase.storage.from('products').upload(path, file, { upsert: false })
-        if (error) throw new Error(error.message)
-        const { data: pub } = supabase.storage.from('products').getPublicUrl(path)
-        uploadedUrls.push(pub.publicUrl)
-      }
-      if (isEdit) {
-        setEditProduct(prev => {
-          if (!prev) return prev
-          const imagini = [...(prev.imagini || []), ...uploadedUrls]
-          return { ...prev, imagini, imagine_url: prev.imagine_url || imagini[0] }
-        })
-      } else {
-        setNewProduct(prev => {
-          const imagini = [...prev.imagini, ...uploadedUrls]
-          return { ...prev, imagini, imagine_url: prev.imagine_url || imagini[0] }
-        })
-      }
-    } catch (err: any) {
-      alert('Eroare upload imagini: ' + err.message)
     } finally {
-      if (isEdit) setEditImgUploading(false)
-      else setImgUploading(false)
+      setLoading(false)
     }
-  }
+  }, [supabase, router, fetchProjects, fetchOrders, fetchProducts, fetchClients])
 
-  function removeProductImage(url: string, isEdit = false) {
-    if (isEdit) {
-      setEditProduct(prev => {
-        if (!prev) return prev
-        const imagini = (prev.imagini || []).filter(u => u !== url)
-        const imagine_url = prev.imagine_url === url ? (imagini[0] || '') : prev.imagine_url
-        return { ...prev, imagini, imagine_url }
-      })
-    } else {
-      setNewProduct(prev => {
-        const imagini = prev.imagini.filter(u => u !== url)
-        const imagine_url = prev.imagine_url === url ? (imagini[0] || '') : prev.imagine_url
-        return { ...prev, imagini, imagine_url }
-      })
+  /* ---------- navigare (hash: #proiecte/<id>) ---------- */
+  const go = useCallback((tab: TabKey, projectId: string | null = null) => {
+    setActiveTab(tab)
+    setActiveProjectId(projectId)
+    setDrawerOpen(false)
+    if (projectId) {
+      setActiveProjectTab('faze')
+      setMessages([])
+      fetchProjectDetails(projectId)
     }
-  }
-
-  function setCoverImage(url: string, isEdit = false) {
-    if (isEdit) setEditProduct(prev => prev ? { ...prev, imagine_url: url } : prev)
-    else setNewProduct(prev => ({ ...prev, imagine_url: url }))
-  }
-
-  // ── Fișier binar produs (pt. download) ──
-  async function uploadProductFile(file: File, isEdit = false) {
-    if (isEdit) setEditProdFileUploading(true)
-    else setProdFileUploading(true)
     try {
-      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
-      const path = `files/${Date.now()}_${safeName}`
-      const { error: upErr } = await supabase.storage.from('product-files').upload(path, file, { upsert: false })
-      if (upErr) throw new Error(upErr.message)
-      const { data: signedData, error: signErr } = await supabase.storage.from('product-files').createSignedUrl(path, 60 * 60 * 24 * 365 * 10)
-      if (signErr || !signedData?.signedUrl) throw new Error('Nu s-a putut genera URL-ul')
-      if (isEdit) setEditProduct(prev => prev ? { ...prev, fisier_url: signedData.signedUrl } : prev)
-      else setNewProduct(prev => ({ ...prev, fisier_url: signedData.signedUrl }))
-    } catch (err: any) {
-      alert('Eroare upload fișier: ' + err.message)
-    } finally {
-      if (isEdit) setEditProdFileUploading(false)
-      else setProdFileUploading(false)
+      history.replaceState(null, '', `#${tab}${projectId ? '/' + projectId : ''}`)
+    } catch { /* ignorat */ }
+    window.scrollTo({ top: 0 })
+  }, [fetchProjectDetails])
+
+  useEffect(() => {
+    const [t, id] = window.location.hash.replace('#', '').split('/')
+    if (NAV.some((n) => n.key === t)) {
+      setActiveTab(t as TabKey)
+      if (t === 'proiecte' && id) {
+        setActiveProjectId(id)
+        fetchProjectDetails(id)
+      }
     }
+    try {
+      setCollapsed(localStorage.getItem('adm-collapsed') === '1')
+    } catch { /* ignorat */ }
+    fetchAll()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const toggleCollapsed = () => {
+    setCollapsed((c) => {
+      try { localStorage.setItem('adm-collapsed', c ? '0' : '1') } catch { /* ignorat */ }
+      return !c
+    })
   }
 
-  // ── Project CRUD ──
-  async function createProject() {
-    if (!newProject.nume) return
-    await supabase.from('projects').insert([{ ...newProject, suprafata: newProject.suprafata ? Number(newProject.suprafata) : null, buget: newProject.buget ? Number(newProject.buget) : null, client_id: newProject.client_id || null, responsabil_id: newProject.responsabil_id || null, data_start: newProject.data_start || null, data_estimata_finalizare: newProject.data_estimata_finalizare || null }])
-    setShowNewProject(false)
-    setNewProject({ nume: '', descriere: '', status: 'nou', client_id: '', responsabil_id: '', adresa: '', suprafata: '', buget: '', data_start: '', data_estimata_finalizare: '' })
+  /* ---------- realtime ---------- */
+  useEffect(() => {
+    if (!activeProjectId) return
+    const ch = supabase
+      .channel('admin-msg-' + activeProjectId)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `project_id=eq.${activeProjectId}` },
+        () => fetchMessages(activeProjectId))
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [supabase, activeProjectId, fetchMessages])
+
+  // Comenzi noi / schimbări de status (ex. plăți Stripe confirmate prin webhook).
+  // Necesită: alter publication supabase_realtime add table public.orders;
+  useEffect(() => {
+    const ch = supabase
+      .channel('admin-orders')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => fetchOrders())
+      .subscribe()
+    return () => { supabase.removeChannel(ch) }
+  }, [supabase, fetchOrders])
+
+  /* ============================================================
+     PROIECTE – filtrare, sortare, paginare
+  ============================================================ */
+  const filteredProjects = useMemo(() => {
+    const q = projectFilter.trim().toLowerCase()
+    return projects.filter((p) => {
+      if (projectStatusFilter !== 'toate' && p.status !== projectStatusFilter) return false
+      if (!q) return true
+      return (
+        p.nume.toLowerCase().includes(q) ||
+        (p.profiles_client?.full_name || '').toLowerCase().includes(q) ||
+        (p.adresa || '').toLowerCase().includes(q)
+      )
+    })
+  }, [projects, projectFilter, projectStatusFilter])
+  const projectSort = useSorted(filteredProjects, PROJECT_GETTERS, { key: 'created_at', dir: 'desc' })
+  const projectPg = usePagination(projectSort.sorted, 10, `${projectFilter}|${projectStatusFilter}|${projectSort.sort.key}|${projectSort.sort.dir}`)
+
+  /* COMENZI */
+  const filteredOrders = useMemo(() => {
+    const q = orderFilter.trim().toLowerCase()
+    return orders.filter((o) => {
+      if (orderStatusFilter !== 'toate' && o.status !== orderStatusFilter) return false
+      if (!q) return true
+      return o.email.toLowerCase().includes(q) || (o.billing_name || '').toLowerCase().includes(q) || o.id.toLowerCase().includes(q)
+    })
+  }, [orders, orderFilter, orderStatusFilter])
+  const orderSort = useSorted(filteredOrders, ORDER_GETTERS, { key: 'date', dir: 'desc' })
+  const orderPg = usePagination(orderSort.sorted, 10, `${orderFilter}|${orderStatusFilter}|${orderSort.sort.key}|${orderSort.sort.dir}`)
+
+  /* PRODUSE */
+  const filteredProducts = useMemo(() => {
+    const q = productFilter.trim().toLowerCase()
+    return products.filter((p) => {
+      if (productView === 'active' && !p.activ) return false
+      if (productView === 'inactive' && p.activ) return false
+      if (productView === 'top' && !p.featured) return false
+      if (!q) return true
+      return p.nume.toLowerCase().includes(q) || (p.categorie || '').toLowerCase().includes(q) || (p.tags || []).some((t) => t.toLowerCase().includes(q))
+    })
+  }, [products, productFilter, productView])
+  const productSort = useSorted(filteredProducts, PRODUCT_GETTERS, { key: 'created_at', dir: 'desc' })
+  const productPg = usePagination(productSort.sorted, 12, `${productFilter}|${productView}|${productSort.sort.key}|${productSort.sort.dir}`)
+
+  /* UTILIZATORI */
+  const filteredClients = useMemo(() => {
+    const q = clientFilter.trim().toLowerCase()
+    return clients.filter((c) => {
+      if (clientRoleFilter !== 'toate' && c.rol !== clientRoleFilter) return false
+      if (!q) return true
+      return (c.full_name || '').toLowerCase().includes(q) || (c.company || '').toLowerCase().includes(q) || (c.email || '').toLowerCase().includes(q)
+    })
+  }, [clients, clientFilter, clientRoleFilter])
+  const clientSort = useSorted(filteredClients, CLIENT_GETTERS, { key: 'din', dir: 'desc' })
+  const clientPg = usePagination(clientSort.sorted, 10, `${clientFilter}|${clientRoleFilter}|${clientSort.sort.key}|${clientSort.sort.dir}`)
+
+  /* DETALII PROIECT: faze, documente, mesaje */
+  const phasePg = usePagination(phases, 10, activeProjectId || '')
+  const docSort = useSorted(documents, DOC_GETTERS, { key: 'data', dir: 'desc' })
+  const docPg = usePagination(docSort.sorted, 10, `${activeProjectId}|${docSort.sort.key}|${docSort.sort.dir}`)
+
+  const MSG_PAGE = 15
+  const msgPages = Math.max(1, Math.ceil(messages.length / MSG_PAGE))
+  const [msgPage, setMsgPage] = useState(1)
+  const [msgFollow, setMsgFollow] = useState(true)
+  useEffect(() => { setMsgFollow(true) }, [activeProjectId])
+  useEffect(() => { if (msgFollow) setMsgPage(msgPages) }, [msgFollow, msgPages, messages.length])
+  const safeMsgPage = Math.min(msgPage, msgPages)
+  const msgSlice = messages.slice((safeMsgPage - 1) * MSG_PAGE, safeMsgPage * MSG_PAGE)
+  useEffect(() => {
+    const el = chatBoxRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }, [msgSlice.length, safeMsgPage, activeProjectTab])
+
+  /* ============================================================
+     DERIVATE
+  ============================================================ */
+  const activeProject = projects.find((p) => p.id === activeProjectId)
+  const revenue = useMemo(
+    () => orders.filter((o) => o.status === 'paid' || o.status === 'completed').reduce((s, o) => s + Number(o.total), 0),
+    [orders]
+  )
+  const pendingOrders = orders.filter((o) => o.status === 'pending').length
+  const overallProgress = phases.length > 0 ? Math.round(phases.reduce((s, p) => s + p.progres, 0) / phases.length) : 0
+
+  const pieData = PROJECT_STATUSES.map((s) => ({
+    label: STATUS_LABELS[s] || s,
+    value: projects.filter((p) => p.status === s).length,
+    color: STATUS_COLORS[s] || '#555555',
+  }))
+
+  const monthlyRevenue = useMemo(() => {
+    const now = new Date()
+    const months: { key: string; label: string; value: number }[] = []
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      months.push({
+        key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+        label: d.toLocaleDateString('ro-RO', { month: 'short' }),
+        value: 0,
+      })
+    }
+    for (const o of orders) {
+      if (o.status !== 'paid' && o.status !== 'completed') continue
+      const d = new Date(o.created_at)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      const m = months.find((x) => x.key === key)
+      if (m) m.value += Number(o.total)
+    }
+    return months
+  }, [orders])
+
+  const topProducts = useMemo(() => [...products].sort((a, b) => b.nr_descarcari - a.nr_descarcari).slice(0, 5), [products])
+
+  /* ============================================================
+     PROIECTE – CRUD
+  ============================================================ */
+  const openProjectForm = (p?: Project) => {
+    setProjectForm(
+      p
+        ? {
+            id: p.id, nume: p.nume, descriere: p.descriere || '', status: p.status,
+            client_id: p.client_id || '', responsabil_id: p.responsabil_id || '', adresa: p.adresa || '',
+            suprafata: p.suprafata != null ? String(p.suprafata) : '', buget: p.buget != null ? String(p.buget) : '',
+            data_start: p.data_start || '', data_estimata_finalizare: p.data_estimata_finalizare || '',
+            data_finalizare: p.data_finalizare || '',
+          }
+        : { ...emptyProject }
+    )
+  }
+
+  async function saveProject() {
+    if (!projectForm) return
+    const f = projectForm
+    if (!f.nume.trim()) { toast('error', 'Numele proiectului este obligatoriu.'); return }
+    setSaving(true)
+    const payload = {
+      nume: f.nume.trim(),
+      descriere: f.descriere || null,
+      status: f.status,
+      adresa: f.adresa || null,
+      suprafata: f.suprafata ? Number(f.suprafata) : null,
+      buget: f.buget ? Number(f.buget) : null,
+      client_id: f.client_id || null,
+      responsabil_id: f.responsabil_id || null,
+      data_start: f.data_start || null,
+      data_estimata_finalizare: f.data_estimata_finalizare || null,
+      data_finalizare: f.data_finalizare || null,
+    }
+    const ok = await mutate(
+      () => (f.id ? supabase.from('projects').update(payload).eq('id', f.id) : supabase.from('projects').insert([payload])),
+      f.id ? 'Proiect actualizat.' : 'Proiect creat.'
+    )
+    setSaving(false)
+    if (!ok) return
+    setProjectForm(null)
     fetchProjects()
   }
-  async function updateProject() {
-    if (!editProject?.id) return
-    const { id, profiles_client, profiles_responsabil, ...rest } = editProject as any
-    await supabase.from('projects').update(rest).eq('id', id)
-    setEditProject(null); fetchProjects()
-    if (activeProjectId === id) fetchProjectDetails(id)
+
+  async function deleteProject(p: Project) {
+    const yes = await ask({ title: 'Ștergi proiectul?', message: `„${p.nume}” și tot ce conține (faze, documente, mesaje) vor fi șterse definitiv.`, label: 'Șterge proiectul' })
+    if (!yes) return
+    if (await mutate(() => supabase.from('projects').delete().eq('id', p.id), 'Proiect șters.')) {
+      if (activeProjectId === p.id) go('proiecte')
+      fetchProjects()
+    }
   }
-  async function deleteProject(id: string) {
-    if (!confirm('Ștergi proiectul și tot ce conține?')) return
-    await supabase.from('projects').delete().eq('id', id)
-    if (activeProjectId === id) setActiveProjectId(null)
-    fetchProjects()
-  }
+
   async function updateProjectStatus(id: string, status: string) {
-    await supabase.from('projects').update({ status }).eq('id', id); fetchProjects()
+    if (await mutate(() => supabase.from('projects').update({ status }).eq('id', id), 'Status actualizat.')) fetchProjects()
   }
 
-  // ── Phase CRUD ──
-  async function createPhase() {
-    if (!newPhase.nume || !activeProjectId) return
-    const maxOrdine = phases.length > 0 ? Math.max(...phases.map(p => p.ordine)) + 1 : 0
-    await supabase.from('phases').insert([{ ...newPhase, project_id: activeProjectId, ordine: maxOrdine, progres: Number(newPhase.progres), data_start: newPhase.data_start || null, data_sfarsit: newPhase.data_sfarsit || null }])
-    setShowNewPhase(false)
-    setNewPhase({ nume: '', descriere: '', status: 'neinceputa', progres: 0, data_start: '', data_sfarsit: '' })
+  /* ---------- faze ---------- */
+  async function savePhase() {
+    if (!phaseForm || !activeProjectId) return
+    const f = phaseForm
+    if (!f.nume.trim()) { toast('error', 'Numele fazei este obligatoriu.'); return }
+    setSaving(true)
+    const base = {
+      nume: f.nume.trim(),
+      descriere: f.descriere || null,
+      status: f.status,
+      progres: Math.min(100, Math.max(0, Number(f.progres) || 0)),
+      data_start: f.data_start || null,
+      data_sfarsit: f.data_sfarsit || null,
+    }
+    const ok = await mutate(
+      () => {
+        if (f.id) return supabase.from('phases').update(base).eq('id', f.id)
+        const ordine = phases.length > 0 ? Math.max(...phases.map((p) => p.ordine)) + 1 : 0
+        return supabase.from('phases').insert([{ ...base, project_id: activeProjectId, ordine }])
+      },
+      f.id ? 'Fază actualizată.' : 'Fază adăugată.'
+    )
+    setSaving(false)
+    if (!ok) return
+    setPhaseForm(null)
     fetchProjectDetails(activeProjectId)
   }
-  async function updatePhase() {
-    if (!editPhase?.id) return
-    const { id, ...rest } = editPhase
-    await supabase.from('phases').update(rest).eq('id', id)
-    setEditPhase(null)
-    if (activeProjectId) fetchProjectDetails(activeProjectId)
-  }
-  async function deletePhase(id: string) {
-    await supabase.from('phases').delete().eq('id', id)
-    if (activeProjectId) fetchProjectDetails(activeProjectId)
+
+  async function deletePhase(ph: Phase) {
+    const yes = await ask({ title: 'Ștergi faza?', message: `„${ph.nume}” va fi ștearsă.`, label: 'Șterge' })
+    if (!yes || !activeProjectId) return
+    if (await mutate(() => supabase.from('phases').delete().eq('id', ph.id), 'Fază ștearsă.')) fetchProjectDetails(activeProjectId)
   }
 
-  // ── Product CRUD ──
-  async function createProduct() {
-    if (!newProduct.nume) return
-    const { error } = await supabase.from('products').insert([{
-      ...newProduct,
-      pret: Number(newProduct.pret) || 0,
-      pret_vechi: newProduct.pret_vechi ? Number(newProduct.pret_vechi) : null,
-      tags: newProduct.tags.length > 0 ? newProduct.tags : null,
-      imagini: newProduct.imagini.length > 0 ? newProduct.imagini : null,
-    }])
-    if (error) {
-      alert('Nu s-a putut publica produsul:\n' + error.message)
-      console.error('createProduct error:', error)
-      return
-    }
-    setShowNewProduct(false)
-    setNewProduct({ nume: '', descriere: '', descriere_scurta: '', pret: '', pret_vechi: '', categorie: '', imagine_url: '', imagini: [], fisier_url: '', activ: true, featured: false, tags: [] })
-    setNewTagInput('')
-    fetchProducts()
-  }
-  async function updateProduct() {
-    if (!editProduct?.id) return
-    const { id, ...rest } = editProduct
-    const { error } = await supabase.from('products').update(rest).eq('id', id)
-    if (error) {
-      alert('Nu s-au putut salva modificările:\n' + error.message)
-      console.error('updateProduct error:', error)
-      return
-    }
-    setEditProduct(null); fetchProducts()
-  }
-  async function toggleProduct(id: string, field: string, value: boolean) {
-    await supabase.from('products').update({ [field]: value }).eq('id', id); fetchProducts()
-  }
-  async function deleteProduct(id: string) {
-    if (!confirm('Ștergi produsul?')) return
-    await supabase.from('products').delete().eq('id', id); fetchProducts()
-  }
-  async function duplicateProduct(p: Product) {
-    const { id, created_at, ...rest } = p
-    await supabase.from('products').insert([{ ...rest, nume: rest.nume + ' (copie)', activ: false }])
-    fetchProducts()
+  async function movePhase(ph: Phase, dir: -1 | 1) {
+    if (!activeProjectId) return
+    const idx = phases.findIndex((p) => p.id === ph.id)
+    const other = phases[idx + dir]
+    if (!other) return
+    const ok1 = await mutate(() => supabase.from('phases').update({ ordine: other.ordine }).eq('id', ph.id))
+    const ok2 = ok1 && (await mutate(() => supabase.from('phases').update({ ordine: ph.ordine }).eq('id', other.id)))
+    if (ok2) fetchProjectDetails(activeProjectId)
   }
 
-  // ── Order ──
-  async function updateOrderStatus(id: string, status: string) {
-    await supabase.from('orders').update({ status }).eq('id', id); fetchOrders()
-  }
-  async function deleteOrder(id: string) {
-    if (!confirm('Ștergi comanda?')) return
-    await supabase.from('orders').delete().eq('id', id); fetchOrders()
-  }
-
-  // ── Export CSV comenzi ──
-  function exportCSV() {
-    const headers = ['ID', 'Email', 'Total', 'Status', 'Data', 'Stripe']
-    const rows = orders.map(o => [
-      o.id, o.email, o.total, o.status,
-      new Date(o.created_at).toLocaleDateString('ro-RO'),
-      o.stripe_payment_id || ''
-    ])
-    const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n')
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url; a.download = `comenzi_${new Date().toISOString().slice(0, 10)}.csv`
-    a.click(); URL.revokeObjectURL(url)
-  }
-
-  // ── Clients ──
-  async function toggleClient(id: string, activ: boolean) {
-    await supabase.from('profiles').update({ activ }).eq('id', id); fetchClients()
-  }
-  async function changeClientRole(id: string, rol: string) {
-    await supabase.from('profiles').update({ rol }).eq('id', id); fetchClients()
-  }
-  async function updateClient() {
-    if (!editClient?.id) return
-    const { id, provider, email, created_at, rol, activ, ...rest } = editClient as any
-    await supabase.from('profiles').update(rest).eq('id', id)
-    setEditClient(null); fetchClients()
-  }
-  async function deleteClient(id: string, name: string) {
-    // Dublă confirmare — ștergerea unui utilizator e ireversibilă și poate afecta
-    // proiecte/comenzi asociate, așa că cerem confirmare explicită de două ori.
-    if (!confirm(`Ești sigur că vrei să ștergi utilizatorul "${name || id}"?`)) return
-    if (!confirm(`Confirmă din nou: chiar vrei să ștergi definitiv "${name || id}"? Acțiunea nu poate fi anulată.`)) return
-    const { error } = await supabase.from('profiles').delete().eq('id', id)
-    if (error) { alert('Eroare la ștergere: ' + error.message); return }
-    fetchClients()
-  }
-
-  // ── Messages ──
-  async function sendMessage() {
-    if (!newMessage.trim() || !activeProjectId) return
-    await supabase.from('messages').insert([{ project_id: activeProjectId, sender_id: currentAdminId, mesaj: newMessage.trim() }])
-    setNewMessage('')
-  }
-
-  // ── Notifications ──
-  async function sendNotification() {
-    if (!notifyTarget || !notifyForm.titlu) return
-    await supabase.from('notifications').insert([{ user_id: notifyTarget.id, titlu: notifyForm.titlu, mesaj: notifyForm.mesaj || null, link: notifyForm.link || null }])
-    setShowNotifyModal(false); setNotifyForm({ titlu: '', mesaj: '', link: '' }); setNotifyTarget(null)
-  }
-  function openNotify(id: string, name: string) {
-    setNotifyTarget({ id, name }); setNotifyForm({ titlu: '', mesaj: '', link: '' }); setShowNotifyModal(true)
-  }
-
-  // ── Documents upload ──
+  /* ---------- documente ---------- */
   function handleFile(f: File) {
     setUploadFile(f)
     if (!uploadName) setUploadName(f.name.replace(/\.[^.]+$/, ''))
@@ -576,948 +1027,1403 @@ export default function AdminDashboardPage() {
 
   async function uploadDocument() {
     if (!uploadFile || !activeProjectId) return
-    setUploading(true); setUploadError('')
+    setUploading(true)
+    setUploadError('')
     try {
       const safeName = uploadFile.name.replace(/[^a-zA-Z0-9._-]/g, '_')
       const path = `${activeProjectId}/${Date.now()}_${safeName}`
       const { error: storageErr } = await supabase.storage.from('documents').upload(path, uploadFile, { upsert: false })
       if (storageErr) throw new Error(storageErr.message)
-      const { data: signedData, error: signErr } = await supabase.storage.from('documents').createSignedUrl(path, 60 * 60 * 24 * 365 * 10)
-      if (signErr || !signedData?.signedUrl) throw new Error('Nu s-a putut genera URL-ul')
-      const { error: dbErr } = await supabase.from('documents').insert([{ project_id: activeProjectId, nume: uploadName || uploadFile.name, tip: uploadTip, url: signedData.signedUrl, marime_bytes: uploadFile.size, vizibil_client: uploadVizibil, incarcat_de: currentAdminId }])
+      const { data: signed, error: signErr } = await supabase.storage.from('documents').createSignedUrl(path, 60 * 60 * 24 * 365 * 10)
+      if (signErr || !signed?.signedUrl) throw new Error('Nu s-a putut genera URL-ul')
+      const { error: dbErr } = await supabase.from('documents').insert([{
+        project_id: activeProjectId, nume: uploadName || uploadFile.name, tip: uploadTip, url: signed.signedUrl,
+        marime_bytes: uploadFile.size, vizibil_client: uploadVizibil, incarcat_de: currentAdminId,
+      }])
       if (dbErr) throw new Error(dbErr.message)
-      setUploadFile(null); setUploadName(''); setUploadTip('altul'); setUploadVizibil(true)
+      setUploadFile(null); setUploadName(''); setUploadTip('altul'); setUploadVizibil(true); setShowUpload(false)
       if (fileInputRef.current) fileInputRef.current.value = ''
+      toast('success', 'Document încărcat.')
       fetchProjectDetails(activeProjectId)
-    } catch (err: any) {
-      setUploadError(err.message || 'Eroare la upload')
-    } finally { setUploading(false) }
+    } catch (e) {
+      setUploadError(errMsg(e))
+    } finally {
+      setUploading(false)
+    }
   }
 
-  async function deleteDocument(id: string, url: string) {
+  async function deleteDocument(d: DocumentRow) {
+    const yes = await ask({ title: 'Ștergi documentul?', message: `„${d.nume}” va fi șters definitiv.`, label: 'Șterge' })
+    if (!yes || !activeProjectId) return
     try {
-      const urlObj = new URL(url)
-      const pathMatch = urlObj.pathname.match(/\/documents\/(.+)/)
-      if (pathMatch) await supabase.storage.from('documents').remove([decodeURIComponent(pathMatch[1])])
-    } catch (_) {}
-    await supabase.from('documents').delete().eq('id', id)
-    if (activeProjectId) fetchProjectDetails(activeProjectId)
+      const m = new URL(d.url).pathname.match(/\/documents\/(.+)/)
+      if (m) await supabase.storage.from('documents').remove([decodeURIComponent(m[1])])
+    } catch { /* ignorat */ }
+    if (await mutate(() => supabase.from('documents').delete().eq('id', d.id), 'Document șters.')) fetchProjectDetails(activeProjectId)
   }
 
-  // ── Helpers ──
-  function fmt(date: string) {
-    return new Date(date).toLocaleDateString('ro-RO', { day: '2-digit', month: 'short', year: 'numeric' })
+  /* ---------- mesaje ---------- */
+  async function sendMessage() {
+    const text = newMessage.trim()
+    if (!text || !activeProjectId) return
+    setNewMessage('')
+    const ok = await mutate(() => supabase.from('messages').insert([{ project_id: activeProjectId, sender_id: currentAdminId, mesaj: text }]))
+    if (!ok) setNewMessage(text)
+    else { setMsgFollow(true); fetchMessages(activeProjectId) }
   }
-  function fmtBytes(b: number | null) {
-    if (!b) return '—'
-    if (b < 1024 * 1024) return `${(b / 1024).toFixed(0)} KB`
-    return `${(b / 1024 / 1024).toFixed(1)} MB`
+
+  /* ============================================================
+     PRODUSE – CRUD
+  ============================================================ */
+  const openProductForm = (p?: Product) => {
+    setTagInput('')
+    setProductForm(
+      p
+        ? {
+            id: p.id, nume: p.nume, descriere: p.descriere || '', descriere_scurta: p.descriere_scurta || '',
+            pret: String(p.pret ?? ''), pret_vechi: p.pret_vechi != null ? String(p.pret_vechi) : '',
+            categorie: p.categorie || '', imagine_url: p.imagine_url || '', imagini: p.imagini || [],
+            fisier_url: p.fisier_url || '', activ: p.activ, featured: p.featured, tags: p.tags || [],
+          }
+        : { ...emptyProduct }
+    )
   }
-  function fileNameFromUrl(url?: string | null) {
-    if (!url) return ''
+
+  async function saveProduct() {
+    if (!productForm) return
+    const f = productForm
+    if (!f.nume.trim()) { toast('error', 'Numele produsului este obligatoriu.'); return }
+    const payload = {
+      nume: f.nume.trim(),
+      descriere: f.descriere || null,
+      descriere_scurta: f.descriere_scurta || null,
+      pret: Number(f.pret) || 0,
+      pret_vechi: f.pret_vechi ? Number(f.pret_vechi) : null,
+      categorie: f.categorie || null,
+      imagine_url: f.imagine_url || null,
+      imagini: f.imagini.length > 0 ? f.imagini : null,
+      fisier_url: f.fisier_url || null,
+      activ: f.activ,
+      featured: f.featured,
+      tags: f.tags.length > 0 ? f.tags : null,
+    }
+    setSaving(true)
+    const ok = await mutate(
+      () => (f.id ? supabase.from('products').update(payload).eq('id', f.id) : supabase.from('products').insert([payload])),
+      f.id ? 'Produs salvat.' : 'Produs publicat.'
+    )
+    setSaving(false)
+    if (!ok) return
+    setProductForm(null)
+    fetchProducts()
+  }
+
+  async function toggleProduct(id: string, field: 'activ' | 'featured', value: boolean) {
+    if (await mutate(() => supabase.from('products').update({ [field]: value }).eq('id', id))) fetchProducts()
+  }
+
+  async function deleteProduct(p: Product) {
+    const yes = await ask({ title: 'Ștergi produsul?', message: `„${p.nume}” va fi șters din magazin.`, label: 'Șterge produsul' })
+    if (!yes) return
+    if (await mutate(() => supabase.from('products').delete().eq('id', p.id), 'Produs șters.')) fetchProducts()
+  }
+
+  async function duplicateProduct(p: Product) {
+    const { id, created_at, nr_descarcari, ...rest } = p
+    void id; void created_at; void nr_descarcari
+    if (await mutate(() => supabase.from('products').insert([{ ...rest, nume: rest.nume + ' (copie)', activ: false }]), 'Produs duplicat (inactiv).')) fetchProducts()
+  }
+
+  async function uploadProductImages(files: FileList | File[]) {
+    const arr = Array.from(files)
+    if (arr.length === 0) return
+    setImgUploading(true)
     try {
-      const clean = url.split('?')[0]
-      const last = clean.split('/').pop() || ''
-      return decodeURIComponent(last.replace(/^\d+_/, ''))
-    } catch { return url }
+      const urls: string[] = []
+      for (const file of arr) {
+        const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+        const path = `products/${Date.now()}_${safe}`
+        const { error } = await supabase.storage.from('products').upload(path, file, { upsert: false })
+        if (error) throw new Error(error.message)
+        urls.push(supabase.storage.from('products').getPublicUrl(path).data.publicUrl)
+      }
+      setProductForm((prev) => {
+        if (!prev) return prev
+        const imagini = [...prev.imagini, ...urls]
+        return { ...prev, imagini, imagine_url: prev.imagine_url || imagini[0] }
+      })
+    } catch (e) {
+      toast('error', 'Upload imagini: ' + errMsg(e))
+    } finally {
+      setImgUploading(false)
+    }
   }
 
-  const filteredProjects = projects.filter(p => p.nume.toLowerCase().includes(projectFilter.toLowerCase()) || (p.profiles_client?.full_name || '').toLowerCase().includes(projectFilter.toLowerCase()))
-  const filteredOrders = orders.filter(o => o.email.toLowerCase().includes(orderFilter.toLowerCase()) || o.status.toLowerCase().includes(orderFilter.toLowerCase()))
-  const filteredClients = clients.filter(c => (c.full_name || '').toLowerCase().includes(clientFilter.toLowerCase()) || c.rol.toLowerCase().includes(clientFilter.toLowerCase()))
-  const activeProject = projects.find(p => p.id === activeProjectId)
-  const revenue = orders.filter(o => o.status === 'paid' || o.status === 'completed').reduce((s, o) => s + Number(o.total), 0)
-  const overallProgress = phases.length > 0 ? Math.round(phases.reduce((s, p) => s + p.progres, 0) / phases.length) : 0
+  const removeProductImage = (url: string) =>
+    setProductForm((prev) => {
+      if (!prev) return prev
+      const imagini = prev.imagini.filter((u) => u !== url)
+      return { ...prev, imagini, imagine_url: prev.imagine_url === url ? imagini[0] || '' : prev.imagine_url }
+    })
 
-  // ── Pie chart data ──
-  const pieData = PROJECT_STATUSES.map(s => ({
-    label: STATUS_LABELS[s] || s,
-    value: projects.filter(p => p.status === s).length,
-    color: STATUS_COLORS[s] || '#555'
-  }))
+  async function uploadProductFile(file: File) {
+    setProdFileUploading(true)
+    try {
+      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+      const path = `files/${Date.now()}_${safe}`
+      const { error: upErr } = await supabase.storage.from('product-files').upload(path, file, { upsert: false })
+      if (upErr) throw new Error(upErr.message)
+      const { data: signed, error: signErr } = await supabase.storage.from('product-files').createSignedUrl(path, 60 * 60 * 24 * 365 * 10)
+      if (signErr || !signed?.signedUrl) throw new Error('Nu s-a putut genera URL-ul')
+      setProductForm((prev) => (prev ? { ...prev, fisier_url: signed.signedUrl } : prev))
+      toast('success', 'Fișier încărcat.')
+    } catch (e) {
+      toast('error', 'Upload fișier: ' + errMsg(e))
+    } finally {
+      setProdFileUploading(false)
+    }
+  }
 
-  // ── Top produse ──
-  const topProducts = [...products].sort((a, b) => b.nr_descarcari - a.nr_descarcari).slice(0, 5)
+  const addTag = () => {
+    const t = tagInput.trim()
+    if (!t) return
+    setProductForm((p) => (p && !p.tags.includes(t) ? { ...p, tags: [...p.tags, t] } : p))
+    setTagInput('')
+  }
 
-  if (loading) return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ color: '#e2b36e', fontFamily: 'DM Mono,monospace', fontSize: 12, letterSpacing: '0.2em' }}>SE ÎNCARCĂ...</div>
-    </div>
-  )
+  /* ============================================================
+     COMENZI
+  ============================================================ */
+  async function updateOrderStatus(id: string, status: string) {
+    if (await mutate(() => supabase.from('orders').update({ status }).eq('id', id), 'Status comandă actualizat.')) fetchOrders()
+  }
+
+  async function deleteOrder(o: Order) {
+    const yes = await ask({ title: 'Ștergi comanda?', message: `Comanda lui ${o.email} (${fmtMoney(o.total)}) va fi ștearsă. Plata din Stripe NU este rambursată automat.`, label: 'Șterge comanda' })
+    if (!yes) return
+    if (await mutate(() => supabase.from('orders').delete().eq('id', o.id), 'Comandă ștearsă.')) fetchOrders()
+  }
+
+  async function openOrder(o: Order) {
+    setOrderDetail({ order: o, items: null })
+    const { data, error } = await supabase.from('order_items').select('id,product_id,nume_produs,pret_la_cumparare').eq('order_id', o.id)
+    setOrderDetail({ order: o, items: (data as OrderItem[]) || [], error: error?.message })
+  }
+
+  function exportCSV() {
+    const esc = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`
+    const headers = ['ID', 'Email', 'Nume facturare', 'Total', 'Status', 'Data', 'Stripe']
+    const rows = orderSort.sorted.map((o) => [
+      o.id, o.email, o.billing_name || '', o.total, o.status,
+      new Date(o.created_at).toLocaleDateString('ro-RO'), o.stripe_payment_intent || o.stripe_payment_id || '',
+    ])
+    const csv = '\uFEFF' + [headers, ...rows].map((r) => r.map(esc).join(',')).join('\n')
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `comenzi_${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+    toast('success', `Export: ${rows.length} comenzi.`)
+  }
+
+  async function copyText(text: string) {
+    try {
+      await navigator.clipboard.writeText(text)
+      toast('info', 'Copiat.')
+    } catch {
+      toast('error', 'Nu am putut copia.')
+    }
+  }
+
+  /* ============================================================
+     UTILIZATORI
+  ============================================================ */
+  async function toggleClient(id: string, activ: boolean) {
+    if (await mutate(() => supabase.from('profiles').update({ activ }).eq('id', id), activ ? 'Utilizator activat.' : 'Utilizator blocat.')) fetchClients()
+  }
+  async function changeClientRole(id: string, rol: string) {
+    if (await mutate(() => supabase.from('profiles').update({ rol }).eq('id', id), 'Rol actualizat.')) fetchClients()
+  }
+  async function saveClient() {
+    if (!clientForm?.id) return
+    const { full_name, phone, company } = clientForm
+    setSaving(true)
+    const ok = await mutate(() => supabase.from('profiles').update({ full_name, phone, company }).eq('id', clientForm.id as string), 'Utilizator actualizat.')
+    setSaving(false)
+    if (ok) { setClientForm(null); fetchClients() }
+  }
+  async function deleteClient(id: string, name: string) {
+    const label = name || id
+    if (!(await ask({ title: 'Ștergi utilizatorul?', message: `„${label}” va fi șters. Proiectele și comenzile asociate pot fi afectate.`, label: 'Continuă' }))) return
+    if (!(await ask({ title: 'Confirmare finală', message: `Chiar vrei să ștergi definitiv „${label}”? Acțiunea nu poate fi anulată.`, label: 'Șterge definitiv' }))) return
+    if (await mutate(() => supabase.from('profiles').delete().eq('id', id), 'Utilizator șters.')) fetchClients()
+  }
+
+  /* ============================================================
+     NOTIFICĂRI
+  ============================================================ */
+  const openNotify = (id: string, name: string) => {
+    setNotifyTarget({ id, name })
+    setNotifyForm({ titlu: '', mesaj: '', link: '' })
+  }
+  async function sendNotification() {
+    if (!notifyTarget || !notifyForm.titlu.trim()) { toast('error', 'Titlul este obligatoriu.'); return }
+    setSaving(true)
+    const ok = await mutate(
+      () => supabase.from('notifications').insert([{ user_id: notifyTarget.id, titlu: notifyForm.titlu.trim(), mesaj: notifyForm.mesaj || null, link: notifyForm.link || null }]),
+      'Notificare trimisă.'
+    )
+    setSaving(false)
+    if (ok) setNotifyTarget(null)
+  }
+
+  /* ============================================================
+     RENDER
+  ============================================================ */
+  if (loading) {
+    return (
+      <div style={{ minHeight: '100vh', background: '#0b0b0c', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#e2b36e', fontFamily: 'DM Mono, monospace', fontSize: 12, letterSpacing: '0.2em' }}>
+        SE ÎNCARCĂ...
+      </div>
+    )
+  }
+
+  const navCount: Partial<Record<TabKey, number>> = {
+    proiecte: projects.length,
+    comenzi: orders.length,
+    magazin: products.length,
+    clienti: clients.length,
+  }
 
   return (
     <>
       <style>{`
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        .root { min-height: 100vh; background: #0a0a0a; color: #ffffff; font-family: 'DM Mono', 'Monaco', monospace; display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; }
-        .wrap { max-width: 1200px; margin: 0 auto; padding: 120px 20px 80px; width: 100%; opacity: 0; transform: translateY(8px); transition: .4s ease-out; }
-        .wrap.ready { opacity: 1; transform: translateY(0); }
-        .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 44px; flex-wrap: wrap; gap: 20px; }
-        .title { font-size: clamp(24px, 4vw, 32px); font-weight: 700; letter-spacing: -0.01em; }
-        .title span { color: #e2b36e; }
-        .logout { font-size: 14px; padding: 12px 22px; border: 2px solid #ffffff; background: #0a0a0a; color: #ffffff; font-weight: 700; cursor: pointer; font-family: inherit; }
-        .logout:hover { border-color: #f87171; color: #f87171; }
-        .tabs { display: flex; gap: 10px; margin-bottom: 40px; flex-wrap: wrap; }
-        .tab { font-size: 14px; padding: 14px 24px; border: 2px solid #222; background: #0f0f0f; color: #ccc; font-weight: 700; cursor: pointer; font-family: inherit; }
-        .tab:hover { border-color: #fff; color: #fff; }
-        .tab.on { border-color: #e2b36e; color: #e2b36e; background: rgba(226,179,110,0.04); }
-        .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 20px; margin-bottom: 20px; }
-        .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 44px; }
-        .card { border: 2px solid #1f1f1f; padding: 28px; background: #0f0f0f; transition: .2s; }
-        .card:hover { border-color: #e2b36e; }
-        .stat { border: 2px solid #1f1f1f; padding: 28px 24px; background: #0f0f0f; }
-        .stat-val { font-size: clamp(32px, 5vw, 42px); color: #e2b36e; font-weight: 700; margin-bottom: 8px; }
-        .stat-lbl { font-size: 13px; color: #777; text-transform: uppercase; font-weight: 700; }
-        .scroll-x { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; border: 2px solid #1f1f1f; margin-bottom: 24px; background: #0f0f0f; }
-        .tbl { width: 100%; border-collapse: collapse; font-size: 15px; min-width: 600px; color: #fff; }
-        .tbl th { text-align: left; font-size: 13px; padding: 16px 18px; border-bottom: 3px solid #fff; font-weight: 700; text-transform: uppercase; background: #151515; color: #888; }
-        .tbl td { padding: 18px 18px; border-bottom: 2px solid #151515; font-weight: 700; }
-        .tbl tr:hover td { background: #121212; }
-        .inp { width: 100%; padding: 14px 16px; border: 2px solid #333; background: #0a0a0a; color: #fff; font-size: 15px; margin-bottom: 14px; font-weight: 700; font-family: inherit; }
-        .inp:focus { outline: none; border-color: #e2b36e; }
-        select.inp { cursor: pointer; }
-        .inp-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-        .btn { font-size: 13px; padding: 14px 24px; border: 2px solid #fff; background: #0a0a0a; color: #fff; font-weight: 700; text-transform: uppercase; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
-        .btn:hover { border-color: #e2b36e; color: #e2b36e; }
-        .btn.primary { border-color: #e2b36e; color: #000; background: #e2b36e; }
-        .btn.primary:hover { background: #c59653; border-color: #c59653; }
-        .btn.danger { border-color: #f87171; color: #f87171; }
-        .btn.danger:hover { background: #f87171; color: #000; }
-        .btn.sm { padding: 8px 14px; font-size: 12px; }
-        .btn.sm:disabled { opacity: .3; cursor: not-allowed; border-color: #333; color: #555; }
-        .btn-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
-        .badge { font-size: 12px; padding: 6px 14px; border: 2px solid #fff; font-weight: 700; display: inline-block; }
-        .prog-wrap { background: #222; height: 6px; flex: 1; min-width: 100px; }
-        .prog-bar { height: 6px; background: #e2b36e; transition: .4s; }
-        .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.88); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px; backdrop-filter: blur(4px); }
-        .modal { background: #0a0a0a; border: 2px solid #222; padding: 32px 24px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; }
-        .modal-title { font-size: 20px; font-weight: 700; margin-bottom: 28px; }
-        .modal-title span { color: #e2b36e; }
-        .sub-tabs { display: flex; gap: 8px; margin-bottom: 28px; border-bottom: 3px solid #1f1f1f; overflow-x: auto; }
-        .sub-tab { font-size: 13px; padding: 12px 20px 14px; border: none; background: transparent; color: #555; font-weight: 700; text-transform: uppercase; border-bottom: 4px solid transparent; cursor: pointer; font-family: inherit; white-space: nowrap; margin-bottom: -3px; }
-        .sub-tab:hover { color: #fff; }
-        .sub-tab.on { color: #e2b36e; border-bottom-color: #e2b36e; }
-        .msgs { max-height: 380px; overflow-y: auto; margin-bottom: 20px; }
-        .msg { padding: 16px 20px; margin-bottom: 10px; font-size: 14px; line-height: 1.6; border: 2px solid #1f1f1f; background: #0f0f0f; }
-        .msg.admin-msg { background: rgba(226,179,110,0.02); border-left: 5px solid #e2b36e; }
-        .msg.client-msg { background: #151515; border-left: 5px solid #fff; }
-        .msg-meta { font-size: 11px; color: #555; margin-top: 8px; font-weight: 700; }
-        .upload-zone { border: 3px dashed #222; background: #0f0f0f; padding: 44px 20px; text-align: center; font-weight: 700; font-size: 15px; cursor: pointer; color: #666; transition: .2s; }
-        .upload-zone:hover,.upload-zone.drag { border-color: #e2b36e; color: #fff; background: rgba(226,179,110,0.02); }
-        .upload-zone.has-file { border-color: #e2b36e; }
-        .img-upload-zone { border: 2px dashed #333; background: #0f0f0f; padding: 16px; text-align: center; cursor: pointer; transition: .2s; margin-bottom: 14px; }
-        .img-upload-zone:hover { border-color: #e2b36e; }
-        .gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; margin-bottom: 14px; }
-        .gallery-thumb { position: relative; aspect-ratio: 1; border: 2px solid #222; overflow: hidden; cursor: pointer; }
-        .gallery-thumb.is-cover { border-color: #e2b36e; }
-        .gallery-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .gallery-thumb .gx { position: absolute; top: 2px; right: 2px; width: 18px; height: 18px; background: rgba(0,0,0,.75); color: #f87171; font-size: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .gallery-thumb .gcover { position: absolute; bottom: 0; left: 0; right: 0; background: #e2b36e; color: #000; font-size: 8px; text-align: center; font-weight: 700; padding: 1px 0; }
-        .gallery-add { aspect-ratio: 1; border: 2px dashed #333; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #444; font-size: 20px; transition: .2s; }
-        .gallery-add:hover { border-color: #e2b36e; color: #e2b36e; }
-        .file-chip { display: flex; align-items: center; justify-content: space-between; gap: 10px; border: 2px solid #e2b36e; background: rgba(226,179,110,0.05); padding: 12px 14px; margin-bottom: 14px; font-size: 11px; color: #e2b36e; }
-        .section-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 16px; }
-        .section-title { font-size: 14px; font-weight: 700; text-transform: uppercase; color: #555; }
-        .empty { font-size: 14px; color: #444; padding: 48px 20px; text-align: center; border: 2px dashed #1f1f1f; background: #0f0f0f; font-weight: 700; }
-        .search { width: 100%; max-width: 340px; padding: 13px 16px; border: 2px solid #333; background: #0a0a0a; color: #fff; font-size: 15px; margin-bottom: 24px; font-weight: 700; font-family: inherit; }
-        .search:focus { outline: none; border-color: #e2b36e; }
-        .tag { font-size: 11px; padding: 4px 10px; background: rgba(226,179,110,0.1); color: #e2b36e; margin-right: 6px; margin-bottom: 4px; display: inline-flex; align-items: center; gap: 4px; font-weight: 700; }
-        .tag-x { cursor: pointer; color: #e2b36e; opacity: .6; }
-        .tag-x:hover { opacity: 1; }
-        .detail-back { font-size: 13px; font-weight: 700; text-transform: uppercase; cursor: pointer; background: none; border: none; font-family: inherit; color: #fff; margin-bottom: 20px; display: inline-block; }
-        .detail-back:hover { color: #e2b36e; }
-        .chip { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; padding: 6px 12px; border: 2px solid #1f1f1f; background: #0f0f0f; font-weight: 700; color: #fff; }
-        .sep { height: 2px; background: #1f1f1f; margin: 28px 0; }
-        .prod-img { width: 100%; height: 160px; object-fit: cover; background: #111; display: block; margin-bottom: 12px; }
-        .prod-img-placeholder { width: 100%; height: 160px; background: #111; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; cursor: pointer; border: 2px dashed #222; transition: .2s; }
-        .prod-img-placeholder:hover { border-color: #e2b36e; }
-        .overview-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 32px; }
-        .overview-card { border: 2px solid #1f1f1f; padding: 24px; background: #0f0f0f; }
-        .overview-card-title { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: .15em; margin-bottom: 16px; font-weight: 700; }
-        @media(max-width: 800px) { .overview-grid { grid-template-columns: 1fr; } }
-        @media(max-width: 650px) { .inp-row { grid-template-columns: 1fr; } }
-        @media(max-width: 500px) { .tab { flex-grow: 1; text-align: center; padding: 12px 16px; } }
-        @media(max-width: 480px) {
-          .stat-grid { grid-template-columns: repeat(2,1fr); }
-          .card-grid { grid-template-columns: 1fr; }
-          .btn { width: 100%; padding: 16px; }
-          .btn-row { flex-direction: column; gap: 10px; }
-          .search { max-width: 100%; }
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&family=Playfair+Display:wght@400;700&display=swap');
+
+        .adm, .adm * { box-sizing: border-box; }
+        .adm {
+          --bg:#0b0b0c; --panel:#111113; --panel2:#161618; --line:#232326; --line2:#2e2e32;
+          --text:#f2f2f2; --muted:#8b8b93; --faint:#5a5a62;
+          --gold:#e2b36e; --gold2:#c59653; --green:#34d399; --red:#f87171; --blue:#a5b4fc;
+          --sb:248px; --sbc:72px;
+          min-height:100vh; background:var(--bg); color:var(--text);
+          font-family:'DM Sans',system-ui,sans-serif; font-size:14px; line-height:1.5;
+          -webkit-font-smoothing:antialiased;
+        }
+        .adm button, .adm input, .adm select, .adm textarea { font-family:inherit; font-size:inherit; color:inherit; }
+        .adm h1, .adm h2, .adm h3, .adm p { margin:0; }
+        .mono { font-family:'DM Mono',monospace; }
+        .muted { color:var(--muted); }
+
+        /* --- Sidebar --- */
+        .sb { position:fixed; inset:0 auto 0 0; width:var(--sb); background:var(--panel); border-right:1px solid var(--line);
+              display:flex; flex-direction:column; z-index:60; transition:width .2s ease, transform .25s ease; }
+        .collapsed .sb { width:var(--sbc); }
+        .sb-top { display:flex; align-items:center; gap:10px; padding:18px 16px; border-bottom:1px solid var(--line); min-height:68px; }
+        .sb-logo { width:36px; height:36px; border-radius:9px; background:linear-gradient(135deg,var(--gold),var(--gold2)); color:#111; font-weight:700;
+                   display:flex; align-items:center; justify-content:center; flex:none; font-family:'Playfair Display',serif; }
+        .sb-brand { overflow:hidden; white-space:nowrap; }
+        .sb-brand b { display:block; font-size:14px; }
+        .sb-brand span { font-size:11px; color:var(--muted); }
+        .collapsed .sb-brand, .collapsed .nav-lbl, .collapsed .nav-cnt, .collapsed .sb-user-meta, .collapsed .sb-foot .btn-lbl { display:none; }
+        .nav { flex:1; padding:14px 10px; display:flex; flex-direction:column; gap:4px; overflow-y:auto; }
+        .nav-item { display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:9px; border:none; background:transparent; color:var(--muted);
+                    cursor:pointer; text-align:left; width:100%; text-decoration:none; font-weight:500; position:relative; }
+        .nav-item:hover { background:var(--panel2); color:var(--text); }
+        .nav-item.on { background:rgba(226,179,110,.1); color:var(--gold); }
+        .nav-item.on::before { content:''; position:absolute; left:-10px; top:8px; bottom:8px; width:3px; border-radius:0 3px 3px 0; background:var(--gold); }
+        .nav-item svg { flex:none; }
+        .nav-lbl { flex:1; white-space:nowrap; }
+        .nav-cnt { font-size:11px; padding:2px 8px; border-radius:99px; background:var(--panel2); color:var(--muted); font-family:'DM Mono',monospace; }
+        .nav-item.on .nav-cnt { background:rgba(226,179,110,.15); color:var(--gold); }
+        .nav-sep { height:1px; background:var(--line); margin:10px 6px; }
+        .sb-foot { padding:12px 10px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:8px; }
+        .sb-user { display:flex; align-items:center; gap:10px; padding:6px 6px; }
+        .avatar { width:34px; height:34px; border-radius:50%; background:var(--panel2); border:1px solid var(--line2); color:var(--gold);
+                  display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; flex:none; }
+        .sb-user-meta { min-width:0; }
+        .sb-user-meta b { display:block; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .sb-user-meta span { font-size:10px; color:var(--gold); letter-spacing:.12em; font-family:'DM Mono',monospace; }
+        .scrim { display:none; }
+
+        /* --- Main --- */
+        .main { margin-left:var(--sb); transition:margin .2s ease; min-width:0; }
+        .collapsed .main { margin-left:var(--sbc); }
+        .topbar { position:sticky; top:0; z-index:40; display:flex; align-items:center; gap:14px; padding:14px clamp(16px,3vw,40px);
+                  background:rgba(11,11,12,.86); backdrop-filter:blur(10px); border-bottom:1px solid var(--line); }
+        .topbar h1 { font-size:18px; font-weight:600; flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .crumbs { font-size:12px; color:var(--muted); display:flex; align-items:center; gap:6px; }
+        .menu-btn { display:none; }
+        .content { padding:26px clamp(16px,3vw,40px) 80px; max-width:1400px; margin:0 auto; }
+
+        @media (max-width:1023px) {
+          .sb { transform:translateX(-100%); width:var(--sb) !important; }
+          .sb.open { transform:none; box-shadow:0 0 60px rgba(0,0,0,.6); }
+          .main, .collapsed .main { margin-left:0; }
+          .menu-btn { display:inline-flex; }
+          .scrim.show { display:block; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:55; }
+          .collapsed .sb-brand, .collapsed .nav-lbl, .collapsed .nav-cnt, .collapsed .sb-user-meta, .collapsed .sb-foot .btn-lbl { display:revert; }
+          .collapse-btn { display:none !important; }
+        }
+
+        /* --- Elemente comune --- */
+        .icon-btn { width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; border:1px solid var(--line2);
+                    background:var(--panel2); cursor:pointer; color:var(--muted); flex:none; }
+        .icon-btn:hover { color:var(--text); border-color:var(--gold); }
+        .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:10px 18px; border-radius:9px; border:1px solid var(--line2);
+               background:var(--panel2); color:var(--text); font-weight:600; cursor:pointer; white-space:nowrap; text-decoration:none; }
+        .btn:hover:not(:disabled) { border-color:var(--gold); color:var(--gold); }
+        .btn:disabled { opacity:.4; cursor:not-allowed; }
+        .btn.primary { background:var(--gold); border-color:var(--gold); color:#141414; }
+        .btn.primary:hover:not(:disabled) { background:var(--gold2); border-color:var(--gold2); color:#141414; }
+        .btn.danger { color:var(--red); border-color:rgba(248,113,113,.4); background:transparent; }
+        .btn.danger:hover:not(:disabled) { background:var(--red); color:#111; border-color:var(--red); }
+        .btn.ghost { background:transparent; }
+        .btn.sm { padding:7px 12px; font-size:12px; border-radius:8px; }
+        .btn:focus-visible, .icon-btn:focus-visible, .nav-item:focus-visible, .pg-btn:focus-visible, .th-btn:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
+
+        .panel { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:20px; }
+        .panel-t { font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:600; margin-bottom:16px;
+                   display:flex; align-items:center; justify-content:space-between; gap:10px; }
+        .grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+        .stats { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:14px; margin-bottom:16px; }
+        .stat { text-align:left; background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px; cursor:pointer; transition:.15s; }
+        .stat:hover { border-color:var(--gold); transform:translateY(-1px); }
+        .stat-ic { width:34px; height:34px; border-radius:9px; background:rgba(226,179,110,.1); color:var(--gold); display:flex; align-items:center; justify-content:center; margin-bottom:14px; }
+        .stat-v { font-size:26px; font-weight:700; letter-spacing:-.01em; }
+        .stat-l { font-size:12px; color:var(--muted); margin-top:2px; }
+        .stat-n { font-size:11px; color:var(--gold); margin-top:6px; }
+        @media (max-width:900px) { .grid-2 { grid-template-columns:1fr; } }
+
+        .toolbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:14px; }
+        .toolbar .grow { flex:1; }
+        .search { position:relative; flex:1 1 240px; max-width:380px; }
+        .search svg { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--faint); pointer-events:none; }
+        .search input { width:100%; padding:10px 12px 10px 36px; border-radius:9px; border:1px solid var(--line2); background:var(--panel); outline:none; }
+        .search input:focus { border-color:var(--gold); }
+        .chips { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+        .chip-btn { padding:6px 12px; border-radius:99px; border:1px solid var(--line2); background:transparent; color:var(--muted); cursor:pointer; font-size:12px; font-weight:600; }
+        .chip-btn:hover { color:var(--text); border-color:var(--faint); }
+        .chip-btn.on { border-color:var(--gold); color:var(--gold); background:rgba(226,179,110,.08); }
+        .chip-btn em { font-style:normal; opacity:.6; margin-left:6px; font-family:'DM Mono',monospace; }
+        .sortbar { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+        .sel-wrap { display:inline-flex; align-items:center; gap:8px; font-size:12px; color:var(--muted); }
+        .sel-wrap select, .pg-size select, .sel { padding:8px 10px; border-radius:8px; border:1px solid var(--line2); background:var(--panel); outline:none; cursor:pointer; }
+        .sel-wrap select:focus, .pg-size select:focus, .sel:focus { border-color:var(--gold); }
+        .sel option, .sel-wrap option, .pg-size option, .inp option { background:#161618; }
+
+        .bdg { display:inline-flex; align-items:center; font-size:11px; font-weight:600; padding:3px 10px; border-radius:99px; border:1px solid; white-space:nowrap; }
+        .chip { display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:3px 10px; border-radius:7px; background:var(--panel2); border:1px solid var(--line); color:#cfcfd4; }
+        .tag { display:inline-flex; align-items:center; gap:4px; font-size:11px; padding:2px 9px; border-radius:99px; background:rgba(226,179,110,.1); color:var(--gold); margin:0 6px 6px 0; }
+        .tag button { background:none; border:none; cursor:pointer; color:inherit; opacity:.7; padding:0; line-height:1; }
+
+        .empty { display:flex; flex-direction:column; align-items:center; gap:8px; padding:48px 20px; text-align:center; color:var(--muted);
+                 border:1px dashed var(--line2); border-radius:14px; background:var(--panel); }
+
+        /* --- Tabele --- */
+        .tbl-wrap { overflow-x:auto; border:1px solid var(--line); border-radius:14px; background:var(--panel); margin-bottom:14px; }
+        .tbl { width:100%; border-collapse:collapse; min-width:680px; }
+        .tbl th { text-align:left; padding:0; background:var(--panel2); border-bottom:1px solid var(--line); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:600; white-space:nowrap; }
+        .tbl th > span { display:block; padding:12px 16px; }
+        .th-btn { display:inline-flex; align-items:center; gap:6px; padding:12px 16px; background:none; border:none; cursor:pointer; text-transform:inherit; letter-spacing:inherit; font-weight:inherit; font-size:inherit; color:inherit; }
+        .th-btn:hover, .th-btn.on { color:var(--gold); }
+        .th-btn .dim { opacity:.4; }
+        .tbl td { padding:13px 16px; border-bottom:1px solid var(--line); vertical-align:middle; }
+        .tbl tr:last-child td { border-bottom:none; }
+        .tbl tbody tr:hover td { background:rgba(255,255,255,.015); }
+        .tbl tr.clickable { cursor:pointer; }
+        .cell-sub { font-size:12px; color:var(--muted); }
+        .acts { display:flex; gap:6px; flex-wrap:wrap; }
+        .inline-sel { background:transparent; border:1px solid transparent; border-radius:6px; padding:4px 6px; cursor:pointer; font-weight:600; }
+        .inline-sel:hover { border-color:var(--line2); }
+
+        /* --- Paginare --- */
+        .pg { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin:6px 0 4px; font-size:12px; color:var(--muted); }
+        .pg-ctrl { display:flex; align-items:center; gap:4px; }
+        .pg-btn { min-width:32px; height:32px; padding:0 8px; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; border:1px solid var(--line2);
+                  background:var(--panel); color:var(--text); cursor:pointer; font-family:'DM Mono',monospace; font-size:12px; }
+        .pg-btn:hover:not(:disabled) { border-color:var(--gold); color:var(--gold); }
+        .pg-btn.on { background:var(--gold); border-color:var(--gold); color:#111; font-weight:700; }
+        .pg-btn:disabled { opacity:.35; cursor:not-allowed; }
+        .pg-ell { padding:0 4px; color:var(--faint); }
+        .pg-size { display:inline-flex; align-items:center; gap:8px; }
+
+        /* --- Carduri proiect / produs --- */
+        .plist { display:flex; flex-direction:column; gap:12px; margin-bottom:14px; }
+        .pcard { background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:18px 20px; display:flex; gap:16px; transition:.15s; }
+        .pcard:hover { border-color:var(--line2); }
+        .pcard-bar { width:4px; border-radius:4px; flex:none; }
+        .pcard-body { flex:1; min-width:0; }
+        .pcard-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+        .pcard h3 { font-size:16px; font-weight:600; }
+        .meta { display:flex; flex-wrap:wrap; gap:6px 14px; font-size:12px; color:var(--muted); margin-top:4px; }
+        .chips-row { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; }
+
+        .pgrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:16px; margin-bottom:14px; }
+        .prod { background:var(--panel); border:1px solid var(--line); border-radius:14px; overflow:hidden; display:flex; flex-direction:column; transition:.15s; }
+        .prod:hover { border-color:var(--line2); }
+        .prod-img { width:100%; height:150px; object-fit:cover; background:#0e0e10; display:block; cursor:zoom-in; }
+        .prod-ph { width:100%; height:150px; background:#0e0e10; display:flex; align-items:center; justify-content:center; color:var(--faint); font-size:12px; cursor:pointer; border-bottom:1px dashed var(--line2); }
+        .prod-b { padding:14px 16px 16px; display:flex; flex-direction:column; gap:6px; flex:1; }
+        .prod-price { font-size:18px; font-weight:700; color:var(--gold); }
+        .prod-price s { font-size:12px; color:var(--faint); font-weight:400; margin-left:8px; }
+        .prod-badges { display:flex; gap:4px; flex-wrap:wrap; }
+        .pb { font-size:10px; padding:2px 7px; border-radius:5px; border:1px solid; font-weight:600; letter-spacing:.04em; }
+
+        /* --- Faze, sub-taburi, chat --- */
+        .subtabs { display:flex; gap:4px; border-bottom:1px solid var(--line); margin-bottom:20px; overflow-x:auto; }
+        .subtab { padding:11px 18px; border:none; background:none; color:var(--muted); cursor:pointer; font-weight:600; border-bottom:2px solid transparent; margin-bottom:-1px; white-space:nowrap; }
+        .subtab:hover { color:var(--text); }
+        .subtab.on { color:var(--gold); border-bottom-color:var(--gold); }
+        .prog { height:6px; border-radius:6px; background:var(--line2); overflow:hidden; flex:1; min-width:80px; }
+        .prog > i { display:block; height:100%; background:var(--gold); border-radius:6px; transition:width .4s; }
+        .phase { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin-bottom:10px; }
+        .phase-top { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
+        .phase-n { width:26px; height:26px; border-radius:50%; background:var(--panel2); border:1px solid var(--line2); display:flex; align-items:center; justify-content:center; font-size:12px; color:var(--muted); flex:none; }
+        .chat { max-height:420px; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding:16px; background:var(--panel); border:1px solid var(--line); border-radius:14px; margin-bottom:10px; }
+        .bubble { max-width:78%; padding:10px 14px; border-radius:14px; font-size:14px; line-height:1.55; white-space:pre-wrap; word-break:break-word; }
+        .bubble.me { align-self:flex-end; background:rgba(226,179,110,.14); border:1px solid rgba(226,179,110,.3); border-bottom-right-radius:4px; }
+        .bubble.other { align-self:flex-start; background:var(--panel2); border:1px solid var(--line2); border-bottom-left-radius:4px; }
+        .bubble small { display:block; margin-top:6px; font-size:11px; color:var(--muted); }
+        .compose { display:flex; gap:8px; }
+        .compose .inp { margin:0; }
+
+        .upload-zone { border:2px dashed var(--line2); border-radius:12px; padding:32px 16px; text-align:center; color:var(--muted); cursor:pointer; transition:.15s; margin-bottom:14px; }
+        .upload-zone:hover, .upload-zone.drag, .upload-zone.has { border-color:var(--gold); color:var(--text); }
+
+        /* --- Formulare --- */
+        .fld { display:flex; flex-direction:column; gap:6px; margin-bottom:14px; }
+        .fld-l { font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+        .fld-h { font-size:11px; color:var(--faint); }
+        .inp { width:100%; padding:11px 13px; border-radius:9px; border:1px solid var(--line2); background:var(--bg); outline:none; margin-bottom:0; }
+        .inp:focus { border-color:var(--gold); }
+        textarea.inp { resize:vertical; min-height:80px; }
+        .row2 { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+        @media (max-width:600px) { .row2 { grid-template-columns:1fr; } }
+        .check { display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; color:#cfcfd4; margin-bottom:14px; }
+        .check input { accent-color:var(--gold); width:16px; height:16px; }
+        .gallery { display:grid; grid-template-columns:repeat(auto-fill,minmax(84px,1fr)); gap:8px; margin-bottom:8px; }
+        .thumb { position:relative; aspect-ratio:1; border-radius:8px; overflow:hidden; border:2px solid var(--line2); cursor:pointer; }
+        .thumb.cover { border-color:var(--gold); }
+        .thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+        .thumb .x { position:absolute; top:3px; right:3px; width:20px; height:20px; border-radius:50%; background:rgba(0,0,0,.75); color:var(--red); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+        .thumb .cv { position:absolute; bottom:0; left:0; right:0; text-align:center; background:var(--gold); color:#111; font-size:9px; font-weight:700; padding:1px 0; }
+        .thumb-add { aspect-ratio:1; border-radius:8px; border:2px dashed var(--line2); display:flex; align-items:center; justify-content:center; color:var(--muted); cursor:pointer; background:none; }
+        .thumb-add:hover { border-color:var(--gold); color:var(--gold); }
+        .file-chip { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 12px; border:1px solid var(--gold); border-radius:9px; background:rgba(226,179,110,.06); color:var(--gold); font-size:13px; margin-bottom:10px; }
+        .section-label { font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); font-weight:600; margin:8px 0; }
+
+        /* --- Modale --- */
+        .ov { position:fixed; inset:0; background:rgba(0,0,0,.72); backdrop-filter:blur(3px); z-index:200; display:flex; align-items:center; justify-content:center; padding:16px; }
+        .mdl { background:var(--panel); border:1px solid var(--line2); border-radius:16px; width:100%; max-width:560px; max-height:92vh; display:flex; flex-direction:column; }
+        .mdl.wide { max-width:720px; }
+        .mdl-hd { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:18px 22px; border-bottom:1px solid var(--line); }
+        .mdl-hd h2 { font-size:17px; font-weight:600; }
+        .mdl-bd { padding:22px; overflow-y:auto; }
+        .mdl-ft { display:flex; justify-content:flex-end; gap:10px; margin-top:8px; flex-wrap:wrap; }
+
+        /* --- Toast --- */
+        .toasts { position:fixed; right:18px; bottom:18px; z-index:400; display:flex; flex-direction:column; gap:10px; max-width:min(380px, calc(100vw - 36px)); }
+        .toast { display:flex; gap:10px; align-items:flex-start; padding:12px 14px; border-radius:11px; background:var(--panel2); border:1px solid var(--line2); box-shadow:0 10px 30px rgba(0,0,0,.45); font-size:13px; animation:tin .25s ease both; }
+        .toast.success { border-color:rgba(52,211,153,.5); } .toast.success svg { color:var(--green); }
+        .toast.error { border-color:rgba(248,113,113,.55); } .toast.error svg { color:var(--red); }
+        .toast.info svg { color:var(--gold); }
+        .toast svg { flex:none; margin-top:1px; }
+        @keyframes tin { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+
+        /* --- Grafice --- */
+        .pie { display:flex; align-items:center; gap:22px; flex-wrap:wrap; }
+        .legend { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; font-size:13px; }
+        .legend li { display:flex; align-items:center; gap:8px; }
+        .legend .dot { width:10px; height:10px; border-radius:3px; display:inline-block; }
+        .legend em { font-style:normal; color:var(--faint); font-size:11px; }
+        .rowline { display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--line); }
+        .rowline:last-child { border-bottom:none; }
+        .rowline.link { cursor:pointer; }
+        .rowline.link:hover { background:rgba(255,255,255,.015); }
+        .rank { width:26px; font-weight:700; color:var(--faint); font-family:'DM Mono',monospace; }
+        .grow-1 { flex:1; min-width:0; }
+        .ell { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+        @media (prefers-reduced-motion:reduce) { .adm *, .toast { transition:none !important; animation:none !important; } }
+        @media (max-width:560px) {
+          .pcard { flex-direction:column; gap:10px; } .pcard-bar { width:100%; height:4px; }
+          .btn.sm { padding:8px 12px; }
         }
       `}</style>
 
-      {/* Image preview modal */}
-      {previewImg && (
-        <div className="overlay" onClick={() => setPreviewImg(null)} style={{ zIndex: 300 }}>
-          <div style={{ position: 'relative', maxWidth: '90vw', maxHeight: '90vh' }}>
-            <img src={previewImg} alt="preview" style={{ maxWidth: '90vw', maxHeight: '80vh', objectFit: 'contain', display: 'block' }} />
-            <button onClick={() => setPreviewImg(null)} style={{ position: 'absolute', top: -16, right: -16, background: '#e2b36e', color: '#000', border: 'none', borderRadius: '50%', width: 32, height: 32, fontSize: 16, cursor: 'pointer', fontWeight: 700 }}>×</button>
-          </div>
-        </div>
-      )}
+      {USE_DASH_HEADER && <DashHeader />}
 
-      <div className="root">
-        <DashHeader />
-        <div className={`wrap ${mounted ? 'ready' : ''}`}>
-
-          {/* Header */}
-          <div className="top">
-            <div>
-              <div className="title">ADMIN — <span>{adminName}</span></div>
-              <div style={{ fontSize: 9, color: '#333', marginTop: 4, letterSpacing: '.2em' }}>{isSuperAdmin ? 'SUPERADMIN' : 'ANGAJAT'}</div>
+      <div className={`adm${collapsed ? ' collapsed' : ''}`}>
+        {/* ======================= SIDEBAR ======================= */}
+        <div className={`scrim${drawerOpen ? ' show' : ''}`} onClick={() => setDrawerOpen(false)} aria-hidden="true" />
+        <aside className={`sb${drawerOpen ? ' open' : ''}`} aria-label="Navigare principală">
+          <div className="sb-top">
+            <div className="sb-logo">P4</div>
+            <div className="sb-brand">
+              <b>PROARH.4D</b>
+              <span>Panou administrare</span>
             </div>
-            <button className="logout" onClick={() => supabase.auth.signOut().then(() => router.push('/login'))}>LOGOUT</button>
           </div>
 
-          {/* Tabs */}
-    {/* Tabs */}
-          <div className="tabs">
-            {['overview', 'proiecte', 'comenzi', 'magazin', 'clienti'].map(t => (
-              <button key={t} className={`tab ${activeTab === t ? 'on' : ''}`}
-                onClick={() => { setActiveTab(t); setActiveProjectId(null) }}>
-                {t.toUpperCase()}
-              </button>
-            ))}
-            <Link href="/dashboard/admin/proiecte-noi" className="tab">
-              PUBLICA PROIECTE NOI
+          <nav className="nav">
+            {NAV.map((n) => {
+              const Icon = n.icon
+              const cnt = navCount[n.key]
+              return (
+                <button
+                  key={n.key}
+                  className={`nav-item${activeTab === n.key ? ' on' : ''}`}
+                  onClick={() => go(n.key)}
+                  aria-current={activeTab === n.key ? 'page' : undefined}
+                  title={n.label}
+                >
+                  <Icon size={18} />
+                  <span className="nav-lbl">{n.label}</span>
+                  {cnt !== undefined && <span className="nav-cnt">{cnt}</span>}
+                </button>
+              )
+            })}
+            <div className="nav-sep" />
+            <Link href="/dashboard/admin/proiecte-noi" className="nav-item" title="Publică proiecte noi">
+              <PlusSquare size={18} />
+              <span className="nav-lbl">Publică proiecte noi</span>
+              <ExternalLink size={13} className="nav-cnt" style={{ background: 'none' }} />
             </Link>
+          </nav>
+
+          <div className="sb-foot">
+            <div className="sb-user">
+              <div className="avatar">{initials(adminName)}</div>
+              <div className="sb-user-meta">
+                <b>{adminName}</b>
+                <span>{isSuperAdmin ? 'SUPERADMIN' : 'ANGAJAT'}</span>
+              </div>
+            </div>
+            <button className="btn sm ghost collapse-btn" onClick={toggleCollapsed} title={collapsed ? 'Extinde meniul' : 'Restrânge meniul'} aria-label={collapsed ? 'Extinde meniul' : 'Restrânge meniul'}>
+              {collapsed ? <ChevronsRight size={15} /> : <ChevronsLeft size={15} />}
+              <span className="btn-lbl">Restrânge</span>
+            </button>
+            <button className="btn sm danger" onClick={() => supabase.auth.signOut().then(() => router.push('/login'))} title="Deconectare">
+              <LogOut size={15} />
+              <span className="btn-lbl">Deconectare</span>
+            </button>
           </div>
+        </aside>
 
-          {/* ════════ OVERVIEW ════════ */}
-          {activeTab === 'overview' && (
-            <>
-<div className="stat-grid">
+        {/* ======================= CONȚINUT ======================= */}
+        <div className="main">
+          <header className="topbar">
+            <button className="icon-btn menu-btn" onClick={() => setDrawerOpen(true)} aria-label="Deschide meniul"><Menu size={18} /></button>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              {activeTab === 'proiecte' && activeProject ? (
+                <div className="crumbs">
+                  <button className="btn sm ghost" style={{ padding: '2px 8px' }} onClick={() => go('proiecte')}>Proiecte</button>
+                  <ChevronRight size={13} />
+                  <span className="ell">{activeProject.nume}</span>
+                </div>
+              ) : null}
+              <h1>{activeTab === 'proiecte' && activeProject ? activeProject.nume : TAB_TITLES[activeTab]}</h1>
+            </div>
+            <Link href="/" className="btn sm ghost" title="Înapoi pe site"><ArrowRight size={14} /> Home page</Link>
+          </header>
 
-  <div className="stat"><div className="stat-val">{projects.length}</div><div className="stat-lbl">PROIECTE</div></div>
-  <div className="stat"><div className="stat-val">{projects.filter(p => p.status === 'in_progres').length}</div><div className="stat-lbl">ÎN PROGRES</div></div>
-  <div className="stat"><div className="stat-val">{orders.length}</div><div className="stat-lbl">COMENZI</div></div>
-  <div className="stat"><div className="stat-val">{revenue.toLocaleString('ro-RO')} lei</div><div className="stat-lbl">VENITURI</div></div>
-  <div className="stat"><div className="stat-val">{products.filter(p => p.activ).length}</div><div className="stat-lbl">PRODUSE ACTIVE</div></div>
-  <div className="stat"><div className="stat-val">{clients.filter(c => c.rol === 'client').length}</div><div className="stat-lbl">CLIENȚI</div></div>
-
-</div>
-
-
-
-              {/* Overview cards */}
-              <div className="overview-grid">
-                {/* Pie chart proiecte */}
-                <div className="overview-card">
-                  <div className="overview-card-title">PROIECTE PER STATUS</div>
-                  <PieChart data={pieData} />
+          <main className="content">
+            {/* ======================= PREZENTARE ======================= */}
+            {activeTab === 'overview' && (
+              <>
+                <div className="stats">
+                  <button className="stat" onClick={() => go('proiecte')}>
+                    <div className="stat-ic"><Folder size={18} /></div>
+                    <div className="stat-v">{projects.length}</div>
+                    <div className="stat-l">Proiecte</div>
+                  </button>
+                  <button className="stat" onClick={() => { setProjectStatusFilter('in_progres'); go('proiecte') }}>
+                    <div className="stat-ic"><Folder size={18} /></div>
+                    <div className="stat-v">{projects.filter((p) => p.status === 'in_progres').length}</div>
+                    <div className="stat-l">Proiecte în progres</div>
+                  </button>
+                  <button className="stat" onClick={() => go('comenzi')}>
+                    <div className="stat-ic"><ShoppingCart size={18} /></div>
+                    <div className="stat-v">{orders.length}</div>
+                    <div className="stat-l">Comenzi</div>
+                    {pendingOrders > 0 && <div className="stat-n">{pendingOrders} în așteptare</div>}
+                  </button>
+                  <button className="stat" onClick={() => go('comenzi')}>
+                    <div className="stat-ic"><ShoppingCart size={18} /></div>
+                    <div className="stat-v">{revenue.toLocaleString('ro-RO')} <span style={{ fontSize: 14, color: 'var(--muted)' }}>lei</span></div>
+                    <div className="stat-l">Venituri (plătite)</div>
+                  </button>
+                  <button className="stat" onClick={() => { setProductView('active'); go('magazin') }}>
+                    <div className="stat-ic"><Package size={18} /></div>
+                    <div className="stat-v">{products.filter((p) => p.activ).length}</div>
+                    <div className="stat-l">Produse active</div>
+                  </button>
+                  <button className="stat" onClick={() => { setClientRoleFilter('client'); go('clienti') }}>
+                    <div className="stat-ic"><Users size={18} /></div>
+                    <div className="stat-v">{clients.filter((c) => c.rol === 'client').length}</div>
+                    <div className="stat-l">Clienți</div>
+                  </button>
                 </div>
 
-                {/* Top produse */}
-                <div className="overview-card">
-                  <div className="overview-card-title">TOP PRODUSE DESCĂRCATE</div>
-                  {topProducts.length === 0
-                    ? <div style={{ fontSize: 12, color: '#444' }}>Fără date</div>
-                    : topProducts.map((p, i) => (
-                      <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: i < topProducts.length - 1 ? '1px solid #1a1a1a' : 'none' }}>
-                        <span style={{ fontSize: 18, color: '#333', fontWeight: 700, minWidth: 24 }}>#{i + 1}</span>
-                        {p.imagine_url && <img src={p.imagine_url} alt="" style={{ width: 36, height: 28, objectFit: 'cover', background: '#111', flexShrink: 0 }} />}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 12, color: '#e0e0e0', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.nume}</div>
-                          <div style={{ fontSize: 10, color: '#555' }}>{p.nr_descarcari} descărcări</div>
+                <div className="grid-2">
+                  <section className="panel">
+                    <div className="panel-t">Proiecte per status</div>
+                    <PieChart data={pieData} />
+                  </section>
+                  <section className="panel">
+                    <div className="panel-t">Venituri ultimele 6 luni</div>
+                    <RevenueBars data={monthlyRevenue} />
+                  </section>
+                </div>
+
+                <div className="grid-2">
+                  <section className="panel">
+                    <div className="panel-t">
+                      Comenzi recente
+                      <button className="btn sm ghost" onClick={() => go('comenzi')}>Vezi toate</button>
+                    </div>
+                    {orders.length === 0 ? <div className="muted">Nicio comandă.</div> : orders.slice(0, 5).map((o) => (
+                      <div key={o.id} className="rowline link" onClick={() => { go('comenzi'); openOrder(o) }}>
+                        <div className="grow-1">
+                          <div className="ell">{o.billing_name || o.email}</div>
+                          <div className="cell-sub">{fmt(o.created_at)}</div>
                         </div>
-                        <span style={{ fontSize: 12, color: '#e2b36e', fontWeight: 700 }}>{Number(p.pret).toLocaleString('ro-RO')} lei</span>
-                      </div>
-                    ))
-                  }
-                </div>
-              </div>
-
-              {/* Export + recent */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
-                <div className="section-title">COMENZI RECENTE</div>
-                <button className="btn sm" onClick={exportCSV}>⬇ EXPORT CSV</button>
-              </div>
-              {orders.slice(0, 5).map(o => (
-                <div key={o.id} className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                  <div>
-                    <div style={{ fontSize: 12, color: '#e0e0e0', marginBottom: 3 }}>{o.email}</div>
-                    <div style={{ fontSize: 10, color: '#444' }}>{fmt(o.created_at)}</div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ color: '#e2b36e', fontSize: 13, marginBottom: 4 }}>{Number(o.total).toLocaleString('ro-RO')} lei</div>
-                    <span className="badge" style={{ color: STATUS_COLORS[o.status] || '#777' }}>{o.status}</span>
-                  </div>
-                </div>
-              ))}
-
-              <div className="sep" />
-              <div className="section-title" style={{ marginBottom: 12 }}>PROIECTE RECENTE</div>
-              {projects.slice(0, 5).map(p => (
-                <div key={p.id} className="card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, cursor: 'pointer' }}
-                  onClick={() => { setActiveTab('proiecte'); setActiveProjectId(p.id); fetchProjectDetails(p.id) }}>
-                  <div>
-                    <div style={{ fontSize: 12, color: '#e0e0e0', marginBottom: 3 }}>{p.nume}</div>
-                    <div style={{ fontSize: 10, color: '#444' }}>{p.profiles_client?.full_name || '—'} · {fmt(p.created_at)}</div>
-                  </div>
-                  <span className="badge" style={{ color: STATUS_COLORS[p.status] || '#777' }}>{p.status}</span>
-                </div>
-              ))}
-            </>
-          )}
-
-          {/* ════════ PROIECTE LIST ════════ */}
-          {activeTab === 'proiecte' && !activeProjectId && (
-            <>
-              <div className="section-hd">
-                <input className="search" placeholder="Caută proiect sau client..." value={projectFilter} onChange={e => setProjectFilter(e.target.value)} />
-                <button className="btn primary" onClick={() => setShowNewProject(true)}>+ PROIECT NOU</button>
-              </div>
-              {filteredProjects.length === 0
-                ? <div className="empty">Nu există proiecte.</div>
-                : filteredProjects.map(p => (
-                  <div key={p.id} className="card">
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-                      <div style={{ flex: 1, minWidth: 180 }}>
-                        <div style={{ fontSize: 13, color: '#fff', marginBottom: 5 }}>{p.nume}</div>
-                        <div style={{ fontSize: 10, color: '#555', display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                          <span>👤 {p.profiles_client?.full_name || '—'}</span>
-                          <span>📋 {p.profiles_responsabil?.full_name || '—'}</span>
-                          <span>{fmt(p.created_at)}</span>
-                        </div>
-                        {p.adresa && <div style={{ fontSize: 10, color: '#444', marginTop: 4 }}>📍 {p.adresa}</div>}
-                        <div style={{ display: 'flex', gap: 10, marginTop: 6, flexWrap: 'wrap' }}>
-                          {p.suprafata && <span className="chip">{p.suprafata} m²</span>}
-                          {p.buget && <span className="chip">{Number(p.buget).toLocaleString('ro-RO')} lei</span>}
-                          {p.data_estimata_finalizare && <span className="chip">Est. {p.data_estimata_finalizare}</span>}
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ color: 'var(--gold)', fontWeight: 600 }}>{fmtMoney(o.total)}</div>
+                          <StatusBadge status={o.status} />
                         </div>
                       </div>
-                      <span className="badge" style={{ color: STATUS_COLORS[p.status] || '#777' }}>{p.status}</span>
+                    ))}
+                  </section>
+                  <section className="panel">
+                    <div className="panel-t">
+                      Proiecte recente
+                      <button className="btn sm ghost" onClick={() => go('proiecte')}>Vezi toate</button>
                     </div>
-                    <div className="btn-row">
-                      <button className="btn sm primary" onClick={() => { setActiveProjectId(p.id); fetchProjectDetails(p.id) }}>DETALII →</button>
-                      <button className="btn sm" onClick={() => setEditProject({ ...p })}>EDITEAZĂ</button>
-                      <select className="btn sm" style={{ background: 'transparent' }} value={p.status} onChange={e => updateProjectStatus(p.id, e.target.value)}>
-                        {PROJECT_STATUSES.map(s => <option key={s} value={s} style={{ background: '#111' }}>{s}</option>)}
-                      </select>
-                      <button className="btn sm" onClick={() => openNotify(p.client_id!, p.profiles_client?.full_name || 'client')} disabled={!p.client_id}>NOTIFY</button>
-                      {isSuperAdmin && <button className="btn sm danger" onClick={() => deleteProject(p.id)}>ȘTERGE</button>}
-                    </div>
-                  </div>
-                ))
-              }
-            </>
-          )}
-
-          {/* ════════ PROIECT DETAIL ════════ */}
-          {activeTab === 'proiecte' && activeProjectId && activeProject && (
-            <>
-              <button className="detail-back" onClick={() => setActiveProjectId(null)}>← ÎNAPOI LA PROIECTE</button>
-              <div className="card" style={{ marginBottom: 20 }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 18, color: '#fff', marginBottom: 8, fontWeight: 300 }}>{activeProject.nume}</div>
-                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', fontSize: 10, color: '#555', marginBottom: 8 }}>
-                      <span>👤 <span style={{ color: '#aaa' }}>{activeProject.profiles_client?.full_name || '—'}</span></span>
-                      <span>📋 <span style={{ color: '#aaa' }}>{activeProject.profiles_responsabil?.full_name || '—'}</span></span>
-                      {activeProject.adresa && <span>📍 {activeProject.adresa}</span>}
-                      {activeProject.buget && <span>💰 {Number(activeProject.buget).toLocaleString('ro-RO')} lei</span>}
-                      {activeProject.suprafata && <span>📐 {activeProject.suprafata} m²</span>}
-                    </div>
-                    {activeProject.descriere && <div style={{ fontSize: 11, color: '#555', lineHeight: 1.7 }}>{activeProject.descriere}</div>}
-                    {phases.length > 0 && (
-                      <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div className="prog-wrap"><div className="prog-bar" style={{ width: `${overallProgress}%` }} /></div>
-                        <span style={{ fontSize: 10, color: '#e2b36e', minWidth: 40 }}>{overallProgress}% finalizat</span>
+                    {projects.length === 0 ? <div className="muted">Niciun proiect.</div> : projects.slice(0, 5).map((p) => (
+                      <div key={p.id} className="rowline link" onClick={() => go('proiecte', p.id)}>
+                        <div className="grow-1">
+                          <div className="ell">{p.nume}</div>
+                          <div className="cell-sub">{p.profiles_client?.full_name || '—'} · {fmt(p.created_at)}</div>
+                        </div>
+                        <StatusBadge status={p.status} />
                       </div>
-                    )}
-                  </div>
-                  <span className="badge" style={{ color: STATUS_COLORS[activeProject.status] || '#777' }}>{activeProject.status}</span>
+                    ))}
+                  </section>
                 </div>
-                <div className="btn-row" style={{ marginTop: 12 }}>
-                  <button className="btn sm" onClick={() => setEditProject({ ...activeProject })}>EDITEAZĂ</button>
-                  <button className="btn sm" onClick={() => openNotify(activeProject.client_id!, activeProject.profiles_client?.full_name || 'client')} disabled={!activeProject.client_id}>NOTIFY CLIENT</button>
-                  {isSuperAdmin && <button className="btn sm danger" onClick={() => deleteProject(activeProjectId)}>ȘTERGE PROIECT</button>}
-                </div>
-              </div>
 
-              <div className="sub-tabs">
-                {[['faze', `Faze (${phases.length})`], ['documente', `Documente (${documents.length})`], ['mesaje', `Mesaje (${messages.length})`]].map(([t, label]) => (
-                  <button key={t} className={`sub-tab ${activeProjectTab === t ? 'on' : ''}`} onClick={() => setActiveProjectTab(t)}>{label}</button>
-                ))}
-              </div>
+                <section className="panel">
+                  <div className="panel-t">Top produse descărcate</div>
+                  {topProducts.length === 0 ? <div className="muted">Fără date.</div> : topProducts.map((p, i) => (
+                    <div key={p.id} className="rowline">
+                      <span className="rank">#{i + 1}</span>
+                      {p.imagine_url && <img src={p.imagine_url} alt="" style={{ width: 44, height: 34, objectFit: 'cover', borderRadius: 6, background: '#0e0e10' }} />}
+                      <div className="grow-1">
+                        <div className="ell" style={{ fontWeight: 600 }}>{p.nume}</div>
+                        <div className="cell-sub">{p.nr_descarcari} descărcări</div>
+                      </div>
+                      <span style={{ color: 'var(--gold)', fontWeight: 600 }}>{fmtMoney(p.pret)}</span>
+                    </div>
+                  ))}
+                </section>
+              </>
+            )}
 
-              {/* FAZE */}
-              {activeProjectTab === 'faze' && (
-                <>
-                  <div className="section-hd">
-                    <div className="section-title">FAZE PROIECT</div>
-                    <button className="btn sm primary" onClick={() => setShowNewPhase(true)}>+ FAZĂ NOUĂ</button>
+            {/* ======================= PROIECTE – LISTĂ ======================= */}
+            {activeTab === 'proiecte' && !activeProjectId && (
+              <>
+                <div className="toolbar">
+                  <div className="search">
+                    <Search size={15} />
+                    <input placeholder="Caută proiect, client sau adresă..." value={projectFilter} onChange={(e) => setProjectFilter(e.target.value)} aria-label="Caută proiecte" />
                   </div>
-                  {phases.length === 0 ? <div className="empty">Nicio fază adăugată.</div>
-                    : phases.map(ph => (
-                      <div key={ph.id} className="card">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10, flexWrap: 'wrap' }}>
-                          <div style={{ fontSize: 12, color: '#e0e0e0', flex: 1 }}><span style={{ color: '#444', marginRight: 8 }}>{ph.ordine + 1}.</span>{ph.nume}</div>
-                          <span className="badge" style={{ color: STATUS_COLORS[ph.status] || '#777' }}>{ph.status}</span>
-                        </div>
-                        {ph.descriere && <div style={{ fontSize: 10, color: '#444', marginBottom: 10 }}>{ph.descriere}</div>}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                          <div className="prog-wrap"><div className="prog-bar" style={{ width: `${ph.progres}%` }} /></div>
-                          <span style={{ fontSize: 11, color: '#e2b36e', minWidth: 36 }}>{ph.progres}%</span>
-                        </div>
-                        {(ph.data_start || ph.data_sfarsit) && (
-                          <div style={{ fontSize: 9, color: '#444', display: 'flex', gap: 12 }}>
-                            {ph.data_start && <span>Start: {ph.data_start}</span>}
-                            {ph.data_sfarsit && <span>Sfârșit: {ph.data_sfarsit}</span>}
+                  <SortBar options={PROJECT_SORTS} sort={projectSort.sort} onChange={projectSort.setSort} />
+                  <div className="grow" />
+                  <button className="btn primary" onClick={() => openProjectForm()}><Plus size={16} /> Proiect nou</button>
+                </div>
+
+                <div className="chips" role="group" aria-label="Filtrare după status">
+                  {['toate', ...PROJECT_STATUSES].map((s) => {
+                    const count = s === 'toate' ? projects.length : projects.filter((p) => p.status === s).length
+                    return (
+                      <button key={s} className={`chip-btn${projectStatusFilter === s ? ' on' : ''}`} onClick={() => setProjectStatusFilter(s)}>
+                        {s === 'toate' ? 'Toate' : STATUS_LABELS[s]}<em>{count}</em>
+                      </button>
+                    )
+                  })}
+                </div>
+
+                {projectPg.total === 0 ? (
+                  <Empty text={projects.length === 0 ? 'Nu există proiecte încă.' : 'Niciun proiect nu corespunde filtrelor.'} icon={<Folder size={26} />} />
+                ) : (
+                  <div className="plist">
+                    {projectPg.slice.map((p) => (
+                      <article key={p.id} className="pcard">
+                        <div className="pcard-bar" style={{ background: STATUS_COLORS[p.status] || '#555555' }} />
+                        <div className="pcard-body">
+                          <div className="pcard-top">
+                            <div style={{ minWidth: 0 }}>
+                              <h3>{p.nume}</h3>
+                              <div className="meta">
+                                <span>Client: <b style={{ color: '#d4d4d8', fontWeight: 500 }}>{p.profiles_client?.full_name || '—'}</b></span>
+                                <span>Responsabil: <b style={{ color: '#d4d4d8', fontWeight: 500 }}>{p.profiles_responsabil?.full_name || '—'}</b></span>
+                                <span>{fmt(p.created_at)}</span>
+                              </div>
+                              {p.adresa && <div className="meta">{p.adresa}</div>}
+                            </div>
+                            <StatusBadge status={p.status} />
                           </div>
-                        )}
-                        <div className="btn-row">
-                          <button className="btn sm" onClick={() => setEditPhase({ ...ph })}>EDITEAZĂ</button>
-                          <button className="btn sm danger" onClick={() => deletePhase(ph.id)}>ȘTERGE</button>
+                          <div className="chips-row">
+                            {p.suprafata != null && <span className="chip">{p.suprafata} m²</span>}
+                            {p.buget != null && <span className="chip">{fmtMoney(p.buget)}</span>}
+                            {p.data_estimata_finalizare && <span className="chip">Termen: {fmt(p.data_estimata_finalizare)}</span>}
+                          </div>
+                          <div className="acts" style={{ marginTop: 14 }}>
+                            <button className="btn sm primary" onClick={() => go('proiecte', p.id)}>Detalii <ArrowRight size={13} /></button>
+                            <button className="btn sm" onClick={() => openProjectForm(p)}><Pencil size={13} /> Editează</button>
+                            <select className="sel" value={p.status} onChange={(e) => updateProjectStatus(p.id, e.target.value)} aria-label="Schimbă statusul">
+                              {PROJECT_STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+                            </select>
+                            <button className="btn sm" onClick={() => openNotify(p.client_id!, p.profiles_client?.full_name || 'client')} disabled={!p.client_id}><Bell size={13} /> Notifică</button>
+                            {isSuperAdmin && <button className="btn sm danger" onClick={() => deleteProject(p)}><Trash2 size={13} /> Șterge</button>}
+                          </div>
                         </div>
-                      </div>
-                    ))
-                  }
-                </>
-              )}
+                      </article>
+                    ))}
+                  </div>
+                )}
+                <Pagination {...projectPg} onPage={projectPg.setPage} onSize={projectPg.setPageSize} sizes={[5, 10, 25, 50]} />
+              </>
+            )}
 
-              {/* DOCUMENTE */}
-              {activeProjectTab === 'documente' && (
-                <>
-                  <div style={{ border: '1px solid #1a1a1a', padding: 16, marginBottom: 16, background: 'rgba(255,255,255,.01)' }}>
-                    <div className="section-title" style={{ marginBottom: 12 }}>ÎNCARCĂ DOCUMENT</div>
-                    <div className={`upload-zone ${dragOver ? 'drag' : ''} ${uploadFile ? 'has-file' : ''}`}
-                      onClick={() => fileInputRef.current?.click()}
-                      onDragOver={e => { e.preventDefault(); setDragOver(true) }}
-                      onDragLeave={() => setDragOver(false)}
-                      onDrop={e => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f) }}>
-                      {uploadFile ? (
-                        <div><div style={{ fontSize: 13, color: '#e2b36e', marginBottom: 4 }}>✓ {uploadFile.name}</div><div style={{ fontSize: 10, color: '#555' }}>{fmtBytes(uploadFile.size)}</div></div>
-                      ) : (
-                        <div><div style={{ fontSize: 24, marginBottom: 8, color: '#333' }}>↑</div><div style={{ fontSize: 11, color: '#444' }}>Click sau drag & drop</div><div style={{ fontSize: 9, color: '#2a2a2a', marginTop: 6 }}>PDF · DXF · DWG · DOC · XLS · PNG · ZIP · IFC · SKP</div></div>
+            {/* ======================= PROIECT – DETALII ======================= */}
+            {activeTab === 'proiecte' && activeProjectId && !activeProject && (
+              <Empty text="Proiectul nu a fost găsit (sau se încarcă)." icon={<Folder size={26} />} />
+            )}
+
+            {activeTab === 'proiecte' && activeProjectId && activeProject && (
+              <>
+                <section className="panel" style={{ marginBottom: 18 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                    <div style={{ flex: 1, minWidth: 220 }}>
+                      <div className="meta" style={{ marginTop: 0 }}>
+                        <span>Client: <b style={{ color: '#d4d4d8', fontWeight: 500 }}>{activeProject.profiles_client?.full_name || '—'}</b></span>
+                        <span>Responsabil: <b style={{ color: '#d4d4d8', fontWeight: 500 }}>{activeProject.profiles_responsabil?.full_name || '—'}</b></span>
+                      </div>
+                      <div className="chips-row">
+                        {activeProject.adresa && <span className="chip">{activeProject.adresa}</span>}
+                        {activeProject.buget != null && <span className="chip">{fmtMoney(activeProject.buget)}</span>}
+                        {activeProject.suprafata != null && <span className="chip">{activeProject.suprafata} m²</span>}
+                        {activeProject.data_estimata_finalizare && <span className="chip">Termen: {fmt(activeProject.data_estimata_finalizare)}</span>}
+                      </div>
+                      {activeProject.descriere && <p className="muted" style={{ marginTop: 12, maxWidth: 760 }}>{activeProject.descriere}</p>}
+                      {phases.length > 0 && (
+                        <div style={{ marginTop: 14, display: 'flex', alignItems: 'center', gap: 10, maxWidth: 420 }}>
+                          <div className="prog"><i style={{ width: `${overallProgress}%` }} /></div>
+                          <span className="mono" style={{ color: 'var(--gold)', fontSize: 12 }}>{overallProgress}%</span>
+                        </div>
                       )}
                     </div>
-                    <input ref={fileInputRef} type="file" accept={DOC_ACCEPT} style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f) }} />
-                    <div className="inp-row">
-                      <input className="inp" style={{ margin: 0 }} placeholder="Nume document" value={uploadName} onChange={e => setUploadName(e.target.value)} />
-                      <select className="inp" style={{ margin: 0 }} value={uploadTip} onChange={e => setUploadTip(e.target.value)}>
-                        {DOC_TIPURI.map(t => <option key={t} value={t} style={{ background: '#111' }}>{t}</option>)}
-                      </select>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4, flexWrap: 'wrap', gap: 8 }}>
-                      <label style={{ fontSize: 10, color: '#555', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                        <input type="checkbox" checked={uploadVizibil} onChange={e => setUploadVizibil(e.target.checked)} style={{ accentColor: '#e2b36e' }} />
-                        Vizibil pentru client
-                      </label>
-                      <div style={{ display: 'flex', gap: 8 }}>
-                        {uploadFile && <button className="btn sm" onClick={() => { setUploadFile(null); setUploadName(''); if (fileInputRef.current) fileInputRef.current.value = '' }}>ANULEAZĂ</button>}
-                        <button className="btn sm primary" onClick={uploadDocument} disabled={!uploadFile || uploading}>
-                          {uploading ? 'SE ÎNCARCĂ...' : 'ÎNCARCĂ FIȘIER'}
-                        </button>
-                      </div>
-                    </div>
-                    {uploadError && <div style={{ fontSize: 10, color: '#f87171', marginTop: 8 }}>⚠ {uploadError}</div>}
+                    <StatusBadge status={activeProject.status} />
                   </div>
-                  <div className="section-hd"><div className="section-title">DOCUMENTE ({documents.length})</div></div>
-                  {documents.length === 0 ? <div className="empty">Niciun document încărcat.</div>
-                    : (
-                      <div className="scroll-x">
+                  <div className="acts" style={{ marginTop: 16 }}>
+                    <button className="btn sm" onClick={() => openProjectForm(activeProject)}><Pencil size={13} /> Editează</button>
+                    <button className="btn sm" onClick={() => openNotify(activeProject.client_id!, activeProject.profiles_client?.full_name || 'client')} disabled={!activeProject.client_id}><Bell size={13} /> Notifică clientul</button>
+                    {isSuperAdmin && <button className="btn sm danger" onClick={() => deleteProject(activeProject)}><Trash2 size={13} /> Șterge proiectul</button>}
+                  </div>
+                </section>
+
+                <div className="subtabs" role="tablist">
+                  {([['faze', `Faze (${phases.length})`], ['documente', `Documente (${documents.length})`], ['mesaje', `Mesaje (${messages.length})`]] as const).map(([t, label]) => (
+                    <button key={t} role="tab" aria-selected={activeProjectTab === t} className={`subtab${activeProjectTab === t ? ' on' : ''}`} onClick={() => setActiveProjectTab(t)}>{label}</button>
+                  ))}
+                </div>
+
+                {/* ---- FAZE ---- */}
+                {activeProjectTab === 'faze' && (
+                  <>
+                    <div className="toolbar">
+                      <div className="panel-t" style={{ margin: 0 }}>Faze proiect</div>
+                      <div className="grow" />
+                      <button className="btn primary sm" onClick={() => setPhaseForm({ ...emptyPhase })}><Plus size={14} /> Fază nouă</button>
+                    </div>
+                    {phasePg.total === 0 ? <Empty text="Nicio fază adăugată." /> : phasePg.slice.map((ph, i) => {
+                      const globalIdx = (phasePg.page - 1) * phasePg.pageSize + i
+                      return (
+                        <div key={ph.id} className="phase">
+                          <div className="phase-top">
+                            <span className="phase-n">{globalIdx + 1}</span>
+                            <b style={{ flex: 1, minWidth: 140 }}>{ph.nume}</b>
+                            <StatusBadge status={ph.status} />
+                          </div>
+                          {ph.descriere && <p className="muted" style={{ marginBottom: 10 }}>{ph.descriere}</p>}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                            <div className="prog"><i style={{ width: `${ph.progres}%` }} /></div>
+                            <span className="mono" style={{ color: 'var(--gold)', fontSize: 12, minWidth: 36 }}>{ph.progres}%</span>
+                          </div>
+                          {(ph.data_start || ph.data_sfarsit) && (
+                            <div className="cell-sub" style={{ display: 'flex', gap: 14 }}>
+                              {ph.data_start && <span>Start: {fmt(ph.data_start)}</span>}
+                              {ph.data_sfarsit && <span>Sfârșit: {fmt(ph.data_sfarsit)}</span>}
+                            </div>
+                          )}
+                          <div className="acts" style={{ marginTop: 12 }}>
+                            <button className="icon-btn" onClick={() => movePhase(ph, -1)} disabled={globalIdx === 0} aria-label="Mută mai sus"><ArrowUp size={14} /></button>
+                            <button className="icon-btn" onClick={() => movePhase(ph, 1)} disabled={globalIdx === phases.length - 1} aria-label="Mută mai jos"><ArrowDown size={14} /></button>
+                            <button className="btn sm" onClick={() => setPhaseForm({ id: ph.id, nume: ph.nume, descriere: ph.descriere || '', status: ph.status, progres: ph.progres, data_start: ph.data_start || '', data_sfarsit: ph.data_sfarsit || '' })}><Pencil size={13} /> Editează</button>
+                            <button className="btn sm danger" onClick={() => deletePhase(ph)}><Trash2 size={13} /> Șterge</button>
+                          </div>
+                        </div>
+                      )
+                    })}
+                    <Pagination {...phasePg} onPage={phasePg.setPage} onSize={phasePg.setPageSize} sizes={[5, 10, 25]} />
+                  </>
+                )}
+
+                {/* ---- DOCUMENTE ---- */}
+                {activeProjectTab === 'documente' && (
+                  <>
+                    <div className="toolbar">
+                      <div className="panel-t" style={{ margin: 0 }}>Documente</div>
+                      <div className="grow" />
+                      <button className="btn primary sm" onClick={() => setShowUpload((s) => !s)}><Upload size={14} /> {showUpload ? 'Ascunde încărcarea' : 'Încarcă document'}</button>
+                    </div>
+
+                    {showUpload && (
+                      <section className="panel" style={{ marginBottom: 16 }}>
+                        <div
+                          className={`upload-zone${dragOver ? ' drag' : ''}${uploadFile ? ' has' : ''}`}
+                          onClick={() => fileInputRef.current?.click()}
+                          onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+                          onDragLeave={() => setDragOver(false)}
+                          onDrop={(e) => { e.preventDefault(); setDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f) }}
+                        >
+                          {uploadFile ? (
+                            <div><b style={{ color: 'var(--gold)' }}>{uploadFile.name}</b><div className="cell-sub">{fmtBytes(uploadFile.size)}</div></div>
+                          ) : (
+                            <div><Upload size={22} style={{ marginBottom: 8 }} /><div>Click sau trage fișierul aici</div><div className="cell-sub" style={{ marginTop: 4 }}>PDF · DXF · DWG · DOC · XLS · PNG · ZIP · IFC · SKP</div></div>
+                          )}
+                        </div>
+                        <input ref={fileInputRef} type="file" accept={DOC_ACCEPT} style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f) }} />
+                        <div className="row2">
+                          <Field label="Nume document"><input className="inp" value={uploadName} onChange={(e) => setUploadName(e.target.value)} /></Field>
+                          <Field label="Tip">
+                            <select className="inp" value={uploadTip} onChange={(e) => setUploadTip(e.target.value)}>
+                              {DOC_TIPURI.map((t) => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                          </Field>
+                        </div>
+                        <label className="check"><input type="checkbox" checked={uploadVizibil} onChange={(e) => setUploadVizibil(e.target.checked)} /> Vizibil pentru client</label>
+                        {uploadError && <p style={{ color: 'var(--red)', fontSize: 13, marginBottom: 10 }}>{uploadError}</p>}
+                        <div className="mdl-ft" style={{ marginTop: 0 }}>
+                          {uploadFile && <button className="btn" onClick={() => { setUploadFile(null); setUploadName(''); if (fileInputRef.current) fileInputRef.current.value = '' }}>Anulează</button>}
+                          <button className="btn primary" onClick={uploadDocument} disabled={!uploadFile || uploading}>{uploading ? 'Se încarcă...' : 'Încarcă fișierul'}</button>
+                        </div>
+                      </section>
+                    )}
+
+                    {docPg.total === 0 ? <Empty text="Niciun document încărcat." icon={<FileText size={26} />} /> : (
+                      <div className="tbl-wrap">
                         <table className="tbl">
-                          <thead><tr><th>NUME</th><th>TIP</th><th>MĂRIME</th><th>VIZIBIL</th><th>DATA</th><th></th></tr></thead>
+                          <thead>
+                            <tr>
+                              <Th label="Nume" k="nume" sort={docSort.sort} onSort={docSort.toggle} />
+                              <Th label="Tip" k="tip" sort={docSort.sort} onSort={docSort.toggle} />
+                              <Th label="Mărime" k="marime" sort={docSort.sort} onSort={docSort.toggle} />
+                              <th><span>Vizibil</span></th>
+                              <Th label="Data" k="data" sort={docSort.sort} onSort={docSort.toggle} firstDir="desc" />
+                              <th><span /></th>
+                            </tr>
+                          </thead>
                           <tbody>
-                            {documents.map(d => (
+                            {docPg.slice.map((d) => (
                               <tr key={d.id}>
-                                <td><a href={d.url} target="_blank" rel="noreferrer" style={{ color: '#e2b36e', textDecoration: 'none' }}>{d.nume} ↗</a></td>
-                                <td><span className="badge" style={{ color: '#555' }}>{d.tip}</span></td>
-                                <td style={{ color: '#555' }}>{fmtBytes(d.marime_bytes)}</td>
-                                <td><span style={{ color: d.vizibil_client ? '#34d399' : '#444', fontSize: 10 }}>{d.vizibil_client ? '✓ DA' : '✗ NU'}</span></td>
-                                <td style={{ color: '#444' }}>{fmt(d.created_at)}</td>
-                                <td><button className="btn sm danger" onClick={() => deleteDocument(d.id, d.url)}>ȘT</button></td>
+                                <td><a href={d.url} target="_blank" rel="noreferrer" style={{ color: 'var(--gold)', textDecoration: 'none', fontWeight: 600 }}>{d.nume} <ExternalLink size={12} style={{ verticalAlign: '-1px' }} /></a></td>
+                                <td><span className="chip">{d.tip}</span></td>
+                                <td className="muted">{fmtBytes(d.marime_bytes)}</td>
+                                <td style={{ color: d.vizibil_client ? 'var(--green)' : 'var(--faint)' }}>{d.vizibil_client ? 'Da' : 'Nu'}</td>
+                                <td className="muted">{fmt(d.created_at)}</td>
+                                <td><button className="btn sm danger" onClick={() => deleteDocument(d)} aria-label={`Șterge ${d.nume}`}><Trash2 size={13} /></button></td>
                               </tr>
                             ))}
                           </tbody>
                         </table>
                       </div>
-                    )
-                  }
-                </>
-              )}
+                    )}
+                    <Pagination {...docPg} onPage={docPg.setPage} onSize={docPg.setPageSize} sizes={[5, 10, 25]} />
+                  </>
+                )}
 
-              {/* MESAJE */}
-              {activeProjectTab === 'mesaje' && (
-                <>
-                  <div className="msgs">
-                    {messages.length === 0 ? <div className="empty">Niciun mesaj.</div>
-                      : messages.map(m => {
-                        const isAdmin = m.sender_id === currentAdminId
+                {/* ---- MESAJE ---- */}
+                {activeProjectTab === 'mesaje' && (
+                  <>
+                    <div className="chat" ref={chatBoxRef} role="log" aria-live="polite">
+                      {messages.length === 0 ? <div className="muted" style={{ textAlign: 'center', padding: 30 }}>Niciun mesaj.</div> : msgSlice.map((m) => {
+                        const mine = m.sender_id === currentAdminId
                         return (
-                          <div key={m.id} className={`msg ${isAdmin ? 'admin-msg' : 'client-msg'}`}>
-                            <div style={{ color: '#e0e0e0' }}>{m.mesaj}</div>
-                            <div className="msg-meta">{m.profiles?.full_name || 'Anonim'} · {fmt(m.created_at)}</div>
+                          <div key={m.id} className={`bubble ${mine ? 'me' : 'other'}`}>
+                            {m.mesaj}
+                            <small>{m.profiles?.full_name || 'Anonim'} · {new Date(m.created_at).toLocaleString('ro-RO', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</small>
                           </div>
                         )
-                      })
-                    }
-                    <div ref={msgEndRef} />
-                  </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <input className="inp" style={{ margin: 0 }} placeholder="Scrie un mesaj..." value={newMessage}
-                      onChange={e => setNewMessage(e.target.value)} onKeyDown={e => e.key === 'Enter' && sendMessage()} />
-                    <button className="btn primary" onClick={sendMessage}>TRIMITE</button>
-                  </div>
-                </>
-              )}
-            </>
-          )}
-
-          {/* ════════ COMENZI ════════ */}
-          {activeTab === 'comenzi' && (
-            <>
-              <div className="section-hd">
-                <input className="search" placeholder="Caută după email sau status..." value={orderFilter} onChange={e => setOrderFilter(e.target.value)} />
-                <button className="btn sm" onClick={exportCSV}>⬇ EXPORT CSV</button>
-              </div>
-              <div className="scroll-x">
-                <table className="tbl">
-                  <thead><tr><th>EMAIL</th><th>TOTAL</th><th>STATUS</th><th>DATA</th><th>STRIPE</th><th>ACȚIUNI</th></tr></thead>
-                  <tbody>
-                    {filteredOrders.length === 0
-                      ? <tr><td colSpan={6} style={{ textAlign: 'center', color: '#2a2a2a', padding: 32 }}>Nicio comandă.</td></tr>
-                      : filteredOrders.map(o => (
-                        <tr key={o.id}>
-                          <td style={{ color: '#e0e0e0' }}>{o.email}</td>
-                          <td style={{ color: '#e2b36e' }}>{Number(o.total).toLocaleString('ro-RO')} lei</td>
-                          <td>
-                            <select className="btn sm" style={{ background: 'transparent', border: 'none', color: STATUS_COLORS[o.status] || '#777' }}
-                              value={o.status} onChange={e => updateOrderStatus(o.id, e.target.value)}>
-                              {ORDER_STATUSES.map(s => <option key={s} value={s} style={{ background: '#111', color: '#e0e0e0' }}>{s}</option>)}
-                            </select>
-                          </td>
-                          <td style={{ color: '#444' }}>{fmt(o.created_at)}</td>
-                          <td style={{ color: '#333', fontSize: 9 }}>{o.stripe_payment_id ? o.stripe_payment_id.slice(0, 14) + '…' : '—'}</td>
-                          <td>
-                            <div style={{ display: 'flex', gap: 6 }}>
-                              {o.user_id && <button className="btn sm" onClick={() => openNotify(o.user_id!, o.email)}>NOTIFY</button>}
-                              {isSuperAdmin && <button className="btn sm danger" onClick={() => deleteOrder(o.id)}>ȘT</button>}
-                            </div>
-                          </td>
-                        </tr>
-                      ))
-                    }
-                  </tbody>
-                </table>
-              </div>
-            </>
-          )}
-
-          {/* ════════ MAGAZIN ════════ */}
-          {activeTab === 'magazin' && (
-            <>
-              <div className="section-hd">
-                <div className="section-title">{products.length} PRODUSE</div>
-                <button className="btn primary" onClick={() => setShowNewProduct(true)}>+ PRODUS NOU</button>
-              </div>
-              <div className="card-grid">
-                {products.length === 0
-                  ? <div className="empty" style={{ gridColumn: '1/-1' }}>Niciun produs.</div>
-                  : products.map(p => (
-                    <div key={p.id} className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                      {/* Imagine produs — click pentru preview */}
-                      {p.imagine_url
-                        ? <img src={p.imagine_url} alt={p.nume} className="prod-img" style={{ cursor: 'zoom-in' }} onClick={() => setPreviewImg(p.imagine_url)} />
-                        : (
-                          <div className="prod-img-placeholder" onClick={() => { setEditProduct({ ...p }); setTimeout(() => imgInputRef.current?.click(), 100) }}>
-                            <span style={{ fontSize: 11, color: '#333', letterSpacing: '.1em' }}>+ ADAUGĂ IMAGINE</span>
-                          </div>
-                        )
-                      }
-                      <div style={{ padding: '16px 20px 20px' }}>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
-                          <div style={{ fontSize: 13, color: '#e0e0e0', flex: 1, fontWeight: 700 }}>{p.nume}</div>
-                          <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                            {p.activ && <span style={{ fontSize: 8, color: '#34d399', border: '1px solid #34d399', padding: '2px 5px' }}>ACTIV</span>}
-                            {p.featured && <span style={{ fontSize: 8, color: '#e2b36e', border: '1px solid #e2b36e', padding: '2px 5px' }}>TOP</span>}
-                            {p.fisier_url && <span style={{ fontSize: 8, color: '#a5b4fc', border: '1px solid #a5b4fc', padding: '2px 5px' }}>FIȘIER</span>}
-                          </div>
-                        </div>
-                        <div style={{ fontSize: 10, color: '#444', marginBottom: 6 }}>{p.categorie || '—'}</div>
-                        <div style={{ fontSize: 16, color: '#e2b36e', fontWeight: 700, marginBottom: 6 }}>
-                          {Number(p.pret).toLocaleString('ro-RO')} lei
-                          {p.pret_vechi && <span style={{ fontSize: 10, color: '#333', textDecoration: 'line-through', marginLeft: 8 }}>{Number(p.pret_vechi).toLocaleString('ro-RO')}</span>}
-                        </div>
-                        {p.imagini && p.imagini.length > 0 && <div style={{ fontSize: 9, color: '#444', marginBottom: 6 }}>🖼 {p.imagini.length} poze</div>}
-                        {p.tags && <div style={{ marginBottom: 8 }}>{p.tags.map(t => <span key={t} className="tag">{t}</span>)}</div>}
-                        <div style={{ fontSize: 9, color: '#333', marginBottom: 14 }}>{p.nr_descarcari} descărcări</div>
-                        <div className="btn-row" style={{ marginTop: 0 }}>
-                          <button className="btn sm" onClick={() => setEditProduct({ ...p })}>EDIT</button>
-                          <button className="btn sm" style={{ color: p.activ ? '#34d399' : '#444', borderColor: p.activ ? '#34d399' : '#252525' }}
-                            onClick={() => toggleProduct(p.id, 'activ', !p.activ)}>{p.activ ? 'ACTIV' : 'INACTIV'}</button>
-                          <button className="btn sm" style={{ color: p.featured ? '#e2b36e' : '#444', borderColor: p.featured ? '#e2b36e' : '#252525' }}
-                            onClick={() => toggleProduct(p.id, 'featured', !p.featured)}>{p.featured ? '★' : '☆'}</button>
-                          <button className="btn sm" onClick={() => duplicateProduct(p)} title="Duplică produs">⧉</button>
-                          {isSuperAdmin && <button className="btn sm danger" onClick={() => deleteProduct(p.id)}>ȘT</button>}
-                        </div>
-                      </div>
+                      })}
                     </div>
-                  ))
-                }
-              </div>
-            </>
-          )}
+                    <Pagination
+                      page={safeMsgPage}
+                      totalPages={msgPages}
+                      total={messages.length}
+                      from={messages.length === 0 ? 0 : (safeMsgPage - 1) * MSG_PAGE + 1}
+                      to={Math.min(safeMsgPage * MSG_PAGE, messages.length)}
+                      onPage={(p) => { setMsgPage(p); setMsgFollow(p === msgPages) }}
+                    />
+                    <div className="compose" style={{ marginTop: 10 }}>
+                      <input className="inp" placeholder="Scrie un mesaj..." value={newMessage} onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && !e.nativeEvent.isComposing) sendMessage() }} aria-label="Mesaj nou" />
+                      <button className="btn primary" onClick={sendMessage} disabled={!newMessage.trim()}><Send size={15} /> Trimite</button>
+                    </div>
+                  </>
+                )}
+              </>
+            )}
 
-          {/* ════════ CLIENȚI ════════ */}
-          {activeTab === 'clienti' && (
-            <>
-              <input className="search" placeholder="Caută după nume sau rol..." value={clientFilter} onChange={e => setClientFilter(e.target.value)} />
-              <div className="scroll-x">
-                <table className="tbl">
-                  <thead><tr><th>NUME</th><th>COMPANIE</th><th>TELEFON</th><th>LOGARE</th><th>ROL</th><th>STATUS</th><th>DIN</th><th>ACȚIUNI</th></tr></thead>
-                  <tbody>
-                    {filteredClients.length === 0
-                      ? <tr><td colSpan={8} style={{ textAlign: 'center', color: '#2a2a2a', padding: 32 }}>Niciun utilizator.</td></tr>
-                      : filteredClients.map(c => (
-                        <tr key={c.id}>
-                          <td style={{ color: '#e0e0e0' }}>{c.full_name || '—'}</td>
-                          <td style={{ color: '#555' }}>{c.company || '—'}</td>
-                          <td style={{ color: '#555' }}>{c.phone || '—'}</td>
-                          <td><span className="badge" style={{ color: providerColor(c.provider), borderColor: providerColor(c.provider) }}>{providerLabel(c.provider)}</span></td>
-                          <td>
-                            {isSuperAdmin
-                              ? <select className="btn sm" style={{ background: 'transparent', border: 'none' }} value={c.rol} onChange={e => changeClientRole(c.id, e.target.value)}>
-                                  {['client', 'angajat', 'superadmin'].map(r => <option key={r} value={r} style={{ background: '#111' }}>{r}</option>)}
-                                </select>
-                              : <span className="badge" style={{ color: '#555' }}>{c.rol}</span>
-                            }
-                          </td>
-                          <td><span style={{ color: c.activ ? '#34d399' : '#f87171', fontSize: 10 }}>{c.activ ? '✓ ACTIV' : '✗ BLOCAT'}</span></td>
-                          <td style={{ color: '#444' }}>{fmt(c.created_at)}</td>
-                          <td>
-                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                              {isSuperAdmin && <button className="btn sm" onClick={() => setEditClient({ ...c })}>EDITEAZĂ</button>}
-                              <button className="btn sm" onClick={() => openNotify(c.id, c.full_name || c.id)}>NOTIFY</button>
-                              {isSuperAdmin && (
-                                <button className="btn sm" style={{ color: c.activ ? '#f87171' : '#34d399', borderColor: c.activ ? '#f87171' : '#34d399' }}
-                                  onClick={() => toggleClient(c.id, !c.activ)}>{c.activ ? 'BLOCHEAZĂ' : 'ACTIVEAZĂ'}</button>
-                              )}
-                              {isSuperAdmin && (
-                                <button className="btn sm danger" onClick={() => deleteClient(c.id, c.full_name || '')}>ȘTERGE</button>
-                              )}
-                            </div>
-                          </td>
+            {/* ======================= COMENZI ======================= */}
+            {activeTab === 'comenzi' && (
+              <>
+                <div className="toolbar">
+                  <div className="search">
+                    <Search size={15} />
+                    <input placeholder="Caută după e-mail, nume sau ID..." value={orderFilter} onChange={(e) => setOrderFilter(e.target.value)} aria-label="Caută comenzi" />
+                  </div>
+                  <select className="sel" value={orderStatusFilter} onChange={(e) => setOrderStatusFilter(e.target.value)} aria-label="Filtrează după status">
+                    <option value="toate">Toate statusurile</option>
+                    {ORDER_STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+                  </select>
+                  <div className="grow" />
+                  <button className="btn sm" onClick={exportCSV} disabled={orderSort.sorted.length === 0}><Download size={14} /> Export CSV ({orderSort.sorted.length})</button>
+                </div>
+
+                {orderPg.total === 0 ? <Empty text={orders.length === 0 ? 'Nicio comandă încă.' : 'Nicio comandă nu corespunde filtrelor.'} icon={<ShoppingCart size={26} />} /> : (
+                  <div className="tbl-wrap">
+                    <table className="tbl">
+                      <thead>
+                        <tr>
+                          <Th label="Client" k="client" sort={orderSort.sort} onSort={orderSort.toggle} />
+                          <Th label="Total" k="total" sort={orderSort.sort} onSort={orderSort.toggle} firstDir="desc" />
+                          <Th label="Status" k="status" sort={orderSort.sort} onSort={orderSort.toggle} />
+                          <Th label="Data" k="date" sort={orderSort.sort} onSort={orderSort.toggle} firstDir="desc" />
+                          <th><span>Stripe</span></th>
+                          <th><span>Acțiuni</span></th>
                         </tr>
-                      ))
-                    }
-                  </tbody>
-                </table>
+                      </thead>
+                      <tbody>
+                        {orderPg.slice.map((o) => {
+                          const stripeId = o.stripe_payment_intent || o.stripe_payment_id
+                          return (
+                            <tr key={o.id} className="clickable" onClick={() => openOrder(o)}>
+                              <td>
+                                <div style={{ fontWeight: 600 }}>{o.billing_name || o.email}</div>
+                                {o.billing_name && <div className="cell-sub">{o.email}</div>}
+                              </td>
+                              <td style={{ color: 'var(--gold)', fontWeight: 600 }}>{fmtMoney(o.total)}</td>
+                              <td onClick={(e) => e.stopPropagation()}>
+                                <select className="inline-sel" style={{ color: STATUS_COLORS[o.status] || '#8b8b93' }} value={o.status} onChange={(e) => updateOrderStatus(o.id, e.target.value)} aria-label="Status comandă">
+                                  {!ORDER_STATUSES.includes(o.status) && <option value={o.status}>{STATUS_LABELS[o.status] || o.status}</option>}
+                                  {ORDER_STATUSES.map((s) => <option key={s} value={s} style={{ color: '#f2f2f2' }}>{STATUS_LABELS[s]}</option>)}
+                                </select>
+                              </td>
+                              <td className="muted">{fmt(o.created_at)}</td>
+                              <td onClick={(e) => e.stopPropagation()}>
+                                {stripeId ? (
+                                  <button className="btn sm ghost mono" onClick={() => copyText(stripeId)} title={`${stripeId} (click pentru copiere)`}>
+                                    <Copy size={12} /> {stripeId.slice(0, 12)}…
+                                  </button>
+                                ) : <span className="muted">—</span>}
+                              </td>
+                              <td onClick={(e) => e.stopPropagation()}>
+                                <div className="acts">
+                                  {o.user_id && <button className="btn sm" onClick={() => openNotify(o.user_id!, o.billing_name || o.email)} aria-label="Notifică"><Bell size={13} /></button>}
+                                  {isSuperAdmin && <button className="btn sm danger" onClick={() => deleteOrder(o)} aria-label="Șterge comanda"><Trash2 size={13} /></button>}
+                                </div>
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                <Pagination {...orderPg} onPage={orderPg.setPage} onSize={orderPg.setPageSize} />
+              </>
+            )}
+
+            {/* ======================= MAGAZIN ======================= */}
+            {activeTab === 'magazin' && (
+              <>
+                <div className="toolbar">
+                  <div className="search">
+                    <Search size={15} />
+                    <input placeholder="Caută produs, categorie sau tag..." value={productFilter} onChange={(e) => setProductFilter(e.target.value)} aria-label="Caută produse" />
+                  </div>
+                  <SortBar options={PRODUCT_SORTS} sort={productSort.sort} onChange={productSort.setSort} />
+                  <div className="grow" />
+                  <button className="btn primary" onClick={() => openProductForm()}><Plus size={16} /> Produs nou</button>
+                </div>
+
+                <div className="chips" role="group" aria-label="Filtrare produse">
+                  {([['toate', 'Toate', products.length], ['active', 'Active', products.filter((p) => p.activ).length], ['inactive', 'Inactive', products.filter((p) => !p.activ).length], ['top', 'Top', products.filter((p) => p.featured).length]] as const).map(([k, l, n]) => (
+                    <button key={k} className={`chip-btn${productView === k ? ' on' : ''}`} onClick={() => setProductView(k)}>{l}<em>{n}</em></button>
+                  ))}
+                </div>
+
+                {productPg.total === 0 ? <Empty text={products.length === 0 ? 'Niciun produs încă.' : 'Niciun produs nu corespunde filtrelor.'} icon={<Package size={26} />} /> : (
+                  <div className="pgrid">
+                    {productPg.slice.map((p) => (
+                      <article key={p.id} className="prod">
+                        {p.imagine_url
+                          ? <img src={p.imagine_url} alt={p.nume} className="prod-img" onClick={() => setPreviewImg(p.imagine_url)} />
+                          : <div className="prod-ph" onClick={() => openProductForm(p)}>+ Adaugă imagine</div>}
+                        <div className="prod-b">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'flex-start' }}>
+                            <b style={{ flex: 1 }}>{p.nume}</b>
+                            <div className="prod-badges">
+                              {p.activ && <span className="pb" style={{ color: 'var(--green)', borderColor: 'rgba(52,211,153,.5)' }}>ACTIV</span>}
+                              {p.featured && <span className="pb" style={{ color: 'var(--gold)', borderColor: 'rgba(226,179,110,.5)' }}>TOP</span>}
+                              {p.fisier_url && <span className="pb" style={{ color: 'var(--blue)', borderColor: 'rgba(165,180,252,.5)' }}>FIȘIER</span>}
+                            </div>
+                          </div>
+                          <div className="cell-sub">{p.categorie || 'Fără categorie'}</div>
+                          <div className="prod-price">{Number(p.pret) === 0 ? 'Gratuit' : fmtMoney(p.pret)}{p.pret_vechi != null && <s>{fmtMoney(p.pret_vechi)}</s>}</div>
+                          {p.tags && p.tags.length > 0 && <div>{p.tags.map((t) => <span key={t} className="tag">{t}</span>)}</div>}
+                          <div className="cell-sub">{p.nr_descarcari} descărcări{p.imagini && p.imagini.length > 0 ? ` · ${p.imagini.length} poze` : ''}{Number(p.pret) > 0 && !p.fisier_url ? ' · ⚠ fără fișier' : ''}</div>
+                          <div className="acts" style={{ marginTop: 'auto', paddingTop: 10 }}>
+                            <button className="btn sm" onClick={() => openProductForm(p)}><Pencil size={13} /> Editează</button>
+                            <button className="btn sm" style={{ color: p.activ ? 'var(--green)' : 'var(--muted)' }} onClick={() => toggleProduct(p.id, 'activ', !p.activ)}>{p.activ ? 'Activ' : 'Inactiv'}</button>
+                            <button className="icon-btn" style={{ color: p.featured ? 'var(--gold)' : undefined }} onClick={() => toggleProduct(p.id, 'featured', !p.featured)} aria-label={p.featured ? 'Scoate din Top' : 'Marchează Top'} aria-pressed={p.featured}><Star size={14} fill={p.featured ? 'currentColor' : 'none'} /></button>
+                            <button className="icon-btn" onClick={() => duplicateProduct(p)} aria-label="Duplică"><Copy size={14} /></button>
+                            {isSuperAdmin && <button className="icon-btn" style={{ color: 'var(--red)' }} onClick={() => deleteProduct(p)} aria-label="Șterge produsul"><Trash2 size={14} /></button>}
+                          </div>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                )}
+                <Pagination {...productPg} onPage={productPg.setPage} onSize={productPg.setPageSize} sizes={[8, 12, 24, 48]} />
+              </>
+            )}
+
+            {/* ======================= UTILIZATORI ======================= */}
+            {activeTab === 'clienti' && (
+              <>
+                <div className="toolbar">
+                  <div className="search">
+                    <Search size={15} />
+                    <input placeholder="Caută după nume, companie sau e-mail..." value={clientFilter} onChange={(e) => setClientFilter(e.target.value)} aria-label="Caută utilizatori" />
+                  </div>
+                  <div className="grow" />
+                </div>
+                <div className="chips" role="group" aria-label="Filtrare după rol">
+                  {['toate', 'client', 'angajat', 'superadmin'].map((r) => (
+                    <button key={r} className={`chip-btn${clientRoleFilter === r ? ' on' : ''}`} onClick={() => setClientRoleFilter(r)}>
+                      {r === 'toate' ? 'Toți' : r}<em>{r === 'toate' ? clients.length : clients.filter((c) => c.rol === r).length}</em>
+                    </button>
+                  ))}
+                </div>
+
+                {clientPg.total === 0 ? <Empty text="Niciun utilizator nu corespunde filtrelor." icon={<Users size={26} />} /> : (
+                  <div className="tbl-wrap">
+                    <table className="tbl" style={{ minWidth: 860 }}>
+                      <thead>
+                        <tr>
+                          <Th label="Nume" k="nume" sort={clientSort.sort} onSort={clientSort.toggle} />
+                          <Th label="Companie" k="companie" sort={clientSort.sort} onSort={clientSort.toggle} />
+                          <th><span>Telefon</span></th>
+                          <Th label="Logare" k="logare" sort={clientSort.sort} onSort={clientSort.toggle} />
+                          <Th label="Rol" k="rol" sort={clientSort.sort} onSort={clientSort.toggle} />
+                          <Th label="Status" k="status" sort={clientSort.sort} onSort={clientSort.toggle} />
+                          <Th label="Din" k="din" sort={clientSort.sort} onSort={clientSort.toggle} firstDir="desc" />
+                          <th><span>Acțiuni</span></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {clientPg.slice.map((c) => (
+                          <tr key={c.id}>
+                            <td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <span className="avatar" style={{ width: 30, height: 30, fontSize: 11 }}>{initials(c.full_name || '?')}</span>
+                                <div>
+                                  <div style={{ fontWeight: 600 }}>{c.full_name || '—'}</div>
+                                  {c.email && <div className="cell-sub">{c.email}</div>}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="muted">{c.company || '—'}</td>
+                            <td className="muted">{c.phone || '—'}</td>
+                            <td><span className="bdg" style={{ color: providerColor(c.provider), borderColor: `${providerColor(c.provider)}55`, background: `${providerColor(c.provider)}14` }}>{providerLabel(c.provider)}</span></td>
+                            <td>
+                              {isSuperAdmin ? (
+                                <select className="inline-sel" value={c.rol} onChange={(e) => changeClientRole(c.id, e.target.value)} aria-label="Rol utilizator">
+                                  {['client', 'angajat', 'superadmin'].map((r) => <option key={r} value={r}>{r}</option>)}
+                                </select>
+                              ) : <span className="chip">{c.rol}</span>}
+                            </td>
+                            <td style={{ color: c.activ ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}>{c.activ ? 'Activ' : 'Blocat'}</td>
+                            <td className="muted">{fmt(c.created_at)}</td>
+                            <td>
+                              <div className="acts">
+                                {isSuperAdmin && <button className="btn sm" onClick={() => setClientForm({ ...c })} aria-label="Editează"><Pencil size={13} /></button>}
+                                <button className="btn sm" onClick={() => openNotify(c.id, c.full_name || c.id)} aria-label="Notifică"><Bell size={13} /></button>
+                                {isSuperAdmin && <button className="btn sm" style={{ color: c.activ ? 'var(--red)' : 'var(--green)' }} onClick={() => toggleClient(c.id, !c.activ)}>{c.activ ? 'Blochează' : 'Activează'}</button>}
+                                {isSuperAdmin && <button className="btn sm danger" onClick={() => deleteClient(c.id, c.full_name || '')} aria-label="Șterge"><Trash2 size={13} /></button>}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                <Pagination {...clientPg} onPage={clientPg.setPage} onSize={clientPg.setPageSize} />
+              </>
+            )}
+          </main>
+        </div>
+
+      {/* ======================= MODALE ======================= */}
+
+      {/* Previzualizare imagine */}
+      {previewImg && (
+        <div className="ov" style={{ zIndex: 300 }} onClick={() => setPreviewImg(null)}>
+          <div style={{ position: 'relative' }}>
+            <img src={previewImg} alt="previzualizare" style={{ maxWidth: '92vw', maxHeight: '86vh', objectFit: 'contain', display: 'block', borderRadius: 10 }} />
+            <button className="icon-btn" style={{ position: 'absolute', top: -14, right: -14, background: 'var(--gold)', color: '#111' }} onClick={() => setPreviewImg(null)} aria-label="Închide"><X size={16} /></button>
+          </div>
+        </div>
+      )}
+
+      {/* Proiect (nou / editare) */}
+      {projectForm && (
+        <Modal title={projectForm.id ? 'Editează proiect' : 'Proiect nou'} onClose={() => setProjectForm(null)}>
+          <Field label="Nume proiect *"><input className="inp" value={projectForm.nume} onChange={(e) => setProjectForm({ ...projectForm, nume: e.target.value })} autoFocus /></Field>
+          <Field label="Descriere"><textarea className="inp" value={projectForm.descriere} onChange={(e) => setProjectForm({ ...projectForm, descriere: e.target.value })} /></Field>
+          <Field label="Adresă"><input className="inp" value={projectForm.adresa} onChange={(e) => setProjectForm({ ...projectForm, adresa: e.target.value })} /></Field>
+          <div className="row2">
+            <Field label="Suprafață (m²)"><input className="inp" type="number" value={projectForm.suprafata} onChange={(e) => setProjectForm({ ...projectForm, suprafata: e.target.value })} /></Field>
+            <Field label="Buget (lei)"><input className="inp" type="number" value={projectForm.buget} onChange={(e) => setProjectForm({ ...projectForm, buget: e.target.value })} /></Field>
+          </div>
+          <div className="row2">
+            <Field label="Data start"><input className="inp" type="date" value={projectForm.data_start} onChange={(e) => setProjectForm({ ...projectForm, data_start: e.target.value })} /></Field>
+            <Field label="Termen estimat"><input className="inp" type="date" value={projectForm.data_estimata_finalizare} onChange={(e) => setProjectForm({ ...projectForm, data_estimata_finalizare: e.target.value })} /></Field>
+          </div>
+          {projectForm.id && <Field label="Data finalizare"><input className="inp" type="date" value={projectForm.data_finalizare} onChange={(e) => setProjectForm({ ...projectForm, data_finalizare: e.target.value })} /></Field>}
+          <div className="row2">
+            <Field label="Client">
+              <select className="inp" value={projectForm.client_id} onChange={(e) => setProjectForm({ ...projectForm, client_id: e.target.value })}>
+                <option value="">— Selectează —</option>
+                {clients.filter((c) => c.rol === 'client').map((c) => <option key={c.id} value={c.id}>{c.full_name || c.email || c.id}</option>)}
+              </select>
+            </Field>
+            <Field label="Responsabil">
+              <select className="inp" value={projectForm.responsabil_id} onChange={(e) => setProjectForm({ ...projectForm, responsabil_id: e.target.value })}>
+                <option value="">— Selectează —</option>
+                {clients.filter((c) => c.rol === 'angajat' || c.rol === 'superadmin').map((c) => <option key={c.id} value={c.id}>{c.full_name || c.email || c.id}</option>)}
+              </select>
+            </Field>
+          </div>
+          <Field label="Status">
+            <select className="inp" value={projectForm.status} onChange={(e) => setProjectForm({ ...projectForm, status: e.target.value })}>
+              {PROJECT_STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+            </select>
+          </Field>
+          <div className="mdl-ft">
+            <button className="btn" onClick={() => setProjectForm(null)}>Anulează</button>
+            <button className="btn primary" onClick={saveProject} disabled={saving}>{saving ? 'Se salvează...' : projectForm.id ? 'Salvează' : 'Creează proiect'}</button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Fază (nouă / editare) */}
+      {phaseForm && (
+        <Modal title={phaseForm.id ? 'Editează fază' : 'Fază nouă'} onClose={() => setPhaseForm(null)}>
+          <Field label="Nume fază *"><input className="inp" value={phaseForm.nume} onChange={(e) => setPhaseForm({ ...phaseForm, nume: e.target.value })} autoFocus /></Field>
+          <Field label="Descriere"><textarea className="inp" value={phaseForm.descriere} onChange={(e) => setPhaseForm({ ...phaseForm, descriere: e.target.value })} /></Field>
+          <div className="row2">
+            <Field label="Status">
+              <select className="inp" value={phaseForm.status} onChange={(e) => setPhaseForm({ ...phaseForm, status: e.target.value })}>
+                {PHASE_STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)}
+              </select>
+            </Field>
+            <Field label={`Progres: ${phaseForm.progres}%`}>
+              <input type="range" min={0} max={100} step={5} value={phaseForm.progres} onChange={(e) => setPhaseForm({ ...phaseForm, progres: Number(e.target.value) })} style={{ accentColor: '#e2b36e', width: '100%', marginTop: 10 }} />
+            </Field>
+          </div>
+          <div className="row2">
+            <Field label="Data start"><input className="inp" type="date" value={phaseForm.data_start} onChange={(e) => setPhaseForm({ ...phaseForm, data_start: e.target.value })} /></Field>
+            <Field label="Data sfârșit"><input className="inp" type="date" value={phaseForm.data_sfarsit} onChange={(e) => setPhaseForm({ ...phaseForm, data_sfarsit: e.target.value })} /></Field>
+          </div>
+          <div className="mdl-ft">
+            <button className="btn" onClick={() => setPhaseForm(null)}>Anulează</button>
+            <button className="btn primary" onClick={savePhase} disabled={saving}>{saving ? 'Se salvează...' : phaseForm.id ? 'Salvează' : 'Adaugă'}</button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Produs (nou / editare) */}
+      {productForm && (
+        <Modal title={productForm.id ? 'Editează produs' : 'Produs nou'} onClose={() => setProductForm(null)} wide>
+          <div className="section-label">Poze produs</div>
+          <div className="gallery">
+            {productForm.imagini.map((url) => (
+              <div key={url} className={`thumb${productForm.imagine_url === url ? ' cover' : ''}`} onClick={() => setProductForm({ ...productForm, imagine_url: url })} title="Click pentru a seta ca poză principală">
+                <img src={url} alt="" />
+                <button className="x" onClick={(e) => { e.stopPropagation(); removeProductImage(url) }} aria-label="Elimină poza"><X size={12} /></button>
+                {productForm.imagine_url === url && <span className="cv">PRINCIPALĂ</span>}
               </div>
-            </>
+            ))}
+            <button className="thumb-add" onClick={() => imgInputRef.current?.click()} aria-label="Adaugă poze">{imgUploading ? '…' : <Plus size={20} />}</button>
+          </div>
+          <input ref={imgInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={(e) => { if (e.target.files) uploadProductImages(e.target.files); e.target.value = '' }} />
+          <p className="fld-h" style={{ marginBottom: 16 }}>Poți încărca mai multe poze deodată. Click pe o poză o setează ca principală.</p>
+
+          <Field label="Nume produs *"><input className="inp" value={productForm.nume} onChange={(e) => setProductForm({ ...productForm, nume: e.target.value })} /></Field>
+          <Field label="Descriere scurtă"><input className="inp" value={productForm.descriere_scurta} onChange={(e) => setProductForm({ ...productForm, descriere_scurta: e.target.value })} /></Field>
+          <Field label="Descriere completă"><textarea className="inp" value={productForm.descriere} onChange={(e) => setProductForm({ ...productForm, descriere: e.target.value })} /></Field>
+          <div className="row2">
+            <Field label="Preț (lei) *" hint="0 = produs gratuit"><input className="inp" type="number" min={0} step="0.01" value={productForm.pret} onChange={(e) => setProductForm({ ...productForm, pret: e.target.value })} /></Field>
+            <Field label="Preț vechi (lei)"><input className="inp" type="number" min={0} step="0.01" value={productForm.pret_vechi} onChange={(e) => setProductForm({ ...productForm, pret_vechi: e.target.value })} /></Field>
+          </div>
+          <Field label="Categorie"><input className="inp" value={productForm.categorie} onChange={(e) => setProductForm({ ...productForm, categorie: e.target.value })} /></Field>
+
+          <div className="section-label">Fișier de descărcat (produs digital)</div>
+          {productForm.fisier_url ? (
+            <div className="file-chip">
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}><Paperclip size={14} /><span className="ell">{fileNameFromUrl(productForm.fisier_url) || 'fișier încărcat'}</span></span>
+              <span style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <a href={productForm.fisier_url} target="_blank" rel="noreferrer" style={{ color: 'var(--gold)' }}>Vezi</a>
+                <button className="icon-btn" style={{ width: 26, height: 26, color: 'var(--red)' }} onClick={() => setProductForm({ ...productForm, fisier_url: '' })} aria-label="Elimină fișierul"><X size={13} /></button>
+              </span>
+            </div>
+          ) : (
+            <div className="upload-zone" style={{ padding: 18 }} onClick={() => prodFileInputRef.current?.click()}>
+              {prodFileUploading ? 'Se încarcă...' : 'Click pentru a încărca fișierul · PDF, DWG, DXF, ZIP...'}
+            </div>
           )}
-        </div>
+          <input ref={prodFileInputRef} type="file" accept={PRODUCT_FILE_ACCEPT} style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadProductFile(f); e.target.value = '' }} />
+          <Field label="...sau URL manual"><input className="inp" value={productForm.fisier_url} onChange={(e) => setProductForm({ ...productForm, fisier_url: e.target.value })} /></Field>
+
+          <div className="section-label">Tag-uri</div>
+          <div>{productForm.tags.map((t) => (
+            <span key={t} className="tag">{t}<button onClick={() => setProductForm({ ...productForm, tags: productForm.tags.filter((x) => x !== t) })} aria-label={`Elimină ${t}`}><X size={11} /></button></span>
+          ))}</div>
+          <div className="compose" style={{ marginBottom: 14 }}>
+            <input className="inp" placeholder="Adaugă tag și apasă Enter..." value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addTag() } }} />
+            <button className="btn" onClick={addTag}><Plus size={14} /></button>
+          </div>
+
+          <div style={{ display: 'flex', gap: 22, flexWrap: 'wrap' }}>
+            <label className="check"><input type="checkbox" checked={productForm.activ} onChange={(e) => setProductForm({ ...productForm, activ: e.target.checked })} /> Activ în magazin</label>
+            <label className="check"><input type="checkbox" checked={productForm.featured} onChange={(e) => setProductForm({ ...productForm, featured: e.target.checked })} /> Marcat Top</label>
+          </div>
+          {Number(productForm.pret) > 0 && !productForm.fisier_url && (
+            <p style={{ color: 'var(--gold)', fontSize: 12, marginBottom: 12 }}>⚠ Produs plătit fără fișier: clientul nu va avea ce descărca după plată.</p>
+          )}
+
+          <div className="mdl-ft">
+            <button className="btn" onClick={() => setProductForm(null)}>Anulează</button>
+            <button className="btn primary" onClick={saveProduct} disabled={saving}>{saving ? 'Se salvează...' : productForm.id ? 'Salvează' : 'Publică produsul'}</button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Utilizator (editare) */}
+      {clientForm && (
+        <Modal title={<>Editează {clientForm.full_name || 'utilizator'}</>} onClose={() => setClientForm(null)}>
+          {clientForm.provider && (
+            <div style={{ marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <span className="bdg" style={{ color: providerColor(clientForm.provider), borderColor: `${providerColor(clientForm.provider)}55`, background: `${providerColor(clientForm.provider)}14` }}>Logat prin {providerLabel(clientForm.provider)}</span>
+              {clientForm.email && <span className="muted">{clientForm.email}</span>}
+            </div>
+          )}
+          <Field label="Nume complet"><input className="inp" value={clientForm.full_name || ''} onChange={(e) => setClientForm({ ...clientForm, full_name: e.target.value })} /></Field>
+          <Field label="Telefon"><input className="inp" value={clientForm.phone || ''} onChange={(e) => setClientForm({ ...clientForm, phone: e.target.value })} /></Field>
+          <Field label="Companie"><input className="inp" value={clientForm.company || ''} onChange={(e) => setClientForm({ ...clientForm, company: e.target.value })} /></Field>
+          <div className="mdl-ft">
+            <button className="btn" onClick={() => setClientForm(null)}>Anulează</button>
+            <button className="btn primary" onClick={saveClient} disabled={saving}>{saving ? 'Se salvează...' : 'Salvează'}</button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Notificare */}
+      {notifyTarget && (
+        <Modal title={<>Notificare → {notifyTarget.name}</>} onClose={() => setNotifyTarget(null)}>
+          <Field label="Titlu *"><input className="inp" value={notifyForm.titlu} onChange={(e) => setNotifyForm({ ...notifyForm, titlu: e.target.value })} autoFocus /></Field>
+          <Field label="Mesaj (opțional)"><textarea className="inp" value={notifyForm.mesaj} onChange={(e) => setNotifyForm({ ...notifyForm, mesaj: e.target.value })} /></Field>
+          <Field label="Link (ex: /dashboard/client)"><input className="inp" value={notifyForm.link} onChange={(e) => setNotifyForm({ ...notifyForm, link: e.target.value })} /></Field>
+          <div className="mdl-ft">
+            <button className="btn" onClick={() => setNotifyTarget(null)}>Anulează</button>
+            <button className="btn primary" onClick={sendNotification} disabled={saving}><Send size={14} /> {saving ? 'Se trimite...' : 'Trimite'}</button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Detalii comandă */}
+      {orderDetail && (
+        <Modal title="Detalii comandă" onClose={() => setOrderDetail(null)}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '8px 18px', marginBottom: 18 }}>
+            <span className="muted">Client</span><span>{orderDetail.order.billing_name || '—'}</span>
+            <span className="muted">E-mail</span><span>{orderDetail.order.email}</span>
+            <span className="muted">Status</span><span><StatusBadge status={orderDetail.order.status} /></span>
+            <span className="muted">Data</span><span>{new Date(orderDetail.order.created_at).toLocaleString('ro-RO')}</span>
+            <span className="muted">Total</span><b style={{ color: 'var(--gold)' }}>{fmtMoney(orderDetail.order.total)}</b>
+            <span className="muted">ID comandă</span><span className="mono" style={{ fontSize: 12, wordBreak: 'break-all' }}>{orderDetail.order.id}</span>
+            {(orderDetail.order.stripe_payment_intent || orderDetail.order.stripe_payment_id) && (
+              <><span className="muted">Stripe</span><span className="mono" style={{ fontSize: 12, wordBreak: 'break-all' }}>{orderDetail.order.stripe_payment_intent || orderDetail.order.stripe_payment_id}</span></>
+            )}
+          </div>
+          <div className="section-label">Produse comandate</div>
+          {orderDetail.items === null ? <div className="muted">Se încarcă...</div> : orderDetail.error ? (
+            <p style={{ color: 'var(--red)', fontSize: 13 }}>{orderDetail.error}</p>
+          ) : orderDetail.items.length === 0 ? <div className="muted">Nu există articole înregistrate pentru această comandă.</div> : (
+            <div>
+              {orderDetail.items.map((it) => (
+                <div key={it.id} className="rowline">
+                  <div className="grow-1 ell">{it.nume_produs}</div>
+                  <b style={{ color: 'var(--gold)' }}>{Number(it.pret_la_cumparare) === 0 ? 'Gratuit' : fmtMoney(it.pret_la_cumparare)}</b>
+                </div>
+              ))}
+            </div>
+          )}
+          <p className="fld-h" style={{ marginTop: 14 }}>Rambursările se fac din panoul Stripe; schimbarea statusului aici nu returnează banii.</p>
+          <div className="mdl-ft">
+            {orderDetail.order.user_id && <button className="btn" onClick={() => { const o = orderDetail.order; setOrderDetail(null); openNotify(o.user_id!, o.billing_name || o.email) }}><Bell size={14} /> Notifică</button>}
+            <button className="btn primary" onClick={() => setOrderDetail(null)}>Închide</button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Confirmare */}
+      {confirmState && (
+        <Modal title={confirmState.title} onClose={() => answerConfirm(false)}>
+          <p style={{ color: '#cfcfd4', marginBottom: 20 }}>{confirmState.message}</p>
+          <div className="mdl-ft">
+            <button className="btn" onClick={() => answerConfirm(false)}>Anulează</button>
+            <button className={`btn ${confirmState.danger ? 'danger' : 'primary'}`} onClick={() => answerConfirm(true)}>{confirmState.label}</button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Notificări toast */}
+      <div className="toasts" aria-live="polite">
+        {toasts.map((t) => (
+          <div key={t.id} className={`toast ${t.kind}`} role={t.kind === 'error' ? 'alert' : 'status'}>
+            {t.kind === 'success' ? <Check size={16} /> : t.kind === 'error' ? <AlertTriangle size={16} /> : <Info size={16} />}
+            <span>{t.text}</span>
+          </div>
+        ))}
       </div>
-
-      {/* ════════ MODAL Produs nou ════════ */}
-      {showNewProduct && (
-        <div className="overlay" onClick={e => e.target === e.currentTarget && setShowNewProduct(false)}>
-          <div className="modal">
-            <div className="modal-title">PRODUS NOU</div>
-
-            {/* Galerie imagini produs */}
-            <div className="section-title" style={{ marginBottom: 8 }}>POZE PRODUS</div>
-            <div className="gallery-grid">
-              {newProduct.imagini.map(url => (
-                <div key={url} className={`gallery-thumb ${newProduct.imagine_url === url ? 'is-cover' : ''}`} onClick={() => setCoverImage(url, false)} title="Click pentru a seta ca poză principală">
-                  <img src={url} alt="" />
-                  <span className="gx" onClick={e => { e.stopPropagation(); removeProductImage(url, false) }}>×</span>
-                  {newProduct.imagine_url === url && <span className="gcover">PRINCIPALĂ</span>}
-                </div>
-              ))}
-              <div className="gallery-add" onClick={() => newImgInputRef.current?.click()}>
-                {imgUploading ? '…' : '+'}
-              </div>
-            </div>
-            <input ref={newImgInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }}
-              onChange={e => { if (e.target.files) uploadProductImages(e.target.files, false); e.target.value = '' }} />
-            <div style={{ fontSize: 9, color: '#444', marginBottom: 14 }}>Poți încărca mai multe poze deodată. Click pe o poză o setează ca principală (coperta produsului).</div>
-
-            <input className="inp" placeholder="Nume produs *" value={newProduct.nume} onChange={e => setNewProduct({ ...newProduct, nume: e.target.value })} />
-            <input className="inp" placeholder="Descriere scurtă" value={newProduct.descriere_scurta} onChange={e => setNewProduct({ ...newProduct, descriere_scurta: e.target.value })} />
-            <input className="inp" placeholder="Descriere completă" value={newProduct.descriere} onChange={e => setNewProduct({ ...newProduct, descriere: e.target.value })} />
-            <div className="inp-row">
-              <input className="inp" placeholder="Preț (lei) *" type="number" value={newProduct.pret} onChange={e => setNewProduct({ ...newProduct, pret: e.target.value })} />
-              <input className="inp" placeholder="Preț vechi (lei)" type="number" value={newProduct.pret_vechi} onChange={e => setNewProduct({ ...newProduct, pret_vechi: e.target.value })} />
-            </div>
-            <input className="inp" placeholder="Categorie" value={newProduct.categorie} onChange={e => setNewProduct({ ...newProduct, categorie: e.target.value })} />
-
-            {/* Fișier binar de download */}
-            <div className="section-title" style={{ marginBottom: 8 }}>FIȘIER DE DESCĂRCAT (PRODUS DIGITAL)</div>
-            {newProduct.fisier_url ? (
-              <div className="file-chip">
-                <span>📎 {fileNameFromUrl(newProduct.fisier_url) || 'fișier încărcat'}</span>
-                <span style={{ display: 'flex', gap: 8 }}>
-                  <a href={newProduct.fisier_url} target="_blank" rel="noreferrer" style={{ color: '#e2b36e' }}>VEZI</a>
-                  <span className="tag-x" style={{ color: '#f87171', fontSize: 14 }} onClick={() => setNewProduct(p => ({ ...p, fisier_url: '' }))}>×</span>
-                </span>
-              </div>
-            ) : (
-              <div className="img-upload-zone" onClick={() => prodFileInputRef.current?.click()}>
-                {prodFileUploading
-                  ? <div style={{ fontSize: 11, color: '#e2b36e' }}>SE ÎNCARCĂ...</div>
-                  : <div style={{ fontSize: 11, color: '#444' }}>Click pentru upload fișier · PDF, DWG, DXF, ZIP, etc.</div>
-                }
-              </div>
-            )}
-            <input ref={prodFileInputRef} type="file" accept={PRODUCT_FILE_ACCEPT} style={{ display: 'none' }}
-              onChange={e => { const f = e.target.files?.[0]; if (f) uploadProductFile(f, false); e.target.value = '' }} />
-            <input className="inp" placeholder="...sau lipește un URL manual" value={newProduct.fisier_url} onChange={e => setNewProduct({ ...newProduct, fisier_url: e.target.value })} />
-
-            {/* Tags */}
-            <div className="section-title" style={{ marginBottom: 8 }}>TAGS</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
-              {newProduct.tags.map(t => (
-                <span key={t} className="tag">{t} <span className="tag-x" onClick={() => setNewProduct(p => ({ ...p, tags: p.tags.filter(x => x !== t) }))}>×</span></span>
-              ))}
-            </div>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-              <input className="inp" style={{ margin: 0 }} placeholder="Adaugă tag..." value={newTagInput} onChange={e => setNewTagInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && newTagInput.trim()) { setNewProduct(p => ({ ...p, tags: [...p.tags, newTagInput.trim()] })); setNewTagInput('') }}} />
-              <button className="btn sm" onClick={() => { if (newTagInput.trim()) { setNewProduct(p => ({ ...p, tags: [...p.tags, newTagInput.trim()] })); setNewTagInput('') }}}>+</button>
-            </div>
-
-            <div className="btn-row">
-              <button className="btn primary" onClick={createProduct}>ADAUGĂ</button>
-              <button className="btn" onClick={() => setShowNewProduct(false)}>ANULEAZĂ</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ════════ MODAL Editare produs ════════ */}
-      {editProduct && (
-        <div className="overlay" onClick={e => e.target === e.currentTarget && setEditProduct(null)}>
-          <div className="modal">
-            <div className="modal-title">EDITEAZĂ PRODUS</div>
-
-            {/* Galerie imagini produs */}
-            <div className="section-title" style={{ marginBottom: 8 }}>POZE PRODUS</div>
-            <div className="gallery-grid">
-              {(editProduct.imagini || []).map(url => (
-                <div key={url} className={`gallery-thumb ${editProduct.imagine_url === url ? 'is-cover' : ''}`} onClick={() => setCoverImage(url, true)} title="Click pentru a seta ca poză principală">
-                  <img src={url} alt="" />
-                  <span className="gx" onClick={e => { e.stopPropagation(); removeProductImage(url, true) }}>×</span>
-                  {editProduct.imagine_url === url && <span className="gcover">PRINCIPALĂ</span>}
-                </div>
-              ))}
-              <div className="gallery-add" onClick={() => imgInputRef.current?.click()}>
-                {editImgUploading ? '…' : '+'}
-              </div>
-            </div>
-            <input ref={imgInputRef} type="file" accept="image/*" multiple style={{ display: 'none' }}
-              onChange={e => { if (e.target.files) uploadProductImages(e.target.files, true); e.target.value = '' }} />
-            <div style={{ fontSize: 9, color: '#444', marginBottom: 14 }}>Poți încărca mai multe poze deodată. Click pe o poză o setează ca principală (coperta produsului).</div>
-
-            <input className="inp" placeholder="Nume *" value={editProduct.nume || ''} onChange={e => setEditProduct({ ...editProduct, nume: e.target.value })} />
-            <input className="inp" placeholder="Descriere scurtă" value={editProduct.descriere_scurta || ''} onChange={e => setEditProduct({ ...editProduct, descriere_scurta: e.target.value })} />
-            <input className="inp" placeholder="Descriere" value={editProduct.descriere || ''} onChange={e => setEditProduct({ ...editProduct, descriere: e.target.value })} />
-            <div className="inp-row">
-              <input className="inp" type="number" placeholder="Preț" value={editProduct.pret ?? ''} onChange={e => setEditProduct({ ...editProduct, pret: Number(e.target.value) })} />
-              <input className="inp" type="number" placeholder="Preț vechi" value={editProduct.pret_vechi ?? ''} onChange={e => setEditProduct({ ...editProduct, pret_vechi: Number(e.target.value) })} />
-            </div>
-            <input className="inp" placeholder="Categorie" value={editProduct.categorie || ''} onChange={e => setEditProduct({ ...editProduct, categorie: e.target.value })} />
-
-            {/* Fișier binar de download */}
-            <div className="section-title" style={{ marginBottom: 8 }}>FIȘIER DE DESCĂRCAT (PRODUS DIGITAL)</div>
-            {editProduct.fisier_url ? (
-              <div className="file-chip">
-                <span>📎 {fileNameFromUrl(editProduct.fisier_url) || 'fișier încărcat'}</span>
-                <span style={{ display: 'flex', gap: 8 }}>
-                  <a href={editProduct.fisier_url} target="_blank" rel="noreferrer" style={{ color: '#e2b36e' }}>VEZI</a>
-                  <span className="tag-x" style={{ color: '#f87171', fontSize: 14 }} onClick={() => setEditProduct(p => p ? { ...p, fisier_url: '' } : p)}>×</span>
-                </span>
-              </div>
-            ) : (
-              <div className="img-upload-zone" onClick={() => editProdFileInputRef.current?.click()}>
-                {editProdFileUploading
-                  ? <div style={{ fontSize: 11, color: '#e2b36e' }}>SE ÎNCARCĂ...</div>
-                  : <div style={{ fontSize: 11, color: '#444' }}>Click pentru upload fișier · PDF, DWG, DXF, ZIP, etc.</div>
-                }
-              </div>
-            )}
-            <input ref={editProdFileInputRef} type="file" accept={PRODUCT_FILE_ACCEPT} style={{ display: 'none' }}
-              onChange={e => { const f = e.target.files?.[0]; if (f) uploadProductFile(f, true); e.target.value = '' }} />
-            <input className="inp" placeholder="...sau lipește un URL manual" value={editProduct.fisier_url || ''} onChange={e => setEditProduct({ ...editProduct, fisier_url: e.target.value })} />
-
-            {/* Tags edit */}
-            <div className="section-title" style={{ marginBottom: 8 }}>TAGS</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
-              {(editProduct.tags || []).map(t => (
-                <span key={t} className="tag">{t} <span className="tag-x" onClick={() => setEditProduct(p => p ? { ...p, tags: (p.tags || []).filter(x => x !== t) } : p)}>×</span></span>
-              ))}
-            </div>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-              <input className="inp" style={{ margin: 0 }} placeholder="Adaugă tag..." value={editTagInput} onChange={e => setEditTagInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && editTagInput.trim()) { setEditProduct(p => p ? { ...p, tags: [...(p.tags || []), editTagInput.trim()] } : p); setEditTagInput('') }}} />
-              <button className="btn sm" onClick={() => { if (editTagInput.trim()) { setEditProduct(p => p ? { ...p, tags: [...(p.tags || []), editTagInput.trim()] } : p); setEditTagInput('') }}}>+</button>
-            </div>
-
-            <div className="btn-row">
-              <button className="btn primary" onClick={updateProduct}>SALVEAZĂ</button>
-              <button className="btn" onClick={() => setEditProduct(null)}>ANULEAZĂ</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ════════ MODAL Proiect nou ════════ */}
-      {showNewProject && (
-        <div className="overlay" onClick={e => e.target === e.currentTarget && setShowNewProject(false)}>
-          <div className="modal">
-            <div className="modal-title">PROIECT NOU</div>
-            <input className="inp" placeholder="Nume proiect *" value={newProject.nume} onChange={e => setNewProject({ ...newProject, nume: e.target.value })} />
-            <input className="inp" placeholder="Descriere" value={newProject.descriere} onChange={e => setNewProject({ ...newProject, descriere: e.target.value })} />
-            <input className="inp" placeholder="Adresă" value={newProject.adresa} onChange={e => setNewProject({ ...newProject, adresa: e.target.value })} />
-            <div className="inp-row">
-              <input className="inp" placeholder="Suprafață (m²)" type="number" value={newProject.suprafata} onChange={e => setNewProject({ ...newProject, suprafata: e.target.value })} />
-              <input className="inp" placeholder="Buget (lei)" type="number" value={newProject.buget} onChange={e => setNewProject({ ...newProject, buget: e.target.value })} />
-            </div>
-            <div className="inp-row">
-              <input className="inp" type="date" value={newProject.data_start} onChange={e => setNewProject({ ...newProject, data_start: e.target.value })} />
-              <input className="inp" type="date" value={newProject.data_estimata_finalizare} onChange={e => setNewProject({ ...newProject, data_estimata_finalizare: e.target.value })} />
-            </div>
-            <select className="inp" value={newProject.client_id} onChange={e => setNewProject({ ...newProject, client_id: e.target.value })}>
-              <option value="">— Selectează client —</option>
-              {clients.filter(c => c.rol === 'client').map(c => <option key={c.id} value={c.id} style={{ background: '#111' }}>{c.full_name || c.id}</option>)}
-            </select>
-            <select className="inp" value={newProject.responsabil_id} onChange={e => setNewProject({ ...newProject, responsabil_id: e.target.value })}>
-              <option value="">— Responsabil —</option>
-              {clients.filter(c => c.rol === 'angajat' || c.rol === 'superadmin').map(c => <option key={c.id} value={c.id} style={{ background: '#111' }}>{c.full_name || c.id}</option>)}
-            </select>
-            <select className="inp" value={newProject.status} onChange={e => setNewProject({ ...newProject, status: e.target.value })}>
-              {PROJECT_STATUSES.map(s => <option key={s} value={s} style={{ background: '#111' }}>{s}</option>)}
-            </select>
-            <div className="btn-row">
-              <button className="btn primary" onClick={createProject}>CREEAZĂ PROIECT</button>
-              <button className="btn" onClick={() => setShowNewProject(false)}>ANULEAZĂ</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ════════ MODAL Editare proiect ════════ */}
-      {editProject && (
-        <div className="overlay" onClick={e => e.target === e.currentTarget && setEditProject(null)}>
-          <div className="modal">
-            <div className="modal-title">EDITEAZĂ PROIECT</div>
-            <input className="inp" placeholder="Nume *" value={editProject.nume || ''} onChange={e => setEditProject({ ...editProject, nume: e.target.value })} />
-            <input className="inp" placeholder="Descriere" value={editProject.descriere || ''} onChange={e => setEditProject({ ...editProject, descriere: e.target.value })} />
-            <input className="inp" placeholder="Adresă" value={editProject.adresa || ''} onChange={e => setEditProject({ ...editProject, adresa: e.target.value })} />
-            <div className="inp-row">
-              <input className="inp" type="number" placeholder="Suprafață" value={editProject.suprafata || ''} onChange={e => setEditProject({ ...editProject, suprafata: Number(e.target.value) })} />
-              <input className="inp" type="number" placeholder="Buget" value={editProject.buget || ''} onChange={e => setEditProject({ ...editProject, buget: Number(e.target.value) })} />
-            </div>
-            <div className="inp-row">
-              <input className="inp" type="date" value={editProject.data_start || ''} onChange={e => setEditProject({ ...editProject, data_start: e.target.value })} />
-              <input className="inp" type="date" value={editProject.data_estimata_finalizare || ''} onChange={e => setEditProject({ ...editProject, data_estimata_finalizare: e.target.value })} />
-            </div>
-            <input className="inp" type="date" placeholder="Data finalizare" value={editProject.data_finalizare || ''} onChange={e => setEditProject({ ...editProject, data_finalizare: e.target.value })} />
-            <select className="inp" value={editProject.status || 'nou'} onChange={e => setEditProject({ ...editProject, status: e.target.value })}>
-              {PROJECT_STATUSES.map(s => <option key={s} value={s} style={{ background: '#111' }}>{s}</option>)}
-            </select>
-            <select className="inp" value={editProject.client_id || ''} onChange={e => setEditProject({ ...editProject, client_id: e.target.value })}>
-              <option value="">— Client —</option>
-              {clients.filter(c => c.rol === 'client').map(c => <option key={c.id} value={c.id} style={{ background: '#111' }}>{c.full_name}</option>)}
-            </select>
-            <select className="inp" value={editProject.responsabil_id || ''} onChange={e => setEditProject({ ...editProject, responsabil_id: e.target.value })}>
-              <option value="">— Responsabil —</option>
-              {clients.filter(c => c.rol === 'angajat' || c.rol === 'superadmin').map(c => <option key={c.id} value={c.id} style={{ background: '#111' }}>{c.full_name}</option>)}
-            </select>
-            <div className="btn-row">
-              <button className="btn primary" onClick={updateProject}>SALVEAZĂ</button>
-              <button className="btn" onClick={() => setEditProject(null)}>ANULEAZĂ</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ════════ MODAL Fază nouă ════════ */}
-      {showNewPhase && (
-        <div className="overlay" onClick={e => e.target === e.currentTarget && setShowNewPhase(false)}>
-          <div className="modal">
-            <div className="modal-title">FAZĂ NOUĂ</div>
-            <input className="inp" placeholder="Nume fază *" value={newPhase.nume} onChange={e => setNewPhase({ ...newPhase, nume: e.target.value })} />
-            <input className="inp" placeholder="Descriere" value={newPhase.descriere} onChange={e => setNewPhase({ ...newPhase, descriere: e.target.value })} />
-            <select className="inp" value={newPhase.status} onChange={e => setNewPhase({ ...newPhase, status: e.target.value })}>
-              {PHASE_STATUSES.map(s => <option key={s} value={s} style={{ background: '#111' }}>{s}</option>)}
-            </select>
-            <input className="inp" placeholder="Progres (0-100)" type="number" min={0} max={100} value={newPhase.progres} onChange={e => setNewPhase({ ...newPhase, progres: Number(e.target.value) })} />
-            <div className="inp-row">
-              <input className="inp" type="date" value={newPhase.data_start} onChange={e => setNewPhase({ ...newPhase, data_start: e.target.value })} />
-              <input className="inp" type="date" value={newPhase.data_sfarsit} onChange={e => setNewPhase({ ...newPhase, data_sfarsit: e.target.value })} />
-            </div>
-            <div className="btn-row">
-              <button className="btn primary" onClick={createPhase}>ADAUGĂ</button>
-              <button className="btn" onClick={() => setShowNewPhase(false)}>ANULEAZĂ</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ════════ MODAL Editare fază ════════ */}
-      {editPhase && (
-        <div className="overlay" onClick={e => e.target === e.currentTarget && setEditPhase(null)}>
-          <div className="modal">
-            <div className="modal-title">EDITEAZĂ FAZĂ</div>
-            <input className="inp" placeholder="Nume *" value={editPhase.nume || ''} onChange={e => setEditPhase({ ...editPhase, nume: e.target.value })} />
-            <input className="inp" placeholder="Descriere" value={editPhase.descriere || ''} onChange={e => setEditPhase({ ...editPhase, descriere: e.target.value })} />
-            <select className="inp" value={editPhase.status || 'neinceputa'} onChange={e => setEditPhase({ ...editPhase, status: e.target.value })}>
-              {PHASE_STATUSES.map(s => <option key={s} value={s} style={{ background: '#111' }}>{s}</option>)}
-            </select>
-            <input className="inp" type="number" min={0} max={100} placeholder="Progres %" value={editPhase.progres ?? 0} onChange={e => setEditPhase({ ...editPhase, progres: Number(e.target.value) })} />
-            <div className="inp-row">
-              <input className="inp" type="date" value={editPhase.data_start || ''} onChange={e => setEditPhase({ ...editPhase, data_start: e.target.value })} />
-              <input className="inp" type="date" value={editPhase.data_sfarsit || ''} onChange={e => setEditPhase({ ...editPhase, data_sfarsit: e.target.value })} />
-            </div>
-            <div className="btn-row">
-              <button className="btn primary" onClick={updatePhase}>SALVEAZĂ</button>
-              <button className="btn" onClick={() => setEditPhase(null)}>ANULEAZĂ</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ════════ MODAL Editare client (superadmin) ════════ */}
-      {editClient && (
-        <div className="overlay" onClick={e => e.target === e.currentTarget && setEditClient(null)}>
-          <div className="modal">
-            <div className="modal-title">EDITEAZĂ <span>{editClient.full_name || 'utilizator'}</span></div>
-            {editClient.provider && (
-              <div style={{ marginBottom: 14 }}>
-                <span className="badge" style={{ color: providerColor(editClient.provider), borderColor: providerColor(editClient.provider) }}>
-                  Logat prin {providerLabel(editClient.provider)}
-                </span>
-                {editClient.email && <span style={{ fontSize: 11, color: '#555', marginLeft: 10 }}>{editClient.email}</span>}
-              </div>
-            )}
-            <input className="inp" placeholder="Nume complet" value={editClient.full_name || ''} onChange={e => setEditClient({ ...editClient, full_name: e.target.value })} />
-            <input className="inp" placeholder="Telefon" value={editClient.phone || ''} onChange={e => setEditClient({ ...editClient, phone: e.target.value })} />
-            <input className="inp" placeholder="Companie" value={editClient.company || ''} onChange={e => setEditClient({ ...editClient, company: e.target.value })} />
-            <div className="btn-row">
-              <button className="btn primary" onClick={updateClient}>SALVEAZĂ</button>
-              <button className="btn" onClick={() => setEditClient(null)}>ANULEAZĂ</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ════════ MODAL Notificare 09-09-26 ════════ */}
-      {showNotifyModal && notifyTarget && (
-        <div className="overlay" onClick={e => e.target === e.currentTarget && setShowNotifyModal(false)}>
-          <div className="modal">
-            <div className="modal-title">NOTIFY → <span>{notifyTarget.name}</span></div>
-            <input className="inp" placeholder="Titlu *" value={notifyForm.titlu} onChange={e => setNotifyForm({ ...notifyForm, titlu: e.target.value })} />
-            <input className="inp" placeholder="Mesaj (opțional)" value={notifyForm.mesaj} onChange={e => setNotifyForm({ ...notifyForm, mesaj: e.target.value })} />
-            <input className="inp" placeholder="Link (ex: /dashboard/client)" value={notifyForm.link} onChange={e => setNotifyForm({ ...notifyForm, link: e.target.value })} />
-            <div className="btn-row">
-              <button className="btn primary" onClick={sendNotification}>TRIMITE</button>
-              <button className="btn" onClick={() => setShowNotifyModal(false)}>ANULEAZĂ</button>
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
     </>
   )
 }

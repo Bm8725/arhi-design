@@ -1652,9 +1652,10 @@ export default function AdminDashboardPage() {
                   </button>
                   <button className="stat" onClick={() => go('comenzi')}>
                     <div className="stat-ic"><ShoppingCart size={18} /></div>
-                    <div className="stat-v">{revenue.toLocaleString('ro-RO')} <span style={{ fontSize: 14, color: 'var(--muted)' }}>lei</span></div>
-                    <div className="stat-l">Venituri (plătite)</div>
+                    <div className="stat-v">—</div>
+                    <div className="stat-l">Venituri (shop)</div>
                   </button>
+
                   <button className="stat" onClick={() => { setProductView('active'); go('magazin') }}>
                     <div className="stat-ic"><Package size={18} /></div>
                     <div className="stat-v">{products.filter((p) => p.activ).length}</div>

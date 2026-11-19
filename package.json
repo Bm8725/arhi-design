@@ -1,6 +1,6 @@
 {
   "name": "arhi-design",
-  "version": "1.1.13",
+  "version": "1.2.13",
   "private": true,
   "scripts": {
     "dev": "next dev ",
@@ -32,6 +32,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "commit-and-tag-version": "^13.3.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "tailwindcss": "^4",

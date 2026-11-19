@@ -1,4 +1,9 @@
 // public/sw.js
+/*
+PWA js
+author: BM26 marius_service@yahoo.com
+updateȘ 19-11-26
+*/
 
 self.addEventListener('install', (event) => {
   console.log('Proarh.4d PWA Service Worker installed.');
@@ -14,8 +19,8 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     fetch(event.request).catch(() => {
-      // Opțional: Aici s-ar pune fallback-ul offline, dar e suficient să returneze fetch-ul normal
-      return new Response("Ești offline, dar PWA-ul este instalat!");
+  
+      return new Response("You are offline, PWA is installed !");
     })
   );
 });

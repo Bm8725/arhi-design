@@ -177,7 +177,7 @@ export default function DashHeader() {
             style={styles.item}
           >
             <span style={styles.label}>app designed by BM</span>
-            <span style={styles.value}>V. 1.1.13</span>
+            <span style={styles.value}>V. 1.2.13</span>
             <span
               style={{
                 ...styles.chevron,

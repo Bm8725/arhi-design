@@ -91,6 +91,7 @@ const STATUS_LABEL: Record<string, string> = {
   paid: 'Plătit',
   processing: 'Se procesează',
   completed: 'Finalizat',
+  delivered: 'Livrat',
   refunded: 'Rambursat',
   cancelled: 'Anulat',
 }
@@ -107,13 +108,13 @@ const STATUS_COLOR: Record<string, string> = {
   paid: '#34d399',
   processing: '#a5b4fc',
   completed: '#34d399',
+  delivered: '#34d399',
   refunded: '#f87171',
   cancelled: '#f87171',
 }
 
 type Section = 'proiecte' | 'comenzi' | 'fisiere' | 'noutati'
 
-// Icons for the sidebar (stroke icons, 24x24)
 const NAV_ICON: Record<Section, React.ReactNode> = {
   proiecte: (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -163,8 +164,8 @@ export default function ClientDashboardPage() {
   const [updates, setUpdates] = useState<Update[]>([])
   const [downloads, setDownloads] = useState<Download[]>([])
   const [orders, setOrders] = useState<Order[]>([])
+  const [dlError, setDlError] = useState('') // DIAGNOSTIC (se scoate după ce merge)
 
-  // Project detail
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'faze' | 'documente' | 'mesaje'>('faze')
   const [phases, setPhases] = useState<Phase[]>([])
@@ -175,8 +176,6 @@ export default function ClientDashboardPage() {
   const msgEndRef = useRef<HTMLDivElement>(null)
 
   const [section, setSection] = useState<Section>('proiecte')
-
-  // Expanded order
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null)
 
   useEffect(() => {
@@ -225,7 +224,7 @@ export default function ClientDashboardPage() {
 
       setUserName(profile?.full_name || user.email?.split('@')[0] || 'Client')
 
-      const [{ data: p }, { data: u }, { data: d }, { data: o }] = await Promise.all([
+      const [{ data: p }, { data: u }, { data: d, error: dErr }, { data: o }] = await Promise.all([
         supabase
           .from('projects')
           .select('id,nume,status,adresa,suprafata,buget,data_start,data_estimata_finalizare,data_finalizare,descriere')
@@ -248,6 +247,13 @@ export default function ClientDashboardPage() {
           .eq('user_id', user.id)
           .order('created_at', { ascending: false }),
       ])
+
+      // DIAGNOSTIC
+      setDlError(
+        dErr
+          ? 'EROARE: ' + dErr.message
+          : `Cont: ${user.email} | fișiere găsite: ${d?.length ?? 0} | rol: ${profile?.rol}`
+      )
 
       setProjects(p || [])
       setUpdates(u as any || [])
@@ -351,7 +357,6 @@ export default function ClientDashboardPage() {
         .c-wrap.ready{opacity:1;transform:none}
         .c-main{min-width:0}
 
-        /* ── SIDEBAR (desktop: full panel) ── */
         .c-side{position:sticky;top:100px;height:calc(100vh - 128px);min-height:480px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;padding:26px 16px 18px;background:radial-gradient(ellipse 120% 40% at 0% 0%,rgba(226,179,110,.18),transparent 60%),linear-gradient(180deg,#151515,#0a0a0a);box-shadow:0 30px 60px -30px rgba(0,0,0,.55);scrollbar-width:none}
         .c-side::-webkit-scrollbar{display:none}
         .c-side-user{display:flex;align-items:center;gap:14px;padding:4px 8px 22px;margin-bottom:12px;border-bottom:1px solid rgba(255,255,255,.08)}
@@ -379,10 +384,7 @@ export default function ClientDashboardPage() {
         .c-greeting{font-size:10px;color:#aaa;letter-spacing:.25em;margin-bottom:6px;text-transform:uppercase}
         .c-name{font-size:28px;color:#000000;font-weight:700;letter-spacing:-.02em}
         .c-name span{color:#e2b36e}
-        .c-logout{background:#111;border:none;color:#fff;font-family:inherit;font-size:9px;letter-spacing:.18em;cursor:pointer;transition:.2s;text-transform:uppercase;padding:10px 20px;font-weight:700}
-        .c-logout:hover{background:#c0392b;color:#fff}
 
-        /* Proiecte */
         .c-proj-card{border:2px solid #ececec;padding:22px;margin-bottom:8px;cursor:pointer;transition:all .2s;background:#ffffff;position:relative}
         .c-proj-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#e2b36e;transform:scaleY(0);transition:.2s;transform-origin:bottom}
         .c-proj-card:hover{border-color:#111;background:#fafafa}
@@ -394,7 +396,6 @@ export default function ClientDashboardPage() {
         .c-prog-track{flex:1;height:2px;background:#f0f0f0}
         .c-prog-fill{height:2px;background:#e2b36e;transition:.4s}
 
-        /* Detail */
         .c-back{font-size:9px;color:#fff;cursor:pointer;letter-spacing:.18em;margin-bottom:24px;display:inline-flex;align-items:center;gap:8px;text-transform:uppercase;transition:.2s;background:#111;border:2px solid #111;font-family:inherit;padding:9px 16px;font-weight:700}
         .c-back:hover{background:#333;border-color:#333}
         .c-detail-name{font-size:24px;color:#000000;margin-bottom:10px;font-weight:700;letter-spacing:-.02em}
@@ -405,7 +406,6 @@ export default function ClientDashboardPage() {
         .c-subtab:hover{color:#111;background:#f8f8f8}
         .c-subtab.on{color:#fff;background:#111;border-color:#111;font-weight:700}
 
-        /* ── FAZE ── */
         .c-phase{padding:18px 0;border-bottom:1px solid #f0f0f0;position:relative}
         .c-phase-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;flex-wrap:wrap}
         .c-phase-name{font-size:13px;color:#000000;font-weight:700;letter-spacing:.01em}
@@ -415,7 +415,6 @@ export default function ClientDashboardPage() {
         .c-phase-pct{font-size:11px;color:#e2b36e;min-width:32px;font-weight:700}
         .c-phase-dates{font-size:9px;color:#ccc;margin-top:6px;letter-spacing:.08em;text-transform:uppercase}
 
-        /* ── DOCUMENTE ── */
         .c-doc{display:flex;align-items:center;justify-content:space-between;padding:16px;margin-bottom:6px;gap:16px;background:#fafafa;border:1px solid #ececec;transition:all .2s;position:relative;overflow:hidden}
         .c-doc::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:linear-gradient(90deg,#e2b36e,#c49a40);transform:scaleX(0);transition:.3s;transform-origin:left}
         .c-doc:hover{background:#fff;border-color:#ccc;box-shadow:0 2px 12px rgba(0,0,0,.06)}
@@ -427,7 +426,6 @@ export default function ClientDashboardPage() {
         .c-doc-link{font-size:9px;color:#fff;text-decoration:none;white-space:nowrap;flex-shrink:0;font-weight:700;letter-spacing:.12em;background:#111;border:2px solid #111;padding:8px 16px;transition:all .2s;text-transform:uppercase}
         .c-doc-link:hover{background:#e2b36e;border-color:#e2b36e}
 
-        /* ── MESAJE ── */
         .c-msgs{max-height:360px;overflow-y:auto;margin-bottom:16px;padding-right:4px;scroll-behavior:smooth}
         .c-msgs::-webkit-scrollbar{width:3px}
         .c-msgs::-webkit-scrollbar-track{background:#f5f5f5}
@@ -452,7 +450,6 @@ export default function ClientDashboardPage() {
         .c-send:hover:not(:disabled){background:#e2b36e;border-left-color:#e2b36e}
         .c-send:disabled{opacity:.3;cursor:not-allowed}
 
-        /* Comenzi */
         .c-order{border:2px solid #ececec;margin-bottom:8px;background:#fff;overflow:hidden;transition:.2s}
         .c-order:hover{border-color:#ccc}
         .c-order-head{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;cursor:pointer;gap:12px;flex-wrap:wrap;transition:.2s}
@@ -467,7 +464,6 @@ export default function ClientDashboardPage() {
         .c-order-item-price{color:#000;font-weight:700}
         .c-stripe{font-size:9px;color:#ddd;margin-top:8px;letter-spacing:.05em}
 
-        /* Downloads */
         .c-dl-card{border:2px solid #ececec;padding:16px;margin-bottom:8px;display:flex;align-items:center;gap:14px;background:#fff;transition:.2s}
         .c-dl-card:hover{border-color:#ccc;box-shadow:0 2px 12px rgba(0,0,0,.05)}
         .c-dl-img{width:52px;height:40px;object-fit:cover;background:#f5f5f5;flex-shrink:0}
@@ -478,7 +474,6 @@ export default function ClientDashboardPage() {
         .c-dl-btn:hover{background:#111;color:#fff}
         .c-dl-btn.expired{border-color:#e8e8e8;color:#ccc;pointer-events:none}
 
-        /* Updates */
         .c-update{padding:18px 0;border-bottom:1px solid #f0f0f0}
         .c-update-msg{font-size:13px;color:#111;line-height:1.75;margin-bottom:8px;font-weight:400}
         .c-update-meta{font-size:9px;color:#bbb;letter-spacing:.08em;text-transform:uppercase}
@@ -486,7 +481,6 @@ export default function ClientDashboardPage() {
 
         .c-empty{font-size:9px;color:#ddd;text-align:center;padding:48px 0;letter-spacing:.2em;text-transform:uppercase}
 
-        /* ── TABLET + MOBILE: slim side rail (the bottom of the phone stays free for your own menu) ── */
         @media(max-width:1099px){
           .c-side{padding:18px 8px 14px;align-items:center}
           .c-side-user{padding:0 0 16px;justify-content:center;width:100%}
@@ -531,7 +525,6 @@ export default function ClientDashboardPage() {
 
         <div className={`c-wrap${mounted ? ' ready' : ''}`}>
 
-          {/* ── Sidebar (PC and tablet) ── */}
           <aside className="c-side" aria-label="Meniu client">
             <div className="c-side-user">
               <div className="c-avatar" aria-hidden>{userName.charAt(0) || 'C'}</div>
@@ -548,7 +541,9 @@ export default function ClientDashboardPage() {
 
           <div className="c-main">
 
-          {/* ── Header ── */}
+          {/* DIAGNOSTIC: rând roșu, se scoate după ce merge */}
+          <div style={{ color: 'red', fontSize: 12, marginBottom: 16 }}>{dlError}</div>
+
           <div className="c-header">
             <div>
               <div className="c-greeting">BINE AI VENIT</div>
@@ -556,9 +551,6 @@ export default function ClientDashboardPage() {
             </div>
           </div>
 
-          {/* ════════════════════════════════════════════════════════════ */}
-          {/* PROIECTE                                                      */}
-          {/* ════════════════════════════════════════════════════════════ */}
           {!activeProjectId && section === 'proiecte' && (
             <>
               {projects.length === 0
@@ -586,9 +578,6 @@ export default function ClientDashboardPage() {
             </>
           )}
 
-          {/* ════════════════════════════════════════════════════════════ */}
-          {/* DETALIU PROIECT                                               */}
-          {/* ════════════════════════════════════════════════════════════ */}
           {activeProjectId && activeProject && (
             <>
               <button className="c-back" onClick={() => setActiveProjectId(null)}>← Înapoi</button>
@@ -695,9 +684,6 @@ export default function ClientDashboardPage() {
             </>
           )}
 
-          {/* ════════════════════════════════════════════════════════════ */}
-          {/* COMENZI                                                       */}
-          {/* ════════════════════════════════════════════════════════════ */}
           {!activeProjectId && section === 'comenzi' && (
             <>
               {orders.length === 0
@@ -740,9 +726,6 @@ export default function ClientDashboardPage() {
             </>
           )}
 
-          {/* ════════════════════════════════════════════════════════════ */}
-          {/* FIȘIERE DIGITALE                                             */}
-          {/* ════════════════════════════════════════════════════════════ */}
           {!activeProjectId && section === 'fisiere' && (
             downloads.length === 0
               ? <div className="c-empty">Niciun fișier achiziționat.</div>
@@ -770,9 +753,6 @@ export default function ClientDashboardPage() {
               })
           )}
 
-          {/* ════════════════════════════════════════════════════════════ */}
-          {/* NOUTĂȚI                                                       */}
-          {/* ════════════════════════════════════════════════════════════ */}
           {!activeProjectId && section === 'noutati' && (
             updates.length === 0
               ? <div className="c-empty">Nicio noutate momentan.</div>
@@ -790,7 +770,6 @@ export default function ClientDashboardPage() {
           </div>
         </div>
 
-        
         <Footer />
       </div>
     </>

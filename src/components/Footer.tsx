@@ -87,7 +87,7 @@ export default function Footer() {
         <div className="flex items-center justify-between text-[9px] uppercase tracking-[0.25em] text-white/30">
           
           <div>
-            © {new Date().getFullYear()} PROARH.4D. ALL RIGHTS RESERVED.
+            © {new Date().getFullYear()} PROARH4D.RO. ALL RIGHTS RESERVED.
           </div>
 
           {/* BUTON BACK TO TOP INTEGRIZAT FIN ÎN DESIGN */}

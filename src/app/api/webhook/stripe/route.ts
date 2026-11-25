@@ -1,4 +1,4 @@
-// src/app/api/webhooks/stripe/route.ts
+// src/app/api/webhook/stripe/route.ts
 import { NextResponse } from 'next/server'
 import type Stripe from 'stripe'
 import { stripe, ORDER_STATUS, CURRENCY, toCents } from '@/lib/stripe'

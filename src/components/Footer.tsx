@@ -2,6 +2,49 @@
 
 import Link from 'next/link';
 
+const VisaIcon = () => (
+  <svg viewBox="0 0 48 32" className="h-5 w-auto" aria-label="Visa" role="img">
+    <rect width="48" height="32" rx="4" fill="currentColor" fillOpacity="0.08" />
+    <text
+      x="24"
+      y="21"
+      textAnchor="middle"
+      fontSize="14"
+      fontWeight="700"
+      fontStyle="italic"
+      fontFamily="Arial, sans-serif"
+      fill="currentColor"
+    >
+      VISA
+    </text>
+  </svg>
+);
+
+const MastercardIcon = () => (
+  <svg viewBox="0 0 48 32" className="h-5 w-auto" aria-label="Mastercard" role="img">
+    <rect width="48" height="32" rx="4" fill="currentColor" fillOpacity="0.08" />
+    <circle cx="19" cy="16" r="9" fill="#eb001b" fillOpacity="0.85" />
+    <circle cx="29" cy="16" r="9" fill="#f79e1b" fillOpacity="0.85" />
+  </svg>
+);
+
+const StripeIcon = () => (
+  <svg viewBox="0 0 48 32" className="h-5 w-auto" aria-label="Stripe" role="img">
+    <rect width="48" height="32" rx="4" fill="currentColor" fillOpacity="0.08" />
+    <text
+      x="24"
+      y="21"
+      textAnchor="middle"
+      fontSize="12"
+      fontWeight="700"
+      fontFamily="Arial, sans-serif"
+      fill="currentColor"
+    >
+      stripe
+    </text>
+  </svg>
+);
+
 export default function Footer() {
   const scrolleazaSus = () => {
     if (typeof window !== 'undefined') {
@@ -71,10 +114,21 @@ export default function Footer() {
                 </a>
               </div>
 
-              {/* Notificarea de plată modernă și curată sub logo-uri */}
-              <span className="text-[8px] text-white/20 uppercase tracking-[0.2em] whitespace-nowrap">
-                SECURE CHECKOUT // VISA • MASTERCARD
-              </span>
+              {/* Metode de plată */}
+              <div className="flex items-center gap-2 text-white/30">
+                <div className="opacity-40 hover:opacity-100 transition-opacity duration-300">
+                  <VisaIcon />
+                </div>
+                <div className="opacity-40 hover:opacity-100 transition-opacity duration-300">
+                  <MastercardIcon />
+                </div>
+                <div className="opacity-40 hover:opacity-100 transition-opacity duration-300">
+                  <StripeIcon />
+                </div>
+                <span className="text-[8px] text-white/20 uppercase tracking-[0.2em] whitespace-nowrap ml-1">
+                  SECURE CHECKOUT
+                </span>
+              </div>
             </div>
 
           </div>
